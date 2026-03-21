@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}Home — Dubai Stem Cell Congress 2026{% endblock %}
+
+{% block head %}
+<style>
+  .home-page { min-height: 100vh; }
+
+  .home-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+
+  .welcome-section { padding: 40px 0 0; }
+
+  .welcome-card {
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(15,181,174,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 36px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--teal), var(--gold), var(--teal));
+    opacity: 0.4;
+  }
+
+  .welcome-greeting { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+  .welcome-greeting span { color: var(--teal); }
+  .welcome-sub { color: var(--text-secondary); font-weight: 300; font-size: 1rem; }
+
+  .welcome-meta { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .welcome-meta .badge { font-size: 0.62rem; }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .dash-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: all 0.3s var(--ease-out);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dash-tile::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    transition: width 0.3s;
+  }
+
+  .dash-tile:hover {
+    border-color: transparent;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .dash-tile:hover::before { width: 5px; }
+  .dash-tile.teal::before { background: var(--teal); }
+  .dash-tile.purple::before { background: var(--purple); }
+  .dash-tile.gold::before { background: var(--gold); }
+  .dash-tile.blue::before { background: var(--blue); }
+  .dash-tile-icon { font-size: 1.5rem; margin-bottom: 12px; }
+  .dash-tile h3 { margin-bottom: 6px; font-size: 1rem; }
+  .dash-tile p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.45; font-weight: 300; }
+
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
+
+  .quick-action {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem; color: var(--text-secondary);
+    transition: all 0.2s var(--ease-out);
+    cursor: pointer; text-decoration: none;
+  }
+
+  .quick-action:hover { border-color: var(--teal); color: var(--text); background: var(--teal-dim); }
+
+  .interests-display { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+  .interest-tag {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em;
+    padding: 4px 10px; border-radius: 100px;
+    background: var(--teal-dim); color: var(--teal);
+    border: 1px solid rgba(15,181,174,0.15);
+  }
+
+  /* Desktop user menu */
+  .user-menu { position: relative; }
+
+  .user-btn {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text); cursor: pointer;
+    font-family: var(--font-sans); font-size: 0.88rem; transition: all 0.2s;
+  }
+
+  .user-btn:hover { border-color: var(--border-light); background: var(--surface-raised); }
+
+  .user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--teal-dim); border: 1px solid rgba(15,181,174,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; color: var(--teal); font-weight: 600;
+  }
+
+  .user-dropdown {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px;
+    min-width: 180px; display: none; z-index: 100;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .user-dropdown.open { display: block; }
+
+  .dropdown-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.15s; border: none; background: none;
+    width: 100%; font-family: var(--font-sans); text-align: left; text-decoration: none;
+  }
+
+  .dropdown-item:hover { background: var(--surface-raised); color: var(--text); }
+
+  @media (max-width: 768px) {
+    .welcome-card { padding: 24px; border-radius: var(--radius-lg); }
+    .welcome-greeting { font-size: 1.3rem; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .quick-actions { gap: 8px; }
+    .quick-action { padding: 8px 14px; font-size: 0.8rem; }
+    .user-menu { display: none; }
+    .desktop-logout { display: none; }
+    .desktop-nav-links { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="home-page">
+  <div class="container">
+    <!-- NAV -->
+    <nav class="topnav home-header animate-in">
+      <a href="/home" class="topnav-brand">
+        <div class="topnav-logo">🧬</div>
+        <span class="topnav-name">DSCC 2026</span>
+      </a>
+      <div class="topnav-links gap-md">
+        <a href="#" class="quick-action desktop-nav-links" style="margin:0;font-size:0.8rem;padding:8px 14px;">📅 Program</a>
+        <a href="#" class="quick-action desktop-nav-links" style="margin:0;font-size:0.8rem;padding:8px 14px;">🤝 Connect</a>
+        <div class="user-menu">
+          <button class="user-btn" onclick="this.parentElement.querySelector('.user-dropdown').classList.toggle('open')">
+            <div class="user-avatar">{{ user.full_name[0] }}</div>
+            <span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
+          </button>
+          <div class="user-dropdown">
+            <a href="/profile" class="dropdown-item">👤 My Profile</a>
+            <a href="/certificates" class="dropdown-item">📜 My Certificates</a>
+            <a href="/settings" class="dropdown-item">⚙️ Settings</a>
+            <a href="/logout" class="dropdown-item" style="color:var(--red);">Sign Out</a>
+          </div>
+        </div>
+        <a href="/logout" class="btn btn-ghost btn-sm desktop-logout" style="color:var(--red);border-color:rgba(239,68,68,0.3);margin-left:4px;">Logout</a>
+        <!-- Mobile hamburger -->
+        <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
+      </div>
+    </nav>
+
+    <!-- WELCOME -->
+    <div class="welcome-section">
+      <div class="welcome-card animate-up">
+        <div class="welcome-greeting">Welcome, <span>{{ user.full_name.split(' ')[0] }}</span> 👋</div>
+        <div class="welcome-sub">Your personalized congress experience starts here.</div>
+        <div class="welcome-meta">
+          <span class="badge badge-teal">📅 Oct 15 – 17, 2026</span>
+          <span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>
+          {% if user.institution %}
+          <span class="badge badge-teal" style="color:var(--text-secondary);border-color:var(--border);background:transparent;">🏛️ {{ user.institution }}</span>
+          {% endif %}
+        </div>
+        {% if user.research_interests %}
+        <div class="interests-display">
+          {% for interest in user.research_interests %}
+          <span class="interest-tag">{{ interest }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="section-title animate-up delay-1">Quick Actions</div>
+    <div class="quick-actions animate-up delay-1">
+      <a href="#" class="quick-action">📋 Browse Program</a>
+      <a href="#" class="quick-action">🖼️ Poster Gallery</a>
+      <a href="#" class="quick-action">🤝 Find Researchers</a>
+      <a href="#" class="quick-action">🤖 AI Companion</a>
+      <a href="#" class="quick-action">🗺️ Venue Map</a>
+    </div>
+
+    <!-- DASHBOARD TILES -->
+    <div class="section-title animate-up delay-2">Your Dashboard</div>
+    <div class="dash-grid">
+      <div class="dash-tile teal animate-up delay-2">
+        <div class="dash-tile-icon">📅</div>
+        <h3>My Schedule</h3>
+        <p>No sessions bookmarked yet. Browse the program to build your personal schedule.</p>
+      </div>
+      <div class="dash-tile purple animate-up delay-3">
+        <div class="dash-tile-icon">🤝</div>
+        <h3>Networking</h3>
+        <p>AI matchmaking will activate 2 weeks before the congress with personalized suggestions.</p>
+      </div>
+      <div class="dash-tile gold animate-up delay-4">
+        <div class="dash-tile-icon">📄</div>
+        <h3>My Papers</h3>
+        <p>Submit your research abstract for review. Deadline: September 1, 2026.</p>
+      </div>
+      <div class="dash-tile blue animate-up delay-5">
+        <div class="dash-tile-icon">📜</div>
+        <h3>CME Credits</h3>
+        <p>Attend sessions and scan QR codes to automatically earn CME/CPD credits.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE SLIDE MENU -->
+<div class="mobile-menu-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+<div class="mobile-menu-panel" id="mobilePanel">
+  <div class="mobile-menu-header">
+    <div class="mobile-menu-user">
+      <div class="avatar">{{ user.full_name[0] }}</div>
+      <div>
+        <div class="name">{{ user.full_name }}</div>
+        <div class="role">{{ user.role.value | replace('_', ' ') | title }}</div>
+      </div>
+    </div>
+    <button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button>
+  </div>
+  <div class="mobile-menu-links">
+    <div class="mobile-menu-section">Navigate</div>
+    <a href="/home" class="mobile-menu-link">🏠 Home</a>
+    <a href="#" class="mobile-menu-link">📅 Program</a>
+    <a href="#" class="mobile-menu-link">🖼️ Posters</a>
+    <a href="#" class="mobile-menu-link">🤝 Connect</a>
+    <a href="#" class="mobile-menu-link">🤖 AI Companion</a>
+    <div class="mobile-menu-section">Account</div>
+    <a href="/profile" class="mobile-menu-link">👤 My Profile</a>
+    <a href="/certificates" class="mobile-menu-link">📜 My Certificates</a>
+    <a href="/settings" class="mobile-menu-link">⚙️ Settings</a>
+    <a href="/logout" class="mobile-menu-link logout">Sign Out</a>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-bottom-nav">
+  <a href="/home" class="mobile-nav-item active"><span>🏠</span>Home</a>
+  <a href="#" class="mobile-nav-item"><span>📅</span>Program</a>
+  <a href="#" class="mobile-nav-item"><span>🖼️</span>Posters</a>
+  <a href="#" class="mobile-nav-item"><span>🤝</span>Connect</a>
+  <a href="/profile" class="mobile-nav-item"><span>👤</span>Me</a>
+</nav>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Desktop dropdown
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.user-menu')) {
+    document.querySelectorAll('.user-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
+
+// Mobile menu
+function openMobileMenu() {
+  document.getElementById('mobileOverlay').classList.add('open');
+  document.getElementById('mobilePanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobileOverlay').classList.remove('open');
+  document.getElementById('mobilePanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+</script>
+{% endblock %}

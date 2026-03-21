@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}Settings — Dubai Stem Cell Congress 2026{% endblock %}
+
+{% block head %}
+<style>
+  .page-wrap { min-height: 100vh; }
+
+  .home-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 32px; }
+
+  .page-title-bar {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
+  }
+  .page-title-bar .back-link {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: center; color: var(--text-secondary); text-decoration: none;
+    transition: all 0.2s; font-size: 1.1rem;
+  }
+  .page-title-bar .back-link:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+  .page-title-bar h2 { font-size: 1.4rem; }
+  .page-title-bar h2 span { color: var(--teal); }
+
+  .settings-stack {
+    max-width: 640px;
+    display: flex; flex-direction: column; gap: 24px;
+    padding-bottom: 60px;
+  }
+
+  .settings-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px 32px;
+    position: relative; overflow: hidden;
+  }
+  .settings-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent); opacity: 0.15;
+  }
+
+  .settings-card-title {
+    font-size: 1.05rem; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .settings-card-desc {
+    font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;
+  }
+
+  .settings-form { display: flex; flex-direction: column; gap: 16px; }
+
+  .pw-requirements {
+    display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 2px;
+  }
+  .pw-req {
+    font-size: 0.72rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px; transition: color 0.2s;
+  }
+  .pw-req.met { color: var(--green); }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+
+  .toggle-info h4 { font-size: 0.92rem; font-weight: 600; margin-bottom: 2px; }
+  .toggle-info p { font-size: 0.8rem; color: var(--text-secondary); }
+
+  .toggle {
+    position: relative; width: 46px; height: 26px; flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; cursor: pointer;
+    background: var(--border); border-radius: 26px;
+    transition: all 0.3s var(--ease-out);
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; width: 20px; height: 20px;
+    left: 3px; bottom: 3px; border-radius: 50%;
+    background: var(--text-secondary); transition: all 0.3s var(--ease-out);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--teal); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: white; }
+
+  /* Danger zone */
+  .danger-card {
+    border-color: rgba(239,68,68,0.2);
+  }
+  .danger-card::before {
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+  }
+  .danger-card .settings-card-title { color: var(--red); }
+
+  .btn-danger {
+    background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.3);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.08); border-color: var(--red); }
+
+  .confirm-text {
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;
+    padding: 14px; background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.12);
+    border-radius: var(--radius-sm); display: none;
+  }
+  .confirm-text.visible { display: block; }
+
+  @media (max-width: 768px) {
+    .settings-stack { max-width: 100%; }
+    .page-title-bar h2 { font-size: 1.2rem; }
+  }
+
+  @media (max-width: 540px) {
+    .settings-card { padding: 20px 16px; }
+    .toggle-row { flex-direction: row; gap: 12px; }
+    .toggle-info h4 { font-size: 0.85rem; }
+    .toggle-info p { font-size: 0.75rem; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-wrap">
+  {% include "nav.html" %}
+
+  <div class="container">
+    <div class="page-title-bar animate-up">
+      <a href="/home" class="back-link">←</a>
+      <h2><span>Settings</span></h2>
+    </div>
+
+    <div class="settings-stack">
+      <!-- PASSWORD -->
+      <div class="settings-card animate-up delay-1">
+        <div class="settings-card-title">🔒 Change Password</div>
+        <div class="settings-card-desc">Update your password. Must be at least 8 characters with uppercase and a number.</div>
+        <form class="settings-form" id="passwordForm" onsubmit="handlePasswordChange(event)">
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" class="form-input" id="currentPassword" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-input" id="newPassword" required oninput="checkNewPassword()">
+            <div class="pw-requirements">
+              <span class="pw-req" id="pw-len">✕ 8+ chars</span>
+              <span class="pw-req" id="pw-upper">✕ Uppercase</span>
+              <span class="pw-req" id="pw-num">✕ Number</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" class="form-input" id="confirmPassword" required>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm" id="pwBtn">Update Password</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="settings-card animate-up delay-2">
+        <div class="settings-card-title">🔔 Notifications</div>
+        <div class="settings-card-desc">Control what notifications you receive from the congress app.</div>
+        <div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Session Reminders</h4>
+              <p>Get notified 15 min before bookmarked sessions</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Schedule Changes</h4>
+              <p>Room moves, cancellations, and time changes</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Networking Matches</h4>
+              <p>AI-suggested connections and meeting requests</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Paper Updates</h4>
+              <p>Review status changes and decisions</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Quiet Hours (10 PM – 7 AM)</h4>
+              <p>Hold non-urgent notifications during night</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRIVACY -->
+      <div class="settings-card animate-up delay-3">
+        <div class="settings-card-title">👁️ Privacy</div>
+        <div class="settings-card-desc">Control your visibility to other attendees.</div>
+        <div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Profile Visible</h4>
+              <p>Other attendees can see your profile and research interests</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Show in Networking</h4>
+              <p>Appear in AI matchmaking suggestions</p>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <h4>Share Data with Sponsors</h4>
+              <p>Allow exhibitors to see your profile (requires opt-in per DATA-06)</p>
+            </div>
+            <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="settings-card danger-card animate-up delay-4">
+        <div class="settings-card-title">⚠️ Danger Zone</div>
+        <div class="settings-card-desc">Irreversible actions. Proceed with caution.</div>
+        <div class="confirm-text" id="deleteConfirm">
+          This will permanently delete your account, schedule, connections, and all associated data. This action cannot be undone.
+        </div>
+        <div style="display:flex;gap:12px;margin-top:12px;">
+          <button class="btn btn-danger btn-sm" onclick="toggleDeleteConfirm()">Delete My Account</button>
+          <button class="btn btn-danger btn-sm" id="confirmDeleteBtn" style="display:none;background:rgba(239,68,68,0.12);" onclick="handleDeleteAccount()">Yes, Delete Everything</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkNewPassword() {
+  const pw = document.getElementById('newPassword').value;
+  const toggle = (id, met) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('met', met);
+    el.textContent = (met ? '✓ ' : '✕ ') + el.textContent.slice(2);
+  };
+  toggle('pw-len', pw.length >= 8);
+  toggle('pw-upper', /[A-Z]/.test(pw));
+  toggle('pw-num', /\d/.test(pw));
+}
+
+async function handlePasswordChange(e) {
+  e.preventDefault();
+  const newPw = document.getElementById('newPassword').value;
+  const confirmPw = document.getElementById('confirmPassword').value;
+
+  if (newPw !== confirmPw) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('pwBtn');
+  btn.innerHTML = '<span class="spinner"></span> Updating...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/auth/password', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        current_password: document.getElementById('currentPassword').value,
+        new_password: newPw,
+      }),
+      credentials: 'same-origin',
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+
+    showToast('Password updated!', 'success');
+    document.getElementById('passwordForm').reset();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.innerHTML = 'Update Password';
+    btn.disabled = false;
+  }
+}
+
+function toggleDeleteConfirm() {
+  document.getElementById('deleteConfirm').classList.toggle('visible');
+  document.getElementById('confirmDeleteBtn').style.display =
+    document.getElementById('deleteConfirm').classList.contains('visible') ? 'inline-flex' : 'none';
+}
+
+async function handleDeleteAccount() {
+  try {
+    const res = await fetch('/api/auth/account', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    if (!res.ok) throw new Error('Failed to delete account');
+    window.location.href = '/';
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+</script>
+{% endblock %}

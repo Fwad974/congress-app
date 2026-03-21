@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block title %}Dubai Stem Cell Congress 2026{% endblock %}
+
+{% block head %}
+<style>
+  /* ========== LANDING-SPECIFIC ========== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-dna {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(600px, 100vw); height: min(600px, 100vw);
+    opacity: 0.03;
+    background:
+      repeating-conic-gradient(
+        from 0deg,
+        transparent 0deg 80deg,
+        rgba(15,181,174,0.3) 80deg 82deg,
+        transparent 82deg 360deg
+      );
+    border-radius: 50%;
+    animation: slow-rotate 60s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes slow-rotate { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .hero-date {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    padding: 7px 16px;
+    border: 1px solid rgba(15,181,174,0.2);
+    border-radius: 100px;
+    background: var(--teal-dim);
+  }
+
+  .hero-venue {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 7px 16px;
+    border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 100px;
+    background: var(--gold-dim);
+  }
+
+  .hero h1 {
+    max-width: 800px;
+    margin-bottom: 20px;
+    line-height: 1.08;
+  }
+
+  .hero h1 .accent { color: var(--teal); }
+  .hero h1 .gold { color: var(--gold); }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Stat counters */
+  .stats-strip {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--teal);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Features grid */
+  .features-section {
+    padding: 80px 24px;
+  }
+
+  .features-section h2 {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .features-section h2 span { color: var(--teal); }
+
+  .features-sub {
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-bottom: 48px;
+    font-size: 1rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    transition: all 0.35s var(--ease-out);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(15,181,174,0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px -8px rgba(0,0,0,0.4);
+  }
+
+  .feature-card:hover::before { opacity: 0.6; }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    background: var(--teal-dim);
+    border: 1px solid rgba(15,181,174,0.1);
+  }
+
+  .feature-card h3 { margin-bottom: 8px; }
+
+  .feature-card p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  /* CTA */
+  .cta-section {
+    padding: 80px 24px;
+    text-align: center;
+  }
+
+  .cta-card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 56px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at center, var(--teal-dim), transparent 60%);
+    pointer-events: none;
+  }
+
+  .cta-card h2 { position: relative; z-index: 1; margin-bottom: 12px; }
+  .cta-card h2 span { color: var(--teal); }
+
+  .cta-card p {
+    position: relative; z-index: 1;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-bottom: 32px;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .cta-card .hero-actions { position: relative; z-index: 1; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .footer a { color: var(--text-secondary); }
+
+  /* Floating cell illustrations */
+  .cell-float {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(15,181,174,0.08);
+    pointer-events: none;
+    animation: float-cell 8s ease-in-out infinite;
+  }
+
+  .cell-float::after {
+    content: '';
+    position: absolute;
+    top: 30%; left: 30%;
+    width: 40%; height: 40%;
+    border-radius: 50%;
+    background: rgba(15,181,174,0.04);
+  }
+
+  @keyframes float-cell {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+
+  @media (max-width: 768px) {
+    .stats-strip { gap: 20px; padding: 28px 16px; }
+    .stat-value { font-size: 1.6rem; }
+    .cta-card { padding: 36px 20px; border-radius: var(--radius-lg); }
+    .hero-content { padding: 60px 16px; }
+    .hero-eyebrow { flex-direction: column; gap: 8px; }
+    .hero-sub { font-size: 1rem; }
+    .hero-actions { flex-direction: column; width: 100%; max-width: 320px; }
+    .hero-actions .btn { width: 100%; }
+    .features-grid { grid-template-columns: 1fr; gap: 14px; }
+    .features-section { padding: 48px 16px; }
+    .features-section h2 { font-size: 1.4rem; }
+    .feature-card { padding: 22px 18px; }
+    .cta-section { padding: 48px 16px; }
+    .cta-card .hero-actions { flex-direction: column; width: 100%; max-width: 280px; margin: 0 auto; }
+    .cta-card .hero-actions .btn { width: 100%; }
+  }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.7rem; }
+    .stats-strip { gap: 16px; }
+    .stat { min-width: 60px; }
+    .stat-value { font-size: 1.3rem; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- NAV -->
+<div class="container">
+  <nav class="topnav animate-in">
+    <a href="/" class="topnav-brand">
+      <div class="topnav-logo">🧬</div>
+      <span class="topnav-name">DSCC 2026</span>
+    </a>
+    <div class="topnav-links">
+      <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
+      <a href="/signup" class="btn btn-primary btn-sm">Register</a>
+    </div>
+  </nav>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-dna"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow animate-up">
+      <span class="hero-date">📅 Oct 15 – 17, 2026</span>
+      <span class="hero-venue">📍 Dubai World Trade Centre</span>
+    </div>
+    <h1 class="animate-up delay-1">
+      Dubai <span class="accent">Stem Cell</span><br>Congress <span class="gold">2026</span>
+    </h1>
+    <p class="hero-sub animate-up delay-2">
+      The premier gathering for regenerative medicine researchers, clinicians,
+      and biotech innovators. Three days of science, networking, and breakthroughs.
+    </p>
+    <div class="hero-actions animate-up delay-3">
+      <a href="/signup" class="btn btn-primary btn-lg">Register Now</a>
+      <a href="#features" class="btn btn-ghost btn-lg">Explore Program</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat animate-up">
+    <div class="stat-value">500+</div>
+    <div class="stat-label">Researchers</div>
+  </div>
+  <div class="stat animate-up delay-1">
+    <div class="stat-value">80+</div>
+    <div class="stat-label">Sessions</div>
+  </div>
+  <div class="stat animate-up delay-2">
+    <div class="stat-value">40+</div>
+    <div class="stat-label">Countries</div>
+  </div>
+  <div class="stat animate-up delay-3">
+    <div class="stat-value">3</div>
+    <div class="stat-label">Days</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="container">
+    <h2 class="animate-up">Your Congress, <span>Reimagined</span></h2>
+    <p class="features-sub animate-up delay-1">AI-powered networking, live session interaction, and a personal congress companion.</p>
+    <div class="features-grid">
+      <div class="feature-card animate-up delay-1">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Congress Companion</h3>
+        <p>Context-aware AI that adapts to your location, schedule, and interests. Proactive nudges, smart summaries, and real-time suggestions.</p>
+      </div>
+      <div class="feature-card animate-up delay-2">
+        <div class="feature-icon">🤝</div>
+        <h3>Smart Networking</h3>
+        <p>AI matches you with researchers in your field. Smart icebreakers, 1-tap meeting requests, and post-event follow-up reminders.</p>
+      </div>
+      <div class="feature-card animate-up delay-3">
+        <div class="feature-icon">🎤</div>
+        <h3>Live Interaction</h3>
+        <p>Submit and upvote Q&A during talks, vote in live polls, and react with emoji pulses — all without disrupting the session.</p>
+      </div>
+      <div class="feature-card animate-up delay-4">
+        <div class="feature-icon">🖼️</div>
+        <h3>Interactive Posters</h3>
+        <p>Browse, vote, and comment on research posters. QR scan at the venue for digital versions and scavenger hunt points.</p>
+      </div>
+      <div class="feature-card animate-up delay-5">
+        <div class="feature-icon">🧬</div>
+        <h3>Knowledge Graph</h3>
+        <p>Every talk, poster, and researcher connected by topic. Discover cross-pollination opportunities you didn't know existed.</p>
+      </div>
+      <div class="feature-card animate-up delay-5">
+        <div class="feature-icon">📜</div>
+        <h3>CME Certificates</h3>
+        <p>Automatic attendance tracking via QR scans. Downloadable certificates with verified credit hours — zero paperwork.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-card animate-up">
+    <h2>Ready to <span>Join</span>?</h2>
+    <p>Register now to build your personalized schedule, discover AI-matched connections, and get early access to the poster gallery.</p>
+    <div class="hero-actions">
+      <a href="/signup" class="btn btn-primary btn-lg">Create Account</a>
+      <a href="/login" class="btn btn-ghost btn-lg">Sign In</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>© 2026 Dubai Stem Cell Congress. All rights reserved. <a href="#">Privacy Policy</a> · <a href="#">Terms</a></p>
+</footer>
+{% endblock %}

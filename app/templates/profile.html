@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Dubai Stem Cell Congress 2026{% endblock %}
+
+{% block head %}
+<style>
+  .page-wrap { min-height: 100vh; }
+
+  .home-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+
+  /* Page header */
+  .page-title-bar {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 32px;
+  }
+  .page-title-bar .back-link {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: center; color: var(--text-secondary); text-decoration: none;
+    transition: all 0.2s; font-size: 1.1rem;
+  }
+  .page-title-bar .back-link:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+  .page-title-bar h2 { font-size: 1.4rem; }
+  .page-title-bar h2 span { color: var(--teal); }
+
+  /* Profile layout */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    padding-bottom: 60px;
+  }
+
+  /* Left sidebar */
+  .profile-sidebar {
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .avatar-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 32px; text-align: center;
+  }
+
+  .avatar-large {
+    width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 16px;
+    background: var(--teal-dim); border: 2px solid rgba(15,181,174,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.4rem; color: var(--teal); font-weight: 700;
+  }
+
+  .avatar-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+  .avatar-email { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; word-break: break-all; }
+
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 100px; color: var(--gold);
+    background: var(--gold-dim); border: 1px solid rgba(212,168,67,0.2);
+  }
+
+  .sidebar-stats {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+  }
+
+  .sidebar-stat {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem;
+  }
+  .sidebar-stat:last-child { border-bottom: none; }
+  .sidebar-stat-label { color: var(--text-secondary); }
+  .sidebar-stat-value { font-family: var(--font-mono); font-size: 0.8rem; color: var(--teal); font-weight: 600; }
+
+  /* Right content */
+  .profile-form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 32px; position: relative; overflow: hidden;
+  }
+  .profile-form-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent); opacity: 0.2;
+  }
+
+  .form-section-title {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+
+  .profile-form { display: flex; flex-direction: column; gap: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .interests-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px;
+  }
+  .interests-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .form-actions {
+    display: flex; gap: 12px; justify-content: flex-end;
+    padding-top: 16px; border-top: 1px solid var(--border); margin-top: 8px;
+  }
+
+  .textarea {
+    width: 100%; min-height: 100px; padding: 14px 18px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text);
+    font-family: var(--font-sans); font-size: 0.95rem; resize: vertical;
+    transition: all 0.25s var(--ease-out); outline: none;
+  }
+  .textarea::placeholder { color: var(--text-muted); }
+  .textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-dim); }
+
+  .save-indicator {
+    font-size: 0.82rem; color: var(--green); display: none; align-items: center; gap: 6px;
+  }
+  .save-indicator.visible { display: flex; }
+
+  @media (max-width: 768px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .profile-form-card { padding: 24px 18px; }
+    .avatar-card { padding: 24px; }
+    .page-title-bar h2 { font-size: 1.2rem; }
+    .form-actions { flex-direction: column; }
+    .form-actions .btn { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-wrap">
+  {% include "nav.html" %}
+
+  <div class="container">
+    <div class="page-title-bar animate-up">
+      <a href="/home" class="back-link">←</a>
+      <h2>My <span>Profile</span></h2>
+    </div>
+
+    <div class="profile-grid">
+      <!-- SIDEBAR -->
+      <div class="profile-sidebar">
+        <div class="avatar-card animate-up delay-1">
+          <div class="avatar-large">{{ user.full_name[0] }}</div>
+          <div class="avatar-name">{{ user.full_name }}</div>
+          <div class="avatar-email">{{ user.email }}</div>
+          <span class="role-badge">{{ user.role.value | replace('_', ' ') | title }}</span>
+        </div>
+
+        <div class="sidebar-stats animate-up delay-2">
+          <div class="sidebar-stat">
+            <span class="sidebar-stat-label">Member since</span>
+            <span class="sidebar-stat-value">{{ user.created_at.strftime('%b %Y') }}</span>
+          </div>
+          <div class="sidebar-stat">
+            <span class="sidebar-stat-label">Sessions booked</span>
+            <span class="sidebar-stat-value">0</span>
+          </div>
+          <div class="sidebar-stat">
+            <span class="sidebar-stat-label">Connections</span>
+            <span class="sidebar-stat-value">0</span>
+          </div>
+          <div class="sidebar-stat">
+            <span class="sidebar-stat-label">CME Hours</span>
+            <span class="sidebar-stat-value">0h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM -->
+      <div class="profile-form-card animate-up delay-2">
+        <div class="form-section-title">Edit Profile</div>
+        <form class="profile-form" id="profileForm" onsubmit="handleProfileSave(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Institution</label>
+              <input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}" placeholder="University / Hospital">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ORCID ID</label>
+            <input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="textarea" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="interests-label">Research Interests</label>
+            <div class="interests-grid" id="interestsGrid">
+              {% set all_interests = ['iPSC', 'MSC', 'Gene Therapy', 'Exosomes', 'CAR-T', 'Organoids', 'Clinical Trials', 'Biomaterials', 'Regenerative Medicine', 'CRISPR'] %}
+              {% for interest in all_interests %}
+              <span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+            <a href="/home" class="btn btn-ghost btn-sm">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function handleProfileSave(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+  btn.disabled = true;
+
+  try {
+    const interests = getSelectedChips(document.getElementById('interestsGrid'));
+
+    const res = await fetch('/api/auth/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: document.getElementById('fullName').value,
+        institution: document.getElementById('institution').value || null,
+        bio: document.getElementById('bio').value || null,
+        orcid_id: document.getElementById('orcidId').value || null,
+        research_interests: interests,
+      }),
+      credentials: 'same-origin',
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.detail || 'Failed to save');
+    }
+
+    showToast('Profile updated!', 'success');
+    document.getElementById('saveIndicator').classList.add('visible');
+    setTimeout(() => document.getElementById('saveIndicator').classList.remove('visible'), 3000);
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.innerHTML = 'Save Changes';
+    btn.disabled = false;
+  }
+}
+</script>
+{% endblock %}
