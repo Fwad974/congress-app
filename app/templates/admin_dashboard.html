@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Admin — User Management — DSCC 2026{% endblock %}
+
+{% block head %}
+<style>
+.admin-page { min-height: 100vh; padding-bottom: 60px; }
+.home-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 0; }
+.admin-title-bar { display: flex; align-items: center; gap: 16px; padding: 28px 0 20px; flex-wrap: wrap; }
+.admin-title-bar h2 { font-size: 1.35rem; }
+.admin-title-bar h2 span { color: #d4a843; }
+.admin-role-badge { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; color: #ef4444; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+.admin-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto; }
+.admin-tab { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 20px; border: none; background: none; color: var(--text-muted); cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; white-space: nowrap; }
+.admin-tab:hover { color: var(--text-secondary); }
+.admin-tab.active { color: #d4a843; border-bottom-color: #d4a843; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; transition: all 0.3s; }
+.stat-card:hover { border-color: rgba(212,168,67,0.2); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.3); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 3px 0 0 3px; }
+.stat-card.gold::before { background: #d4a843; } .stat-card.teal::before { background: #0fb5ae; }
+.stat-card.red::before { background: #ef4444; } .stat-card.green::before { background: #22c55e; }
+.stat-card.blue::before { background: #3b82f6; }
+.stat-card-val { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.stat-card.gold .stat-card-val{color:#d4a843} .stat-card.teal .stat-card-val{color:#0fb5ae}
+.stat-card.red .stat-card-val{color:#ef4444} .stat-card.green .stat-card-val{color:#22c55e}
+.stat-card.blue .stat-card-val{color:#3b82f6}
+.stat-card-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.toolbar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+.search-box { flex: 1; min-width: 200px; padding: 10px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: var(--font-sans); font-size: 0.88rem; outline: none; }
+.search-box:focus { border-color: #d4a843; box-shadow: 0 0 0 3px rgba(212,168,67,0.1); }
+.search-box::placeholder { color: var(--text-muted); }
+.filter-select { padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-size: 0.85rem; font-family: var(--font-sans); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234f5b72'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.toolbar-btn { padding: 10px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; transition: all 0.2s; font-family: var(--font-sans); display: inline-flex; align-items: center; gap: 6px; }
+.toolbar-btn:hover { border-color: #d4a843; color: var(--text); }
+.toolbar-btn.primary { background: #d4a843; color: #050709; border-color: #d4a843; font-weight: 600; }
+.toolbar-btn.primary:hover { background: #e0b654; }
+.toolbar-btn.danger { border-color: rgba(239,68,68,0.3); color: #ef4444; }
+.toolbar-btn.danger:hover { background: rgba(239,68,68,0.08); border-color: #ef4444; }
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.users-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.users-table thead th { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 14px 16px; background: var(--bg-elevated); color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+.users-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.025); transition: background 0.15s; }
+.users-table tbody tr:hover { background: rgba(255,255,255,0.015); }
+.users-table tbody td { padding: 12px 16px; color: var(--text-secondary); vertical-align: middle; }
+.user-cell { display: flex; align-items: center; gap: 12px; }
+.user-cell-avatar { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; background: rgba(15,181,174,0.1); color: #0fb5ae; border: 1px solid rgba(15,181,174,0.15); }
+.user-cell-name { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+.user-cell-email { font-size: 0.78rem; color: var(--text-muted); }
+.role-pill { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; display: inline-flex; }
+.role-pill.super_admin{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)} .role-pill.admin{background:rgba(212,168,67,0.1);color:#d4a843;border:1px solid rgba(212,168,67,0.2)} .role-pill.moderator{background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2)} .role-pill.review_chair,.role-pill.session_chair{background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.2)} .role-pill.speaker,.role-pill.reviewer{background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2)} .role-pill.attendee{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.active { background: #22c55e; } .status-dot.suspended { background: #ef4444; }
+.action-group { display: flex; gap: 6px; }
+.action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.action-btn:hover { border-color: var(--border-light); color: var(--text); background: var(--surface-raised); }
+.action-btn svg { width: 14px; height: 14px; }
+.action-btn.del-btn { color: #ef4444; border-color: rgba(239,68,68,0.25); }
+.action-btn.del-btn:hover { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+.action-btn.green-btn { color: #22c55e; border-color: rgba(34,197,94,0.25); }
+.action-btn.green-btn:hover { background: rgba(34,197,94,0.1); border-color: #22c55e; }
+.action-btn.warn-btn { color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+.action-btn.warn-btn:hover { background: rgba(245,158,11,0.1); border-color: #f59e0b; }
+.select-checkbox { width: 16px; height: 16px; accent-color: #d4a843; cursor: pointer; }
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); }
+.pagination-btns { display: flex; gap: 4px; }
+.page-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; }
+.page-btn:hover { border-color: #d4a843; color: #d4a843; }
+.page-btn.active { background: #d4a843; color: #050709; border-color: #d4a843; }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(4px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; position: relative; }
+.modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #d4a843, transparent); opacity: 0.4; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px 0; }
+.modal-header h3 { font-size: 1.1rem; } .modal-header h3 span { color: #d4a843; }
+.modal-close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { border-color: #ef4444; color: #ef4444; }
+.modal-body { padding: 24px 28px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 0 28px 24px; }
+.audit-entry { display: flex; gap: 14px; padding: 14px 8px; border-bottom: 1px solid rgba(255,255,255,0.025); font-size: 0.85rem; cursor: pointer; border-radius: 8px; transition: background 0.15s; }
+.audit-entry:hover { background: rgba(255,255,255,0.02); }
+.audit-icon { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+.audit-icon.info { background: rgba(59,130,246,0.1); color: #3b82f6; } .audit-icon.warning { background: rgba(245,158,11,0.1); color: #f59e0b; } .audit-icon.critical { background: rgba(239,68,68,0.1); color: #ef4444; }
+.audit-meta { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; display: flex; gap: 12px; flex-wrap: wrap; }
+.audit-desc { color: var(--text-secondary); line-height: 1.4; }
+.audit-detail-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.88rem; }
+.audit-detail-row:last-child { border-bottom: none; }
+.audit-detail-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); min-width: 100px; padding-top: 2px; flex-shrink: 0; }
+.audit-detail-value { color: var(--text-secondary); word-break: break-all; line-height: 1.4; }
+.audit-detail-value strong { color: var(--text); }
+.audit-detail-severity { display: inline-flex; font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; }
+.audit-detail-severity.info{background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2)} .audit-detail-severity.warning{background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)} .audit-detail-severity.critical{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)}
+.audit-change-block { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.audit-change-old { padding: 4px 10px; border-radius: 6px; background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); text-decoration: line-through; }
+.audit-change-new { padding: 4px 10px; border-radius: 6px; background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.15); }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.loading-bar { height: 2px; background: linear-gradient(90deg, transparent, #d4a843, transparent); animation: loading-slide 1.5s ease infinite; display: none; }
+.loading-bar.active { display: block; }
+@keyframes loading-slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+@media(max-width:900px){.stat-row{grid-template-columns:repeat(2,1fr)}.hide-mobile-col{display:none}}
+@media(max-width:640px){.stat-row{grid-template-columns:1fr}.toolbar{flex-direction:column}.search-box{min-width:100%}.admin-title-bar{flex-direction:column;align-items:flex-start;gap:8px}.modal{max-width:100%;margin:0 12px}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="admin-page">
+{% include "nav.html" %}
+<div class="container">
+<div class="admin-title-bar animate-up">
+  <a href="/home" style="color:var(--text-secondary);text-decoration:none;font-size:1.1rem;">&#8592;</a>
+  <h2>User <span>Management</span></h2>
+  <span class="admin-role-badge">{{ user.role.value | replace('_', ' ') | upper }}</span>
+</div>
+<div class="admin-tabs animate-up delay-1">
+  <button class="admin-tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <button class="admin-tab" data-tab="users" onclick="switchTab('users')">Users</button>
+  <button class="admin-tab" data-tab="audit" onclick="switchTab('audit')">Audit Log</button>
+</div>
+<div class="loading-bar" id="loadingBar"></div>
+
+<div class="tab-panel active" id="tab-overview">
+  <div class="stat-row">
+    <div class="stat-card gold"><div class="stat-card-val" id="stat-total">-</div><div class="stat-card-label">Total Users</div></div>
+    <div class="stat-card green"><div class="stat-card-val" id="stat-active">-</div><div class="stat-card-label">Active</div></div>
+    <div class="stat-card red"><div class="stat-card-val" id="stat-suspended">-</div><div class="stat-card-label">Suspended</div></div>
+    <div class="stat-card teal"><div class="stat-card-val" id="stat-today">-</div><div class="stat-card-label">New Today</div></div>
+    <div class="stat-card blue"><div class="stat-card-val" id="stat-week">-</div><div class="stat-card-label">This Week</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px;">
+    <div class="table-wrap"><div style="padding:18px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Role Breakdown</span></div><div style="padding:14px 18px;" id="roleBreakdown"><div class="empty-state">Loading...</div></div></div>
+    <div class="table-wrap"><div style="padding:18px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Recent Activity</span></div><div style="padding:14px 18px;max-height:340px;overflow-y:auto;" id="recentActivity"><div class="empty-state">Loading...</div></div></div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-users">
+  <div class="toolbar">
+    <input type="text" class="search-box" id="userSearch" placeholder="Search by name, email, or institution..." oninput="debounceSearch()">
+    <select class="filter-select" id="roleFilter" onchange="loadUsers()"><option value="">All Roles</option><option value="attendee">Attendee</option><option value="speaker">Speaker</option><option value="reviewer">Reviewer</option><option value="moderator">Moderator</option><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select>
+    <select class="filter-select" id="statusFilter" onchange="loadUsers()"><option value="">All Status</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
+    <button class="toolbar-btn" onclick="loadUsers()">Refresh</button>
+    <button class="toolbar-btn" onclick="exportCSV()">Export CSV</button>
+    <button class="toolbar-btn primary" onclick="openCreateModal()">+ New User</button>
+  </div>
+  <div id="bulkBar" style="display:none;padding:12px 18px;background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.15);border-radius:10px;margin-bottom:14px;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-family:var(--font-mono);font-size:0.7rem;color:#d4a843;" id="bulkCount">0</span>
+    <button class="toolbar-btn" style="font-size:0.78rem;padding:6px 14px;" onclick="bulkAction('activate')">Activate</button>
+    <button class="toolbar-btn danger" style="font-size:0.78rem;padding:6px 14px;" onclick="bulkAction('suspend')">Suspend</button>
+    <button class="toolbar-btn danger" style="font-size:0.78rem;padding:6px 14px;background:rgba(239,68,68,0.1);font-weight:700;" onclick="bulkDelete()">DELETE</button>
+  </div>
+  <div class="table-wrap"><div style="overflow-x:auto;">
+    <table class="users-table"><thead><tr>
+      <th style="width:40px;"><input type="checkbox" class="select-checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+      <th>User</th><th>Role</th><th class="hide-mobile-col">Institution</th><th>Status</th><th class="hide-mobile-col">Joined</th><th class="hide-mobile-col">Last Login</th><th style="width:170px;">Actions</th>
+    </tr></thead><tbody id="usersTableBody"><tr><td colspan="8"><div class="empty-state">Loading...</div></td></tr></tbody></table>
+  </div><div class="pagination" id="pagination" style="display:none;"><span id="paginationInfo">-</span><div class="pagination-btns" id="paginationBtns"></div></div></div>
+</div>
+
+<div class="tab-panel" id="tab-audit">
+  <div class="toolbar">
+    <select class="filter-select" id="auditActionFilter" onchange="loadAudit()"><option value="">All Actions</option><option value="user_create">Create</option><option value="user_update">Update</option><option value="role_change">Role Change</option><option value="user_suspend">Suspend</option><option value="user_activate">Activate</option><option value="user_delete">Delete</option><option value="login_success">Login</option><option value="login_failure">Login Fail</option><option value="export_data">Export</option></select>
+    <select class="filter-select" id="auditSeverityFilter" onchange="loadAudit()"><option value="">All Severity</option><option value="info">Info</option><option value="warning">Warning</option><option value="critical">Critical</option></select>
+    <button class="toolbar-btn" onclick="loadAudit()">Refresh</button>
+  </div>
+  <div class="table-wrap" style="padding:18px;" id="auditContainer"><div class="empty-state">Loading...</div></div>
+  <div class="pagination" id="auditPagination" style="display:none;padding:14px 0;"><span id="auditPaginationInfo">-</span><div class="pagination-btns" id="auditPaginationBtns"></div></div>
+</div>
+</div></div>
+
+<div class="modal-overlay" id="userModal"><div class="modal"><div class="modal-header"><h3 id="modalTitle">New <span>User</span></h3><button class="modal-close" onclick="closeModal()">X</button></div><div class="modal-body"><form id="userForm" style="display:flex;flex-direction:column;gap:16px;"><input type="hidden" id="editUserId" value=""><div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="m_fullName" required></div><div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="m_email" required></div><div class="form-group" id="passwordGroup"><label class="form-label">Password</label><input type="password" class="form-input" id="m_password"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="m_institution"></div><div class="form-group"><label class="form-label">Role</label><select class="form-input" id="m_role"><option value="attendee">Attendee</option><option value="speaker">Speaker</option><option value="reviewer">Reviewer</option><option value="moderator">Moderator</option><option value="admin">Admin</option>{% if user.role.value == 'super_admin' %}<option value="super_admin">Super Admin</option>{% endif %}</select></div></div></form></div><div class="modal-footer"><button class="toolbar-btn" onclick="closeModal()">Cancel</button><button class="toolbar-btn primary" id="modalSubmitBtn" onclick="submitUserForm()">Create User</button></div></div></div>
+
+<div class="modal-overlay" id="roleModal"><div class="modal"><div class="modal-header"><h3>Change <span>Role</span></h3><button class="modal-close" onclick="document.getElementById('roleModal').classList.remove('open')">X</button></div><div class="modal-body"><p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">Changing role for: <strong id="roleUserName" style="color:var(--text);">-</strong></p><input type="hidden" id="roleUserId"><div class="form-group" style="margin-bottom:14px;"><label class="form-label">New Role</label><select class="form-input" id="newRoleSelect"><option value="attendee">Attendee</option><option value="speaker">Speaker</option><option value="reviewer">Reviewer</option><option value="moderator">Moderator</option><option value="admin">Admin</option>{% if user.role.value == 'super_admin' %}<option value="super_admin">Super Admin</option>{% endif %}</select></div><div class="form-group"><label class="form-label">Reason</label><input type="text" class="form-input" id="roleReason" placeholder="Reason for change"></div></div><div class="modal-footer"><button class="toolbar-btn" onclick="document.getElementById('roleModal').classList.remove('open')">Cancel</button><button class="toolbar-btn primary" onclick="submitRoleChange()">Change Role</button></div></div></div>
+
+<div class="modal-overlay" id="suspendModal"><div class="modal"><div class="modal-header"><h3 style="color:#ef4444;">Suspend <span>User</span></h3><button class="modal-close" onclick="document.getElementById('suspendModal').classList.remove('open')">X</button></div><div class="modal-body"><p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px;">Suspending: <strong id="suspendUserName" style="color:var(--text);">-</strong></p><input type="hidden" id="suspendUserId"><div class="form-group" style="margin-bottom:14px;"><label class="form-label">Reason (required)</label><input type="text" class="form-input" id="suspendReason" required placeholder="e.g. Spam, policy violation"></div><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-radius:10px;"><input type="checkbox" id="suspendForever" onchange="toggleSuspendForever()" style="width:18px;height:18px;accent-color:#ef4444;cursor:pointer;"><div><div style="font-size:0.88rem;font-weight:600;color:#ef4444;">Suspend Forever (permanent ban)</div><div style="font-size:0.75rem;color:var(--text-muted);">Only admin can reactivate</div></div></div><div class="form-group" id="suspendDurationGroup"><label class="form-label">Duration (hours)</label><input type="number" class="form-input" id="suspendDuration" placeholder="e.g. 24" min="1"></div></div><div class="modal-footer"><button class="toolbar-btn" onclick="document.getElementById('suspendModal').classList.remove('open')">Cancel</button><button class="toolbar-btn danger" id="suspendSubmitBtn" onclick="submitSuspend()">Suspend User</button></div></div></div>
+
+<div class="modal-overlay" id="deleteModal"><div class="modal"><div class="modal-header"><h3 style="color:#ef4444;">Delete <span>User</span></h3><button class="modal-close" onclick="document.getElementById('deleteModal').classList.remove('open')">X</button></div><div class="modal-body"><input type="hidden" id="deleteUserId"><div style="padding:18px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;margin-bottom:16px;"><div style="font-size:0.95rem;font-weight:600;color:#ef4444;margin-bottom:6px;">This action is permanent</div><p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">Deleting <strong id="deleteUserName" style="color:var(--text);">-</strong> (<span id="deleteUserEmail" style="color:var(--text-muted);">-</span>) will permanently remove their account. Cannot be undone.</p></div><div class="form-group"><label class="form-label">Type the user's email to confirm</label><input type="text" class="form-input" id="deleteConfirmEmail" placeholder="Type email here..." oninput="checkDeleteConfirm()"></div></div><div class="modal-footer"><button class="toolbar-btn" onclick="document.getElementById('deleteModal').classList.remove('open')">Cancel</button><button class="toolbar-btn danger" id="deleteSubmitBtn" onclick="submitDelete()" disabled style="opacity:0.4;">Delete Permanently</button></div></div></div>
+
+<div class="modal-overlay" id="auditDetailModal"><div class="modal" style="max-width:580px;"><div class="modal-header"><h3>Log <span>Detail</span></h3><button class="modal-close" onclick="document.getElementById('auditDetailModal').classList.remove('open')">X</button></div><div class="modal-body" id="auditDetailBody"></div></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CUR_UID = {{ user.id }};
+let pg=1, sortCol='created_at', sortDir='desc', apg=1, sto=null, sel=new Set();
+window._uc={}; window._ac={};
+
+const IC={
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  role:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg>',
+  ban:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+};
+
+async function api(u,m='GET',b=null){const o={method:m,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(b)o.body=JSON.stringify(b);const r=await fetch(u,o);const d=await r.json();if(!r.ok)throw new Error(d.detail||'Failed');return d;}
+function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
+function switchTab(t){document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));if(t==='users')loadUsers();if(t==='audit')loadAudit();if(t==='overview')loadStats();}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+async function loadStats(){ld(true);try{const d=await api('/api/admin/stats');document.getElementById('stat-total').textContent=d.total_users;document.getElementById('stat-active').textContent=d.active_users;document.getElementById('stat-suspended').textContent=d.suspended_users;document.getElementById('stat-today').textContent=d.new_today;document.getElementById('stat-week').textContent=d.new_this_week;const rb=document.getElementById('roleBreakdown');const ro=['super_admin','admin','moderator','review_chair','session_chair','speaker','reviewer','attendee'];rb.innerHTML=ro.filter(r=>d.roles_breakdown[r]).map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.025);"><span class="role-pill ${r}">${r.replace('_',' ')}</span><span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text);">${d.roles_breakdown[r]}</span></div>`).join('')||'<div class="empty-state">No users</div>';const ra=document.getElementById('recentActivity');ra.innerHTML=d.recent_activity.length?d.recent_activity.map((a,i)=>auditRow(a,i)).join(''):'<div class="empty-state">No activity</div>';}catch(e){showToast(e.message,'error');}ld(false);}
+
+async function loadUsers(p){if(p)pg=p;ld(true);try{const s=document.getElementById('userSearch').value,r=document.getElementById('roleFilter').value,st=document.getElementById('statusFilter').value;const q=new URLSearchParams({page:pg,per_page:20,sort_by:sortCol,sort_order:sortDir});if(s)q.set('search',s);if(r)q.set('role',r);if(st)q.set('status',st);const d=await api('/api/admin/users?'+q);renderTable(d);renderPg(d);sel.clear();updBulk();}catch(e){showToast(e.message,'error');}ld(false);}
+
+function renderTable(d){
+const tb=document.getElementById('usersTableBody');
+if(!d.users.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state">No users found</div></td></tr>';return;}
+window._uc={};d.users.forEach(u=>window._uc[u.id]=u);
+tb.innerHTML=d.users.map(u=>{
+const ini=u.full_name.split(' ').map(n=>n[0]).join('').substring(0,2);
+const jd=new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+const ll=u.last_login?new Date(u.last_login).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+const me=u.id===CUR_UID;
+const dis=me?'disabled style="opacity:0.3;pointer-events:none;"':'';
+return `<tr>
+<td><input type="checkbox" class="select-checkbox" value="${u.id}" ${me?'disabled':''} onchange="tglSel(${u.id})"></td>
+<td><div class="user-cell"><div class="user-cell-avatar">${ini}</div><div><div class="user-cell-name">${esc(u.full_name)}${me?' <span style="color:#d4a843;font-size:0.72rem;">(you)</span>':''}</div><div class="user-cell-email">${esc(u.email)}</div></div></div></td>
+<td><span class="role-pill ${u.role}">${u.role.replace('_',' ')}</span></td>
+<td class="hide-mobile-col">${esc(u.institution||'-')}</td>
+<td><span class="status-dot ${u.is_active?'active':'suspended'}"></span> ${u.is_active?'Active':'Suspended'}</td>
+<td class="hide-mobile-col">${jd}</td>
+<td class="hide-mobile-col">${ll}</td>
+<td>
+  <div class="action-group">
+    <button class="action-btn" title="Edit" onclick="openEdit(${u.id})">${IC.edit}</button>
+    <button class="action-btn warn-btn" title="Change Role" onclick="openRole(${u.id})" ${dis}>${IC.role}</button>
+    ${u.is_active
+      ?`<button class="action-btn" title="Suspend" onclick="openSusp(${u.id})" ${dis} style="color:#f59e0b;border-color:rgba(245,158,11,0.25);">${IC.ban}</button>`
+      :`<button class="action-btn green-btn" title="Activate" onclick="doActivate(${u.id})">${IC.ok}</button>`}
+    <button class="action-btn del-btn" title="Delete User" onclick="openDel(${u.id})" ${dis}>${IC.trash}</button>
+  </div>
+</td>
+</tr>`;}).join('');}
+
+function renderPg(d){const p=document.getElementById('pagination');p.style.display=d.pages>1?'flex':'none';document.getElementById('paginationInfo').textContent=`${(d.page-1)*d.per_page+1}-${Math.min(d.page*d.per_page,d.total)} of ${d.total}`;let h=`<button class="page-btn" onclick="loadUsers(${d.page-1})" ${d.page<=1?'disabled':''}>&#8249;</button>`;for(let i=Math.max(1,d.page-2);i<=Math.min(d.pages,d.page+2);i++)h+=`<button class="page-btn ${i===d.page?'active':''}" onclick="loadUsers(${i})">${i}</button>`;h+=`<button class="page-btn" onclick="loadUsers(${d.page+1})" ${d.page>=d.pages?'disabled':''}>&#8250;</button>`;document.getElementById('paginationBtns').innerHTML=h;}
+
+function debounceSearch(){clearTimeout(sto);sto=setTimeout(()=>loadUsers(1),350);}
+function tglSel(id){if(sel.has(id))sel.delete(id);else sel.add(id);updBulk();}
+function toggleSelectAll(){const c=document.getElementById('selectAll').checked;document.querySelectorAll('#usersTableBody .select-checkbox').forEach(cb=>{if(!cb.disabled){cb.checked=c;c?sel.add(+cb.value):sel.delete(+cb.value);}});updBulk();}
+function updBulk(){document.getElementById('bulkBar').style.display=sel.size>0?'flex':'none';document.getElementById('bulkCount').textContent=sel.size+' selected';}
+
+async function bulkAction(a){if(!sel.size)return;if(!confirm(a+' '+sel.size+' user(s)?'))return;try{const r=await api('/api/admin/users/bulk','POST',{user_ids:[...sel],action:a,reason:'Bulk action'});showToast(r.success+' done, '+r.failed+' failed',r.failed?'error':'success');loadUsers();loadStats();}catch(e){showToast(e.message,'error');}}
+async function bulkDelete(){if(!sel.size)return;if(!confirm('PERMANENTLY DELETE '+sel.size+' user(s)? Cannot undo!'))return;let ok=0,fail=0;for(const id of sel){try{await api('/api/admin/users/'+id,'DELETE');ok++;}catch(e){fail++;}}showToast(ok+' deleted, '+fail+' failed',fail?'error':'success');sel.clear();updBulk();loadUsers();loadStats();}
+
+function openCreateModal(){document.getElementById('editUserId').value='';document.getElementById('m_fullName').value='';document.getElementById('m_email').value='';document.getElementById('m_password').value='';document.getElementById('m_institution').value='';document.getElementById('m_role').value='attendee';document.getElementById('m_email').removeAttribute('disabled');document.getElementById('passwordGroup').style.display='block';document.getElementById('modalTitle').innerHTML='New <span>User</span>';document.getElementById('modalSubmitBtn').textContent='Create User';document.getElementById('userModal').classList.add('open');}
+
+async function openEdit(id){try{const u=await api('/api/admin/users/'+id);document.getElementById('editUserId').value=u.id;document.getElementById('m_fullName').value=u.full_name;document.getElementById('m_email').value=u.email;document.getElementById('m_email').setAttribute('disabled','true');document.getElementById('m_password').value='';document.getElementById('passwordGroup').style.display='none';document.getElementById('m_institution').value=u.institution||'';document.getElementById('m_role').value=u.role;document.getElementById('modalTitle').innerHTML='Edit <span>User</span>';document.getElementById('modalSubmitBtn').textContent='Save Changes';document.getElementById('userModal').classList.add('open');}catch(e){showToast(e.message,'error');}}
+
+function closeModal(){document.getElementById('userModal').classList.remove('open');}
+
+async function submitUserForm(){const eid=document.getElementById('editUserId').value;const btn=document.getElementById('modalSubmitBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{if(eid){await api('/api/admin/users/'+eid,'PUT',{full_name:document.getElementById('m_fullName').value,institution:document.getElementById('m_institution').value||null});const nr=document.getElementById('m_role').value;const cu=window._uc[parseInt(eid)];if(cu&&cu.role!==nr){await api('/api/admin/users/'+eid+'/role','PUT',{role:nr,reason:'Changed via Edit modal'});showToast('Updated + role changed','success');}else{showToast('User updated','success');}}else{await api('/api/admin/users','POST',{email:document.getElementById('m_email').value,password:document.getElementById('m_password').value,full_name:document.getElementById('m_fullName').value,institution:document.getElementById('m_institution').value||null,role:document.getElementById('m_role').value});showToast('User created','success');}closeModal();loadUsers();loadStats();}catch(e){showToast(e.message,'error');}btn.innerHTML=eid?'Save Changes':'Create User';btn.disabled=false;}
+
+function openRole(id){const u=window._uc[id];if(!u)return;document.getElementById('roleUserId').value=id;document.getElementById('roleUserName').textContent=u.full_name;document.getElementById('newRoleSelect').value=u.role;document.getElementById('roleReason').value='';document.getElementById('roleModal').classList.add('open');}
+async function submitRoleChange(){const id=document.getElementById('roleUserId').value;try{await api('/api/admin/users/'+id+'/role','PUT',{role:document.getElementById('newRoleSelect').value,reason:document.getElementById('roleReason').value||null});showToast('Role changed','success');document.getElementById('roleModal').classList.remove('open');loadUsers();loadStats();}catch(e){showToast(e.message,'error');}}
+
+function openSusp(id){const u=window._uc[id];if(!u)return;document.getElementById('suspendUserId').value=id;document.getElementById('suspendUserName').textContent=u.full_name;document.getElementById('suspendReason').value='';document.getElementById('suspendDuration').value='';document.getElementById('suspendForever').checked=false;document.getElementById('suspendDurationGroup').style.display='block';document.getElementById('suspendSubmitBtn').textContent='Suspend User';document.getElementById('suspendModal').classList.add('open');}
+function toggleSuspendForever(){const c=document.getElementById('suspendForever').checked;document.getElementById('suspendDurationGroup').style.display=c?'none':'block';document.getElementById('suspendSubmitBtn').textContent=c?'SUSPEND FOREVER':'Suspend User';}
+async function submitSuspend(){const id=document.getElementById('suspendUserId').value,reason=document.getElementById('suspendReason').value,forever=document.getElementById('suspendForever').checked;if(!reason){showToast('Reason required','error');return;}const btn=document.getElementById('suspendSubmitBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{await api('/api/admin/users/'+id+'/suspend','POST',{reason:forever?'[PERMANENT] '+reason:reason,duration_hours:forever?null:(parseInt(document.getElementById('suspendDuration').value)||null)});showToast(forever?'Permanently suspended':'Suspended','success');document.getElementById('suspendModal').classList.remove('open');loadUsers();loadStats();}catch(e){showToast(e.message,'error');}btn.textContent=forever?'SUSPEND FOREVER':'Suspend User';btn.disabled=false;}
+
+async function doActivate(id){if(!confirm('Activate?'))return;try{await api('/api/admin/users/'+id+'/activate','POST');showToast('Activated','success');loadUsers();loadStats();}catch(e){showToast(e.message,'error');}}
+
+function openDel(id){const u=window._uc[id];if(!u)return;document.getElementById('deleteUserId').value=id;document.getElementById('deleteUserName').textContent=u.full_name;document.getElementById('deleteUserEmail').textContent=u.email;document.getElementById('deleteConfirmEmail').value='';document.getElementById('deleteSubmitBtn').disabled=true;document.getElementById('deleteSubmitBtn').style.opacity='0.4';document.getElementById('deleteModal').classList.add('open');}
+function checkDeleteConfirm(){const m=document.getElementById('deleteConfirmEmail').value.trim()===document.getElementById('deleteUserEmail').textContent;document.getElementById('deleteSubmitBtn').disabled=!m;document.getElementById('deleteSubmitBtn').style.opacity=m?'1':'0.4';}
+async function submitDelete(){const id=document.getElementById('deleteUserId').value,btn=document.getElementById('deleteSubmitBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{await api('/api/admin/users/'+id,'DELETE');showToast('User deleted','success');document.getElementById('deleteModal').classList.remove('open');loadUsers();loadStats();}catch(e){showToast(e.message,'error');}btn.innerHTML='Delete Permanently';btn.disabled=false;}
+function exportCSV(){window.open('/api/admin/users/export/csv','_blank');}
+
+async function loadAudit(p){if(p)apg=p;ld(true);try{const a=document.getElementById('auditActionFilter').value,s=document.getElementById('auditSeverityFilter').value;const q=new URLSearchParams({page:apg,per_page:30});if(a)q.set('action',a);if(s)q.set('severity',s);const d=await api('/api/admin/audit?'+q);const c=document.getElementById('auditContainer');if(!d.logs.length){c.innerHTML='<div class="empty-state">No entries</div>';document.getElementById('auditPagination').style.display='none';}else{window._ac={};c.innerHTML=d.logs.map((a,i)=>auditRow(a,i)).join('');const pages=Math.ceil(d.total/d.per_page),pg2=document.getElementById('auditPagination');pg2.style.display=pages>1?'flex':'none';document.getElementById('auditPaginationInfo').textContent=d.total+' entries';let h='<button class="page-btn" onclick="loadAudit('+(apg-1)+')" '+(apg<=1?'disabled':'')+'>&#8249;</button>';for(let i=Math.max(1,apg-2);i<=Math.min(pages,apg+2);i++)h+='<button class="page-btn '+(i===apg?'active':'')+'" onclick="loadAudit('+i+')">'+i+'</button>';h+='<button class="page-btn" onclick="loadAudit('+(apg+1)+')" '+(apg>=pages?'disabled':'')+'>&#8250;</button>';document.getElementById('auditPaginationBtns').innerHTML=h;}}catch(e){showToast(e.message,'error');}ld(false);}
+
+function auditRow(a,i){const k=a.id||i;window._ac[k]=a;const sev={info:'INF',warning:'WRN',critical:'CRT'};const t=new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});return '<div class="audit-entry" onclick="showAuditDetail('+k+')"><div class="audit-icon '+a.severity+'">'+(sev[a.severity]||'INF')+'</div><div style="flex:1;min-width:0;"><div class="audit-desc">'+esc(a.description)+'</div><div class="audit-meta"><span>'+esc(a.actor_email)+'</span><span>'+a.action.replace('_',' ')+'</span><span>'+t+'</span>'+(a.ip_hash?'<span>'+a.ip_hash.substring(0,8)+'...</span>':'')+'</div></div><div style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;align-self:center;">&#9654;</div></div>';}
+
+function showAuditDetail(k){const a=window._ac[k];if(!a)return;const sl={info:'Info',warning:'Warning',critical:'Critical'};const ft=new Date(a.created_at).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});let ch='';if(a.old_value||a.new_value)ch='<div class="audit-detail-row"><div class="audit-detail-label">Changes</div><div class="audit-detail-value"><div class="audit-change-block">'+(a.old_value?'<span class="audit-change-old">'+esc(a.old_value)+'</span>':'<span style="color:var(--text-muted);">-</span>')+' <span style="color:var(--text-muted);">&#8594;</span> '+(a.new_value?'<span class="audit-change-new">'+esc(a.new_value)+'</span>':'<span style="color:var(--text-muted);">-</span>')+'</div></div></div>';document.getElementById('auditDetailBody').innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);"><div class="audit-icon '+a.severity+'" style="width:42px;height:42px;font-size:0.8rem;">'+(sl[a.severity]||'?')+'</div><div><div style="font-weight:600;font-size:1rem;color:var(--text);margin-bottom:2px;">'+esc(a.action.replace('_',' '))+'</div><span class="audit-detail-severity '+a.severity+'">'+(sl[a.severity]||a.severity)+'</span></div></div><div class="audit-detail-row"><div class="audit-detail-label">Description</div><div class="audit-detail-value"><strong>'+esc(a.description)+'</strong></div></div><div class="audit-detail-row"><div class="audit-detail-label">Actor</div><div class="audit-detail-value">'+esc(a.actor_email)+' <span style="color:var(--text-muted);">('+esc(a.actor_role)+')</span></div></div>'+(a.target_email?'<div class="audit-detail-row"><div class="audit-detail-label">Target</div><div class="audit-detail-value">'+esc(a.target_email)+'</div></div>':'')+ch+'<div class="audit-detail-row"><div class="audit-detail-label">Timestamp</div><div class="audit-detail-value">'+ft+'</div></div>'+(a.ip_hash?'<div class="audit-detail-row"><div class="audit-detail-label">IP Hash</div><div class="audit-detail-value" style="font-family:var(--font-mono);font-size:0.82rem;">'+esc(a.ip_hash)+'</div></div>':'')+'<div class="audit-detail-row"><div class="audit-detail-label">Log ID</div><div class="audit-detail-value" style="font-family:var(--font-mono);">#'+(a.id||'-')+'</div></div>';document.getElementById('auditDetailModal').classList.add('open');}
+
+document.addEventListener('DOMContentLoaded',()=>loadStats());
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+</script>
+{% endblock %}

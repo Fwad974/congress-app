@@ -1,46 +1,16 @@
 <!-- Shared top nav for authenticated pages -->
 <style>
   .nav-user-menu { position: relative; }
-  .nav-user-btn {
-    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
-    border: 1px solid var(--border); border-radius: var(--radius-md);
-    background: var(--surface); color: var(--text); cursor: pointer;
-    font-family: var(--font-sans); font-size: 0.88rem; transition: all 0.2s;
-  }
+  .nav-user-btn { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text); cursor: pointer; font-family: var(--font-sans); font-size: 0.88rem; transition: all 0.2s; }
   .nav-user-btn:hover { border-color: var(--border-light); background: var(--surface-raised); }
-  .nav-user-avatar {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--teal-dim); border: 1px solid rgba(15,181,174,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem; color: var(--teal); font-weight: 600;
-  }
-  .nav-user-dropdown {
-    position: absolute; top: calc(100% + 8px); right: 0;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-md); padding: 6px;
-    min-width: 180px; display: none; z-index: 100;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  }
+  .nav-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--teal-dim); border: 1px solid rgba(15,181,174,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--teal); font-weight: 600; }
+  .nav-user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 6px; min-width: 180px; display: none; z-index: 100; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
   .nav-user-dropdown.open { display: block; }
-  .nav-dd-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-    border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-secondary);
-    cursor: pointer; transition: all 0.15s; text-decoration: none; width: 100%;
-  }
+  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; text-decoration: none; width: 100%; }
   .nav-dd-item:hover { background: var(--surface-raised); color: var(--text); }
-  .nav-quick {
-    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-secondary);
-    transition: all 0.2s; cursor: pointer; text-decoration: none; margin: 0;
-  }
+  .nav-quick { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-secondary); transition: all 0.2s; cursor: pointer; text-decoration: none; margin: 0; }
   .nav-quick:hover { border-color: var(--teal); color: var(--text); background: var(--teal-dim); }
-
-  @media (max-width: 768px) {
-    .nav-user-menu { display: none; }
-    .nav-desktop-logout { display: none; }
-    .nav-desktop-link { display: none; }
-  }
+  @media (max-width: 768px) { .nav-user-menu { display: none; } .nav-desktop-logout { display: none; } .nav-desktop-link { display: none; } }
 </style>
 
 <div class="container">
@@ -52,6 +22,9 @@
     <div class="topnav-links gap-md">
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
+      {% if user.role.value in ['admin', 'super_admin'] %}
+      <a href="/admin" class="nav-quick nav-desktop-link" style="border-color:rgba(212,168,67,0.3);color:#d4a843;">🛡️ Admin</a>
+      {% endif %}
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
           <div class="nav-user-avatar">{{ user.full_name[0] }}</div>
@@ -61,6 +34,9 @@
           <a href="/profile" class="nav-dd-item">👤 My Profile</a>
           <a href="/certificates" class="nav-dd-item">📜 My Certificates</a>
           <a href="/settings" class="nav-dd-item">⚙️ Settings</a>
+          {% if user.role.value in ['admin', 'super_admin'] %}
+          <a href="/admin" class="nav-dd-item" style="color:#d4a843;">🛡️ Admin Dashboard</a>
+          {% endif %}
           <a href="/logout" class="nav-dd-item" style="color:var(--red);">Sign Out</a>
         </div>
       </div>
@@ -70,16 +46,12 @@
   </nav>
 </div>
 
-<!-- MOBILE SLIDE MENU -->
 <div class="mobile-menu-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 <div class="mobile-menu-panel" id="mobilePanel">
   <div class="mobile-menu-header">
     <div class="mobile-menu-user">
       <div class="avatar">{{ user.full_name[0] }}</div>
-      <div>
-        <div class="name">{{ user.full_name }}</div>
-        <div class="role">{{ user.role.value | replace('_', ' ') | title }}</div>
-      </div>
+      <div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div>
     </div>
     <button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button>
   </div>
@@ -89,6 +61,10 @@
     <a href="#" class="mobile-menu-link">📅 Program</a>
     <a href="#" class="mobile-menu-link">🖼️ Posters</a>
     <a href="#" class="mobile-menu-link">🤝 Connect</a>
+    {% if user.role.value in ['admin', 'super_admin'] %}
+    <div class="mobile-menu-section">Admin</div>
+    <a href="/admin" class="mobile-menu-link" style="color:#d4a843;">🛡️ User Management</a>
+    {% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link">👤 My Profile</a>
     <a href="/certificates" class="mobile-menu-link">📜 My Certificates</a>
@@ -97,7 +73,6 @@
   </div>
 </div>
 
-<!-- MOBILE BOTTOM NAV -->
 <nav class="mobile-bottom-nav">
   <a href="/home" class="mobile-nav-item"><span>🏠</span>Home</a>
   <a href="#" class="mobile-nav-item"><span>📅</span>Program</a>
@@ -108,20 +83,8 @@
 
 <script>
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.nav-user-menu')) {
-    document.querySelectorAll('.nav-user-dropdown').forEach(d => d.classList.remove('open'));
-  }
+  if (!e.target.closest('.nav-user-menu')) document.querySelectorAll('.nav-user-dropdown').forEach(d => d.classList.remove('open'));
 });
-
-function openMobileMenu() {
-  document.getElementById('mobileOverlay').classList.add('open');
-  document.getElementById('mobilePanel').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobileOverlay').classList.remove('open');
-  document.getElementById('mobilePanel').classList.remove('open');
-  document.body.style.overflow = '';
-}
+function openMobileMenu() { document.getElementById('mobileOverlay').classList.add('open'); document.getElementById('mobilePanel').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeMobileMenu() { document.getElementById('mobileOverlay').classList.remove('open'); document.getElementById('mobilePanel').classList.remove('open'); document.body.style.overflow = ''; }
 </script>

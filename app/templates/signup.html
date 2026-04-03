@@ -1,256 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Register — Dubai Stem Cell Congress 2026{% endblock %}
-
 {% block head %}
 <style>
-  .auth-page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .auth-body {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 24px;
-  }
-
-  .auth-card {
-    width: 100%;
-    max-width: 480px;
-  }
-
-  .auth-card .card {
-    padding: 44px 40px;
-  }
-
-  .auth-header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-
-  .auth-header .badge { margin-bottom: 16px; }
-
-  .auth-header h2 {
-    margin-bottom: 6px;
-  }
-
-  .auth-header h2 span { color: var(--teal); }
-
-  .auth-header p {
-    color: var(--text-secondary);
-    font-size: 0.92rem;
-    font-weight: 300;
-  }
-
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  .interests-label {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-  }
-
-  .interests-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .auth-footer {
-    text-align: center;
-    margin-top: 24px;
-    font-size: 0.88rem;
-    color: var(--text-secondary);
-  }
-
-  .auth-footer a {
-    font-weight: 600;
-  }
-
-  .sso-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .sso-row .btn { font-size: 0.85rem; padding: 12px; }
-
-  .pw-requirements {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    margin-top: 2px;
-  }
-
-  .pw-req {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: color 0.2s;
-  }
-
-  .pw-req.met { color: var(--green); }
-
-  @media (max-width: 540px) {
-    .auth-card .card { padding: 28px 18px; border-radius: var(--radius-lg); }
-    .auth-card { max-width: 100%; }
-    .form-row { grid-template-columns: 1fr; }
-    .sso-row { grid-template-columns: 1fr; }
-    .auth-body { padding: 24px 16px; }
-    .auth-header h2 { font-size: 1.3rem; }
-    .interests-grid { gap: 6px; }
-    .chip { padding: 6px 12px; font-size: 0.8rem; }
-  }
+.auth-page{min-height:100vh;display:flex;flex-direction:column}.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}.auth-card{width:100%;max-width:480px}.auth-card .card{padding:44px 40px}.auth-header{text-align:center;margin-bottom:32px}.auth-header .badge{margin-bottom:16px}.auth-header h2{margin-bottom:6px}.auth-header h2 span{color:var(--teal)}.auth-header p{color:var(--text-secondary);font-size:0.92rem;font-weight:300}.auth-form{display:flex;flex-direction:column;gap:18px}.interests-label{font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px}.interests-grid{display:flex;flex-wrap:wrap;gap:8px}.auth-footer{text-align:center;margin-top:24px;font-size:0.88rem;color:var(--text-secondary)}.auth-footer a{font-weight:600}.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sso-row .btn{font-size:0.85rem;padding:12px}.pw-requirements{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:2px}.pw-req{font-size:0.72rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;transition:color 0.2s}.pw-req.met{color:var(--green)}
+@media(max-width:540px){.auth-card .card{padding:28px 18px;border-radius:var(--radius-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
-
 {% block body %}
-<div class="auth-page">
-  <div class="container">
-    <nav class="topnav animate-in">
-      <a href="/" class="topnav-brand">
-        <div class="topnav-logo">🧬</div>
-        <span class="topnav-name">DSCC 2026</span>
-      </a>
-      <div class="topnav-links">
-        <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
-      </div>
-    </nav>
-  </div>
-
-  <div class="auth-body">
-    <div class="auth-card animate-scale">
-      <div class="card">
-        <div class="auth-header">
-          <div class="badge badge-teal">🧬 New Registration</div>
-          <h2>Create Your <span>Account</span></h2>
-          <p>Join 500+ researchers at the congress</p>
-        </div>
-
-        <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
-          <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="email" placeholder="jane@university.edu" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Institution</label>
-            <input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()">
-            <div class="pw-requirements">
-              <span class="pw-req" id="pw-len">✕ 8+ chars</span>
-              <span class="pw-req" id="pw-upper">✕ Uppercase</span>
-              <span class="pw-req" id="pw-num">✕ Number</span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="interests-label">Research Interests</label>
-            <div class="interests-grid" id="interestsGrid">
-              <span class="chip" data-value="iPSC">iPSC</span>
-              <span class="chip" data-value="MSC">MSC</span>
-              <span class="chip" data-value="Gene Therapy">Gene Therapy</span>
-              <span class="chip" data-value="Exosomes">Exosomes</span>
-              <span class="chip" data-value="CAR-T">CAR-T</span>
-              <span class="chip" data-value="Organoids">Organoids</span>
-              <span class="chip" data-value="Clinical Trials">Clinical Trials</span>
-              <span class="chip" data-value="Biomaterials">Biomaterials</span>
-              <span class="chip" data-value="Regenerative Medicine">Regen Med</span>
-              <span class="chip" data-value="CRISPR">CRISPR</span>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary w-full" id="submitBtn">
-            Create Account
-          </button>
-
-          <div class="divider">or register with</div>
-
-          <div class="sso-row">
-            <button type="button" class="btn btn-google">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-              Google
-            </button>
-            <button type="button" class="btn btn-google">
-              🆔 ORCID
-            </button>
-          </div>
-        </form>
-
-        <div class="auth-footer">
-          Already registered? <a href="/login">Sign in</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="auth-page"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">DSCC 2026</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div>
+<div class="auth-body"><div class="auth-card animate-scale"><div class="card">
+<div class="auth-header"><div class="badge badge-teal">🧬 New Registration</div><h2>Create Your <span>Account</span></h2><p>Join 500+ researchers at the congress</p></div>
+<form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+<div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
+<div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
+<div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
+<div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-requirements"><span class="pw-req" id="pw-len">✕ 8+ chars</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
+<div class="form-group"><label class="interests-label">Research Interests</label><div class="interests-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
+<button type="submit" class="btn btn-primary w-full" id="submitBtn">Create Account</button>
+<div class="divider">or register with</div>
+<div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
+</form>
+<div class="auth-footer">Already registered? <a href="/login">Sign in</a></div>
+</div></div></div></div>
 {% endblock %}
-
 {% block scripts %}
 <script>
-function checkPassword() {
-  const pw = document.getElementById('password').value;
-  const toggle = (id, met) => {
-    const el = document.getElementById(id);
-    el.classList.toggle('met', met);
-    el.textContent = (met ? '✓ ' : '✕ ') + el.textContent.slice(2);
-  };
-  toggle('pw-len', pw.length >= 8);
-  toggle('pw-upper', /[A-Z]/.test(pw));
-  toggle('pw-num', /\d/.test(pw));
-}
-
-async function handleSignup(e) {
-  e.preventDefault();
-  const btn = document.getElementById('submitBtn');
-  btn.innerHTML = '<span class="spinner"></span> Creating...';
-  btn.disabled = true;
-
-  try {
-    const interests = getSelectedChips(document.getElementById('interestsGrid'));
-
-    await api('/api/auth/signup', {
-      email: document.getElementById('email').value,
-      password: document.getElementById('password').value,
-      full_name: document.getElementById('fullName').value,
-      institution: document.getElementById('institution').value || null,
-      research_interests: interests,
-    });
-
-    showToast('Account created! Redirecting...', 'success');
-    setTimeout(() => window.location.href = '/home', 800);
-  } catch (err) {
-    showToast(err.message, 'error');
-    btn.innerHTML = 'Create Account';
-    btn.disabled = false;
-  }
-}
+function checkPassword(){const pw=document.getElementById('password').value;const toggle=(id,met)=>{const el=document.getElementById(id);el.classList.toggle('met',met);el.textContent=(met?'✓ ':'✕ ')+el.textContent.slice(2)};toggle('pw-len',pw.length>=8);toggle('pw-upper',/[A-Z]/.test(pw));toggle('pw-num',/\d/.test(pw))}
+async function handleSignup(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Creating...';btn.disabled=true;try{const interests=getSelectedChips(document.getElementById('interestsGrid'));await api('/api/auth/signup',{email:document.getElementById('email').value,password:document.getElementById('password').value,full_name:document.getElementById('fullName').value,institution:document.getElementById('institution').value||null,research_interests:interests});showToast('Account created!','success');setTimeout(()=>window.location.href='/home',800)}catch(err){showToast(err.message,'error');btn.innerHTML='Create Account';btn.disabled=false}}
 </script>
 {% endblock %}
