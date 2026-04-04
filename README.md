@@ -94,6 +94,7 @@ congress-app/
 │   ├── test_admin.py          # Admin endpoint & RBAC tests (42 tests)
 │   ├── test_security.py       # Security unit tests (38 tests)
 │   └── test_schemas.py        # Schema validation tests (11 tests)
+├── docker-compose.yml         # Full stack: app + PostgreSQL + Redis + pgAdmin
 ├── Dockerfile                 # Production container image
 ├── .dockerignore
 ├── entrypoint.sh              # Auto-creates super admin from env vars
@@ -127,7 +128,36 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Admin:   http://localhost:8000/admin (requires admin role)
 ```
 
-### Docker Deployment
+### Docker Compose (recommended)
+
+Starts the full stack: **app + PostgreSQL + Redis + pgAdmin**.
+
+```bash
+# Start all services
+SUPER_ADMIN_EMAIL=admin@example.com \
+SUPER_ADMIN_PASSWORD=SecurePass123 \
+docker compose up -d
+
+# View logs
+docker compose logs -f app
+
+# Stop all services
+docker compose down
+
+# Stop and remove data volumes
+docker compose down -v
+```
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **App** | http://localhost:8000 | Congress application |
+| **pgAdmin** | http://localhost:5050 | Database admin UI (login: `admin@congress.com` / `admin123`) |
+| **PostgreSQL** | localhost:5432 | Database (user: `congress_user`, pass: `congress_pass`) |
+| **Redis** | localhost:6379 | Cache/session store |
+
+To connect pgAdmin to the database, add a server with host `db`, port `5432`, user `congress_user`, password `congress_pass`.
+
+### Docker (standalone)
 
 ```bash
 # Build the image
