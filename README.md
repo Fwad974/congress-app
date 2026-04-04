@@ -253,13 +253,30 @@ UPDATE users SET role = 'super_admin' WHERE email = 'your@email.com';
 
 Once created, access `/admin` to manage all users from the dashboard.
 
+## Role Permissions
+
+| Action | Super Admin | Admin | Moderator & below |
+|--------|:-----------:|:-----:|:-----------------:|
+| View admin dashboard | Yes | Yes | No |
+| Create users (attendee–moderator) | Yes | Yes | No |
+| Create admin/super_admin users | Yes | No | No |
+| Edit users below own role | Yes | Yes | No |
+| Edit same-level or higher users | Yes | No | No |
+| Change roles (attendee–moderator) | Yes | Yes | No |
+| Assign admin/super_admin role | Yes | No | No |
+| Suspend/activate lower users | Yes | Yes | No |
+| Suspend same-level or higher | Yes | No | No |
+| Delete users | Yes | No | No |
+| Export CSV | Yes | Yes | No |
+| View audit logs | Yes | Yes | No |
+
 ## Testing
 
 ```bash
 # Install test dependencies
 pip install pytest httpx
 
-# Run all 118 tests
+# Run all 124 tests
 pytest tests/ -v
 ```
 
@@ -268,6 +285,6 @@ pytest tests/ -v
 | File | Tests | Coverage |
 |------|-------|---------|
 | `test_auth.py` | 17 | Signup, login, logout, profile, password, login lockout |
-| `test_admin.py` | 42 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
+| `test_admin.py` | 48 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
 | `test_security.py` | 38 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
 | `test_schemas.py` | 11 | Pydantic validation for all request schemas |

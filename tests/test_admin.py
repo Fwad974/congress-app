@@ -154,6 +154,13 @@ class TestUpdateUser:
         }, cookies=auth_cookie(admin_user))
         assert resp.status_code == 403
 
+    def test_admin_cannot_update_other_admin(self, client, admin_user, db):
+        other = make_user(db, email="other_admin@test.com", role=UserRole.admin)
+        resp = client.put(f"/api/admin/users/{other.id}", json={
+            "full_name": "Hacked",
+        }, cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
     def test_update_nonexistent_user(self, client, admin_user):
         resp = client.put("/api/admin/users/99999", json={
             "full_name": "Ghost",
@@ -181,15 +188,33 @@ class TestChangeRole:
         assert "ROLE-04" in resp.json()["detail"]
 
     def test_admin_cannot_assign_super_admin_role(self, client, admin_user, db):
+        """ROLE-01: Admin cannot assign super_admin."""
         user = make_user(db, email="target@test.com")
         resp = client.put(f"/api/admin/users/{user.id}/role", json={
             "role": "super_admin",
         }, cookies=auth_cookie(admin_user))
         assert resp.status_code == 403
 
-    def test_admin_cannot_manage_same_level(self, client, admin_user, db):
-        other_admin = make_user(db, email="otheradmin@test.com", role=UserRole.admin)
-        resp = client.put(f"/api/admin/users/{other_admin.id}/role", json={
+    def test_admin_cannot_assign_admin_role(self, client, admin_user, db):
+        """ROLE-02: Admin cannot assign admin role to others."""
+        user = make_user(db, email="target@test.com")
+        resp = client.put(f"/api/admin/users/{user.id}/role", json={
+            "role": "admin",
+        }, cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
+    def test_admin_cannot_change_super_admin_role(self, client, admin_user, db):
+        """Admin cannot change a super_admin's role."""
+        sa = make_user(db, email="sa@test.com", role=UserRole.super_admin)
+        resp = client.put(f"/api/admin/users/{sa.id}/role", json={
+            "role": "attendee",
+        }, cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
+    def test_admin_cannot_change_other_admin_role(self, client, admin_user, db):
+        """Admin cannot change another admin's role."""
+        other = make_user(db, email="otheradmin@test.com", role=UserRole.admin)
+        resp = client.put(f"/api/admin/users/{other.id}/role", json={
             "role": "moderator",
         }, cookies=auth_cookie(admin_user))
         assert resp.status_code == 403
@@ -223,6 +248,14 @@ class TestSuspendUser:
         sa = make_user(db, email="sa@test.com", role=UserRole.super_admin)
         resp = client.post(f"/api/admin/users/{sa.id}/suspend", json={
             "reason": "No way",
+        }, cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
+    def test_cannot_suspend_same_level(self, client, admin_user, db):
+        """Admin cannot suspend another admin."""
+        other = make_user(db, email="other_admin@test.com", role=UserRole.admin)
+        resp = client.post(f"/api/admin/users/{other.id}/suspend", json={
+            "reason": "Not allowed",
         }, cookies=auth_cookie(admin_user))
         assert resp.status_code == 403
 
@@ -298,6 +331,18 @@ class TestBulkActions:
         resp = client.post("/api/admin/users/bulk", json={
             "user_ids": [sa.id],
             "action": "suspend",
+        }, cookies=auth_cookie(admin_user))
+        data = resp.json()
+        assert data["failed"] == 1
+        assert data["success"] == 0
+
+    def test_bulk_role_change_to_admin_blocked(self, client, admin_user, db):
+        """Admin cannot bulk-assign admin role."""
+        u1 = make_user(db, email="b1@test.com")
+        resp = client.post("/api/admin/users/bulk", json={
+            "user_ids": [u1.id],
+            "action": "role_change",
+            "role": "admin",
         }, cookies=auth_cookie(admin_user))
         data = resp.json()
         assert data["failed"] == 1
