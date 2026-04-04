@@ -132,21 +132,51 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Starts the full stack: **app + PostgreSQL + Redis + pgAdmin**.
 
+**Option A: Using `.env` file (recommended)**
+
+Add the super admin credentials to your `.env` file:
+
 ```bash
-# Start all services
+echo 'SUPER_ADMIN_EMAIL=admin@example.com' >> .env
+echo 'SUPER_ADMIN_PASSWORD=SecurePass123' >> .env
+```
+
+Then start normally — Docker Compose reads `.env` automatically:
+
+```bash
+docker compose up -d
+```
+
+**Option B: Inline environment variables**
+
+```bash
 SUPER_ADMIN_EMAIL=admin@example.com \
 SUPER_ADMIN_PASSWORD=SecurePass123 \
 docker compose up -d
+```
 
-# View logs
+> **Important:** The env vars must be set when running `docker compose up`. Running `docker compose up` without them will skip super admin creation.
+
+**Common commands:**
+
+```bash
+# View logs (verify super admin creation)
+docker compose logs app | grep -i "super admin"
+
+# Follow live logs
 docker compose logs -f app
 
 # Stop all services
 docker compose down
 
-# Stop and remove data volumes
+# Stop and remove data volumes (full reset)
 docker compose down -v
 ```
+
+**Troubleshooting login:**
+- Check logs for `Created super admin:` or `Super admin ... updated` message
+- If no message appears, the env vars were not passed — add them to `.env` and restart
+- To reset everything: `docker compose down -v && docker compose up -d`
 
 | Service | URL | Description |
 |---------|-----|-------------|
@@ -188,11 +218,26 @@ docker run -p 8000:8000 \
 
 ## Creating First Super Admin
 
-### Option 1: Docker (automatic)
+### Option 1: Docker with `.env` file (recommended)
 
-Set `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` environment variables when running the container. The super admin account is created automatically on startup.
+Add to your `.env` file:
 
-### Option 2: Interactive script
+```env
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=SecurePass123
+SUPER_ADMIN_NAME=Admin Name
+```
+
+Then run `docker compose up -d`. The super admin is created/updated automatically on every startup. Check logs to confirm:
+
+```bash
+docker compose logs app | grep -i "super admin"
+# Expected: "Created super admin: admin@example.com"
+```
+
+> **Note:** The entrypoint resets the super admin password on every startup to match the env var, so you can change the password by updating `.env` and restarting.
+
+### Option 2: Interactive script (local development)
 
 ```bash
 python seed_admin.py
@@ -200,7 +245,7 @@ python seed_admin.py
 
 Prompts for email, name, password, and institution interactively.
 
-### Option 3: SQL
+### Option 3: SQL (manual)
 
 ```sql
 UPDATE users SET role = 'super_admin' WHERE email = 'your@email.com';
