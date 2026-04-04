@@ -18,14 +18,14 @@ try:
     db = SessionLocal()
     try:
         email = os.environ['SUPER_ADMIN_EMAIL']
+        password = os.environ['SUPER_ADMIN_PASSWORD']
         existing = db.query(User).filter(User.email == email).first()
         if existing:
-            if existing.role != UserRole.super_admin:
-                existing.role = UserRole.super_admin
-                db.commit()
-                print(f'Promoted {email} to super_admin')
-            else:
-                print(f'Super admin {email} already exists, skipping')
+            existing.role = UserRole.super_admin
+            existing.hashed_password = hash_password(password)
+            existing.is_active = True
+            db.commit()
+            print(f'Super admin {email} updated (password reset, role ensured)')
         else:
             user = User(
                 email=email,
