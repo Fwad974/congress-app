@@ -61,7 +61,7 @@ Full-stack User Management dashboard at `/admin` with:
 ## Architecture
 
 ```
-dubai-congress/
+congress-app/
 ├── app/
 │   ├── api/
 │   │   ├── admin.py           # Admin REST API (RBAC-protected)
@@ -88,11 +88,23 @@ dubai-congress/
 │   │   ├── css/main.css
 │   │   └── js/main.js
 │   └── main.py
+├── tests/
+│   ├── conftest.py            # Test fixtures (SQLite DB, user factories)
+│   ├── test_auth.py           # Auth endpoint tests (17 tests)
+│   ├── test_admin.py          # Admin endpoint & RBAC tests (42 tests)
+│   ├── test_security.py       # Security unit tests (38 tests)
+│   └── test_schemas.py        # Schema validation tests (11 tests)
+├── Dockerfile                 # Production container image
+├── .dockerignore
+├── entrypoint.sh              # Auto-creates super admin from env vars
+├── seed_admin.py              # Interactive super admin setup script
 ├── .env
 └── requirements.txt
 ```
 
 ## Setup
+
+### Local Development
 
 ```bash
 # 1. Create PostgreSQL database
@@ -108,7 +120,6 @@ pip install -r requirements.txt
 openssl rand -hex 32  # Put in .env
 
 # 4. Run
-cd dubai-congress
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # 5. Open browser
@@ -116,12 +127,72 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Admin:   http://localhost:8000/admin (requires admin role)
 ```
 
-## Creating First Admin
+### Docker Deployment
 
-After signup, manually promote a user to super_admin in the database:
+```bash
+# Build the image
+docker build -t congress-app .
+
+# Run with auto super admin creation
+docker run -p 8000:8000 \
+  -e DATABASE_URL=postgresql://user:pass@db-host:5432/dubai_congress \
+  -e SECRET_KEY=$(openssl rand -hex 32) \
+  -e SUPER_ADMIN_EMAIL=admin@example.com \
+  -e SUPER_ADMIN_PASSWORD=SecurePass123 \
+  -e SUPER_ADMIN_NAME="Admin Name" \
+  congress-app
+```
+
+#### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SECRET_KEY` | Yes | JWT signing key (generate with `openssl rand -hex 32`) |
+| `ALGORITHM` | No | JWT algorithm (default: `HS256`) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiry in minutes (default: `1440`) |
+| `SUPER_ADMIN_EMAIL` | No | Auto-create super admin with this email on startup |
+| `SUPER_ADMIN_PASSWORD` | No | Password for auto-created super admin |
+| `SUPER_ADMIN_NAME` | No | Full name for auto-created super admin (default: `Super Admin`) |
+| `SUPER_ADMIN_INSTITUTION` | No | Institution for auto-created super admin |
+
+## Creating First Super Admin
+
+### Option 1: Docker (automatic)
+
+Set `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` environment variables when running the container. The super admin account is created automatically on startup.
+
+### Option 2: Interactive script
+
+```bash
+python seed_admin.py
+```
+
+Prompts for email, name, password, and institution interactively.
+
+### Option 3: SQL
 
 ```sql
 UPDATE users SET role = 'super_admin' WHERE email = 'your@email.com';
 ```
 
-Then access `/admin` to manage all other users from the dashboard.
+Once created, access `/admin` to manage all users from the dashboard.
+
+## Testing
+
+```bash
+# Install test dependencies
+pip install pytest httpx
+
+# Run all 118 tests
+pytest tests/ -v
+```
+
+### Test Coverage
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test_auth.py` | 17 | Signup, login, logout, profile, password, login lockout |
+| `test_admin.py` | 42 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
+| `test_security.py` | 38 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
+| `test_schemas.py` | 11 | Pydantic validation for all request schemas |
