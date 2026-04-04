@@ -202,7 +202,7 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if not can_manage_user(admin, user) and admin.id != user.id:
+    if admin.id != user.id and not can_manage_user(admin, user):
         raise HTTPException(status_code=403, detail="Cannot manage user at same or higher role")
 
     changes = []

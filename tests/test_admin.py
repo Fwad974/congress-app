@@ -147,6 +147,13 @@ class TestUpdateUser:
         assert resp.status_code == 200
         assert resp.json()["full_name"] == "Edited Name"
 
+    def test_admin_cannot_update_super_admin(self, client, admin_user, db):
+        sa = make_user(db, email="sa@test.com", role=UserRole.super_admin)
+        resp = client.put(f"/api/admin/users/{sa.id}", json={
+            "full_name": "Hacked Name",
+        }, cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
     def test_update_nonexistent_user(self, client, admin_user):
         resp = client.put("/api/admin/users/99999", json={
             "full_name": "Ghost",
