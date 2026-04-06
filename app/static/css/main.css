@@ -148,11 +148,11 @@ a:hover{color:var(--gold-l)}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* ═══ MOBILE ═══ */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(4,15,11,.95);backdrop-filter:blur(20px);border-top:1px solid var(--ga2);padding:6px 0 env(safe-area-inset-bottom,8px);z-index:900;justify-content:space-around}
-.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;font:.54rem var(--f);letter-spacing:.02em;text-transform:uppercase;color:var(--w3);text-decoration:none;transition:.2s;font-weight:500}
-.mobile-nav-item span{font-size:1.15rem}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(4,15,11,.96);backdrop-filter:blur(24px);border-top:1px solid rgba(201,169,98,.2);padding:12px 0 env(safe-area-inset-bottom,14px);z-index:900;justify-content:space-around;box-shadow:0 -4px 20px rgba(0,0,0,.3)}
+.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 16px;font:700 .62rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);text-decoration:none;transition:.2s}
+.mobile-nav-item svg{width:26px;height:26px}
 .mobile-nav-item.active{color:var(--gold)}
-.mobile-nav-item:hover{color:var(--w9)}
+.mobile-nav-item:hover{color:var(--w)}
 
 .mobile-menu-btn{display:none;width:36px;height:36px;border:1px solid var(--ga2);border-radius:var(--r);background:var(--ga2);color:var(--gold);cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;transition:.2s}
 .mobile-menu-btn:hover{background:var(--ga2)}
