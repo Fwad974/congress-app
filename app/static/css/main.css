@@ -112,7 +112,8 @@ a:hover{color:var(--fg)}
 /* ═══ NAV ═══ */
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
 .topnav-brand{display:flex;align-items:center;gap:12px;text-decoration:none}
-.topnav-logo{width:42px;height:42px;background:var(--fg);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#fff;box-shadow:0 2px 8px rgba(0,62,30,.12)}
+.topnav-logo{width:42px;height:42px;display:flex;align-items:center;justify-content:center}
+.topnav-logo img{width:100%;height:100%;object-fit:contain}
 .topnav-name{font:700 .72rem/1 var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--fg)}
 .topnav-links{display:flex;align-items:center;gap:10px}
 .landing-nav{border-bottom:1.5px solid var(--b);padding-bottom:18px}
