@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Certificates — {{ congress_short }}{% endblock %}
 {% block head %}<style>
-.page-wrap { min-height: 100vh; }
-.home-header { border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 0; }
-.page-title-bar { display: flex; align-items: center; gap: 14px; margin: 28px 0 24px; }
-.page-title-bar .back-link { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--gold-20); display: flex; align-items: center; justify-content: center; color: var(--gold); text-decoration: none; font-size: 1rem; background: var(--gold-10); transition: 0.2s; }
-.page-title-bar .back-link:hover { background: var(--gold-15); color: var(--gold-light); }
-.page-title-bar h2 span { color: var(--green); }
-.cert-card { background: var(--surface); border: 1px solid var(--border-mid); border-radius: var(--r-lg); padding: 26px; display: flex; align-items: center; gap: 20px; margin-bottom: 14px; transition: 0.25s; }
-.cert-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.4); }
-.cert-icon { width: 58px; height: 58px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: var(--gold-10); border: 1px dashed var(--gold-20); flex-shrink: 0; }
-.cert-info { flex: 1; }
-.cert-name { font-weight: 600; margin-bottom: 4px; font-size: 0.96rem; }
-.cert-desc { font-size: 0.83rem; color: var(--white-50); line-height: 1.5; }
-.cert-status { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 7px 16px; border-radius: 100px; color: var(--gold-dark); border: 1px solid var(--gold-20); background: var(--gold-10); flex-shrink: 0; }
-@media(max-width:540px){.cert-card{flex-direction:column;align-items:flex-start;gap:14px}}
+.page-wrap{min-height:100vh}
+.home-header{border-bottom:1px solid var(--b);padding-bottom:16px;margin-bottom:0}
+.ptbar{display:flex;align-items:center;gap:12px;margin:24px 0 20px}
+.ptbar .back{width:34px;height:34px;border-radius:8px;border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--w5);text-decoration:none;font-size:.95rem;background:var(--w1);transition:.2s}
+.ptbar .back:hover{border-color:var(--g2);color:var(--gl);background:var(--g1)}
+.ptbar h2 em{font-style:normal;color:var(--g)}
+.cc{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rl);padding:22px;display:flex;align-items:center;gap:16px;margin-bottom:10px;transition:.2s}
+.cc:hover{border-color:var(--b3);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.cc-ico{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:var(--g1);border:1px dashed var(--g2);flex-shrink:0}
+.cc-info{flex:1}
+.cc-name{font-weight:600;margin-bottom:2px;font-size:.92rem}
+.cc-desc{font-size:.8rem;color:var(--w5);line-height:1.45}
+.cc-status{font:.6rem var(--m);letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:100px;color:var(--w3);border:1px solid var(--b2);flex-shrink:0}
+@media(max-width:540px){.cc{flex-direction:column;align-items:flex-start;gap:10px}}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
-  <div class="page-title-bar animate-up"><a href="/home" class="back-link">←</a><h2>My <span>Certificates</span></h2></div>
-  <div class="cert-card animate-up delay-1"><div class="cert-icon">📜</div><div class="cert-info"><div class="cert-name">Certificate of Attendance</div><div class="cert-desc">Awarded upon attending 80% or more of bookmarked sessions.</div></div><span class="cert-status">Locked</span></div>
-  <div class="cert-card animate-up delay-2"><div class="cert-icon">🏆</div><div class="cert-info"><div class="cert-name">CME/CPD Credit Certificate</div><div class="cert-desc">Continuing Medical Education credits based on sessions attended.</div></div><span class="cert-status">Locked</span></div>
-  <div class="cert-card animate-up delay-3"><div class="cert-icon">🎤</div><div class="cert-info"><div class="cert-name">Speaker Certificate</div><div class="cert-desc">Issued to presenters after their session is completed.</div></div><span class="cert-status">Locked</span></div>
+  <div class="ptbar animate-up"><a href="/home" class="back">←</a><h2>My <em>Certificates</em></h2></div>
+  <div class="cc animate-up delay-1"><div class="cc-ico">📜</div><div class="cc-info"><div class="cc-name">Certificate of Attendance</div><div class="cc-desc">Awarded upon attending 80%+ of bookmarked sessions.</div></div><span class="cc-status">Locked</span></div>
+  <div class="cc animate-up delay-2"><div class="cc-ico">🏆</div><div class="cc-info"><div class="cc-name">CME/CPD Credit Certificate</div><div class="cc-desc">Continuing Medical Education credits based on attendance.</div></div><span class="cc-status">Locked</span></div>
+  <div class="cc animate-up delay-3"><div class="cc-ico">🎤</div><div class="cc-info"><div class="cc-name">Speaker Certificate</div><div class="cc-desc">Issued to presenters after their session is completed.</div></div><span class="cc-status">Locked</span></div>
 </div></div>
 {% endblock %}

@@ -2,32 +2,32 @@
 {% block title %}Register — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.auth-page { min-height: 100vh; display: flex; flex-direction: column; }
-.auth-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
-.auth-card { width: 100%; max-width: 470px; }
-.auth-card .card { padding: 48px 40px; }
-.auth-header { text-align: center; margin-bottom: 32px; }
-.auth-header .badge { margin-bottom: 16px; }
-.auth-header h2 { margin-bottom: 6px; } .auth-header h2 span { color: var(--green); }
-.auth-header p { color: var(--white-50); font-size: 0.9rem; font-weight: 300; }
-.auth-form { display: flex; flex-direction: column; gap: 16px; }
-.interests-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
-.interests-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.auth-footer { text-align: center; margin-top: 24px; font-size: 0.86rem; color: var(--white-50); }
-.auth-footer a { font-weight: 600; color: var(--gold); }
-.sso-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.sso-row .btn { font-size: 0.84rem; padding: 12px; }
-.pw-requirements { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
-.pw-req { font-size: 0.72rem; color: var(--white-30); display: flex; align-items: center; gap: 4px; transition: 0.2s; }
-.pw-req.met { color: var(--green); }
-@media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--r-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+.auth-page{min-height:100vh;display:flex;flex-direction:column}
+.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.auth-card{width:100%;max-width:460px}
+.auth-card .card{padding:44px 36px}
+.auth-header{text-align:center;margin-bottom:28px}
+.auth-header .badge{margin-bottom:14px}
+.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--g)}
+.auth-header p{color:var(--w5);font-size:.88rem;font-weight:300}
+.auth-form{display:flex;flex-direction:column;gap:14px}
+.interests-label{font:.62rem var(--m);letter-spacing:.12em;text-transform:uppercase;color:var(--w5);margin-bottom:2px}
+.interests-grid{display:flex;flex-wrap:wrap;gap:6px}
+.auth-footer{text-align:center;margin-top:20px;font-size:.84rem;color:var(--w5)}
+.auth-footer a{font-weight:600}
+.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sso-row .btn{font-size:.82rem;padding:11px}
+.pw-requirements{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px}
+.pw-req{font-size:.7rem;color:var(--w3);display:flex;align-items:center;gap:3px;transition:.2s}
+.pw-req.met{color:var(--g)}
+@media(max-width:540px){.auth-card .card{padding:28px 20px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
 {% block body %}
 <div class="auth-page">
   <div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-    <div class="auth-header"><div class="badge badge-green">🧬 New Registration</div><h2>Create Your <span>Account</span></h2><p>Join 500+ researchers at the congress</p></div>
+    <div class="auth-header"><div class="badge badge-green">🧬 New Registration</div><h2>Create Your <em>Account</em></h2><p>Join 500+ researchers at the congress</p></div>
     <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
       <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>

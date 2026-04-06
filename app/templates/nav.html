@@ -1,17 +1,16 @@
-<!-- Shared top nav for authenticated pages -->
+<!-- Shared nav for authenticated pages -->
 <style>
-  .nav-user-menu { position: relative; }
-  .nav-user-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--gold-20); border-radius: var(--r); background: var(--gold-10); color: var(--white-90); cursor: pointer; font-family: var(--sans); font-size: 0.86rem; transition: 0.2s; }
-  .nav-user-btn:hover { background: var(--gold-15); }
-  .nav-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--green-deep)); border: 2px solid var(--gold-20); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #000; font-weight: 800; }
-  .nav-user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-2); border: 1px solid var(--border-mid); border-radius: var(--r); padding: 5px; min-width: 190px; display: none; z-index: 100; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
-  .nav-user-dropdown::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-20), transparent); }
-  .nav-user-dropdown.open { display: block; }
-  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; color: var(--white-50); cursor: pointer; transition: 0.12s; text-decoration: none; width: 100%; }
-  .nav-dd-item:hover { background: var(--green-10); color: var(--white-90); }
-  .nav-quick { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--gold-10); border: 1px solid var(--gold-20); border-radius: var(--r); font-size: 0.78rem; color: var(--gold); transition: 0.2s; cursor: pointer; text-decoration: none; }
-  .nav-quick:hover { background: var(--gold-15); color: var(--gold-light); }
-  @media (max-width: 768px) { .nav-user-menu { display: none; } .nav-desktop-logout { display: none; } .nav-desktop-link { display: none; } }
+  .nav-user-menu{position:relative}
+  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--b2);border-radius:var(--r);background:var(--w1);color:var(--w9);cursor:pointer;font:.86rem var(--f);transition:.2s}
+  .nav-user-btn:hover{background:var(--b)}
+  .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:var(--gdd);display:flex;align-items:center;justify-content:center;font:.7rem var(--f);color:var(--gp);font-weight:700}
+  .nav-user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--b2);border-radius:var(--r);padding:4px;min-width:180px;display:none;z-index:100;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .nav-user-dropdown.open{display:block}
+  .nav-dd-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:6px;font-size:.86rem;color:var(--w5);cursor:pointer;transition:.1s;text-decoration:none;width:100%}
+  .nav-dd-item:hover{background:var(--g1);color:var(--w9)}
+  .nav-quick{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--w1);border:1px solid var(--b);border-radius:var(--r);font:.76rem var(--f);color:var(--w5);transition:.2s;cursor:pointer;text-decoration:none}
+  .nav-quick:hover{border-color:var(--g2);color:var(--gl);background:var(--g1)}
+  @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}}
 </style>
 
 <div class="container">
@@ -21,7 +20,7 @@
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
       {% if user.role.value in ['admin', 'super_admin'] %}
-      <a href="/admin" class="nav-quick nav-desktop-link">🛡️ Admin</a>
+      <a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold);border-color:var(--gold2)">🛡️ Admin</a>
       {% endif %}
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
@@ -33,12 +32,12 @@
           <a href="/certificates" class="nav-dd-item">📜 Certificates</a>
           <a href="/settings" class="nav-dd-item">⚙️ Settings</a>
           {% if user.role.value in ['admin', 'super_admin'] %}
-          <a href="/admin" class="nav-dd-item" style="color:var(--gold);">🛡️ Admin</a>
+          <a href="/admin" class="nav-dd-item" style="color:var(--gold)">🛡️ Admin</a>
           {% endif %}
-          <a href="/logout" class="nav-dd-item" style="color:var(--red);">Sign Out</a>
+          <a href="/logout" class="nav-dd-item" style="color:var(--red)">Sign Out</a>
         </div>
       </div>
-      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(244,63,94,0.15);font-size:0.78rem;padding:7px 14px;">Logout</a>
+      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(239,68,68,.15);font-size:.76rem;padding:6px 12px">Logout</a>
       <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
     </div>
   </nav>
@@ -61,7 +60,7 @@
     <a href="#" class="mobile-menu-link">🤝 Connect</a>
     {% if user.role.value in ['admin', 'super_admin'] %}
     <div class="mobile-menu-section">Admin</div>
-    <a href="/admin" class="mobile-menu-link" style="color:var(--gold);">🛡️ User Management</a>
+    <a href="/admin" class="mobile-menu-link" style="color:var(--gold)">🛡️ User Management</a>
     {% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link">👤 My Profile</a>
@@ -80,7 +79,7 @@
 </nav>
 
 <script>
-document.addEventListener('click', (e) => { if (!e.target.closest('.nav-user-menu')) document.querySelectorAll('.nav-user-dropdown').forEach(d => d.classList.remove('open')); });
-function openMobileMenu() { document.getElementById('mobileOverlay').classList.add('open'); document.getElementById('mobilePanel').classList.add('open'); document.body.style.overflow = 'hidden'; }
-function closeMobileMenu() { document.getElementById('mobileOverlay').classList.remove('open'); document.getElementById('mobilePanel').classList.remove('open'); document.body.style.overflow = ''; }
+document.addEventListener('click',e=>{if(!e.target.closest('.nav-user-menu'))document.querySelectorAll('.nav-user-dropdown').forEach(d=>d.classList.remove('open'))});
+function openMobileMenu(){document.getElementById('mobileOverlay').classList.add('open');document.getElementById('mobilePanel').classList.add('open');document.body.style.overflow='hidden'}
+function closeMobileMenu(){document.getElementById('mobileOverlay').classList.remove('open');document.getElementById('mobilePanel').classList.remove('open');document.body.style.overflow=''}
 </script>
