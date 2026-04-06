@@ -110,13 +110,13 @@ a:hover{color:var(--fg)}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--b2)}
 
 /* ═══ NAV ═══ */
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+.nav-bar{background:var(--surface);border-bottom:1px solid var(--b2);position:sticky;top:0;z-index:100}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
 .topnav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
-.topnav-logo{width:32px;height:32px;flex-shrink:0}
+.topnav-logo{width:30px;height:30px;flex-shrink:0}
 .topnav-logo img{width:100%;height:100%;object-fit:contain}
-.topnav-name{font:600 .92rem/1.2 var(--f);color:var(--fg);letter-spacing:-.01em}
+.topnav-name{font:600 .88rem/1.2 var(--f);color:var(--fg);letter-spacing:-.01em}
 .topnav-links{display:flex;align-items:center;gap:8px}
-.landing-nav{border-bottom:1px solid var(--b2);padding-bottom:14px}
 
 /* ═══ ANIMATIONS ═══ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}

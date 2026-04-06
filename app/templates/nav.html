@@ -1,6 +1,5 @@
 <!-- Shared nav -->
 <style>
-  .home-header{border-bottom:1.5px solid var(--b2);padding-bottom:16px;margin-bottom:0;background:var(--surface)}
   .nav-user-menu{position:relative}
   .nav-user-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--b2);border-radius:var(--r);background:var(--surface);color:var(--t);cursor:pointer;font:.84rem var(--f);transition:.2s}
   .nav-user-btn:hover{background:var(--fg-pale);border-color:var(--fg2)}
@@ -14,8 +13,9 @@
   @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}}
 </style>
 
+<div class="nav-bar">
 <div class="container">
-  <nav class="topnav home-header animate-in">
+  <nav class="topnav animate-in">
     <a href="/home" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a>
     <div class="topnav-links gap-sm">
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
@@ -35,6 +35,7 @@
       <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
     </div>
   </nav>
+</div>
 </div>
 <div class="mobile-menu-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 <div class="mobile-menu-panel" id="mobilePanel">

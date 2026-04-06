@@ -2,7 +2,6 @@
 {% block title %}Sign In — {{ congress_full }}{% endblock %}
 {% block head %}<style>
 .auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg2)}
-.auth-nav{border-bottom:1.5px solid var(--b);background:var(--bg);padding-bottom:0}
 .auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 24px}
 .auth-card{width:100%;max-width:440px}
 .auth-card .card{padding:48px 44px;box-shadow:0 2px 12px rgba(0,62,30,.05)}
@@ -21,7 +20,7 @@
 </style>{% endblock %}
 {% block body %}
 <div class="auth-page">
-  <div class="container"><nav class="topnav auth-nav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a><div class="topnav-links gap-sm"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
+  <div class="nav-bar"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a><div class="topnav-links gap-sm"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
     <div class="auth-header">
       <h2>Welcome Back</h2>
