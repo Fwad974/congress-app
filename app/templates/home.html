@@ -34,7 +34,7 @@
   <div class="welcome"><div class="wc animate-up">
     <div class="wc-top"><div class="wc-hi">Welcome back, <em>{{ user.full_name.split(' ')[0] }}</em></div><div class="wc-sub">Your personalized congress experience starts here.</div></div>
     <div class="wc-body">
-      <div class="wc-meta"><span class="badge badge-green">📅 {{ congress_dates }}</span><span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>{% if user.institution %}<span class="badge" style="color:var(--w5);border-color:var(--w1);background:var(--w05)">🏛️ {{ user.institution }}</span>{% endif %}</div>
+      <div class="wc-meta"><span class="badge badge-green">{{ congress_dates }}</span><span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>{% if user.institution %}<span class="badge" style="color:var(--w5);border-color:var(--w1);background:var(--w05)">{{ user.institution }}</span>{% endif %}</div>
       {% if user.research_interests %}<div class="itags">{% for interest in user.research_interests %}<span class="itag">{{ interest }}</span>{% endfor %}</div>{% endif %}
     </div>
   </div></div>
