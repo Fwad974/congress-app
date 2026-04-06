@@ -2,45 +2,81 @@
 {% block title %}Home — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.home-page{min-height:100vh}.home-header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:32px}
-.welcome-section{padding:40px 0 0}.welcome-card{background:linear-gradient(135deg,var(--surface) 0%,rgba(16,185,129,0.04) 100%);border:1px solid var(--border);border-radius:var(--radius-xl);padding:36px;margin-bottom:28px;position:relative;overflow:hidden}.welcome-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--green-light),var(--green));opacity:0.4}
-.welcome-greeting{font-size:1.6rem;font-weight:700;margin-bottom:4px}.welcome-greeting span{color:var(--green)}.welcome-sub{color:var(--text-secondary);font-weight:300;font-size:1rem}
-.welcome-meta{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}.welcome-meta .badge{font-size:0.62rem}
-.section-title{font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px}
-.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:32px}
-.dash-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;transition:all 0.3s var(--ease-out);cursor:pointer;position:relative;overflow:hidden}
-.dash-tile::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;transition:width 0.3s}
-.dash-tile:hover{border-color:transparent;transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,0.4)}.dash-tile:hover::before{width:5px}
-.dash-tile.green::before{background:var(--green)}.dash-tile.green-light::before{background:var(--green-light)}.dash-tile.green-dark::before{background:var(--green-dark)}.dash-tile.gold::before{background:var(--gold)}.dash-tile.purple::before{background:var(--purple)}.dash-tile.blue::before{background:var(--blue)}
-.dash-tile-icon{font-size:1.5rem;margin-bottom:12px}.dash-tile h3{margin-bottom:6px;font-size:1rem}.dash-tile p{color:var(--text-secondary);font-size:0.85rem;line-height:1.45;font-weight:300}
-.quick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:40px}
-.quick-action{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);font-size:0.88rem;color:var(--text-secondary);transition:all 0.2s var(--ease-out);cursor:pointer;text-decoration:none}
-.quick-action:hover{border-color:var(--green);color:var(--text);background:var(--green-dim)}
-.interests-display{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.interest-tag{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em;padding:4px 10px;border-radius:100px;background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.15)}
-@media(max-width:768px){.welcome-card{padding:24px;border-radius:var(--radius-lg)}.welcome-greeting{font-size:1.3rem}.dash-grid{grid-template-columns:1fr}}
+.home-page { min-height: 100vh; }
+.home-header { border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 0; }
+.welcome-section { padding: 36px 0 0; }
+.welcome-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; margin-bottom: 32px; position: relative; overflow: hidden; }
+.welcome-card::before { content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px; background: linear-gradient(90deg, transparent, var(--green), var(--amber), transparent); opacity: 0.2; }
+.welcome-greeting { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+.welcome-greeting span { color: var(--green); }
+.welcome-sub { color: var(--text-secondary); font-weight: 300; font-size: 0.95rem; }
+.welcome-meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.section-title { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 36px; }
+.dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; transition: all 0.25s var(--ease-out); cursor: pointer; position: relative; overflow: hidden; }
+.dash-tile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
+.dash-tile:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+.dash-tile:hover::before { width: 4px; }
+.dash-tile.t-green::before { background: var(--green); }
+.dash-tile.t-purple::before { background: var(--purple); }
+.dash-tile.t-amber::before { background: var(--amber); }
+.dash-tile.t-blue::before { background: var(--blue); }
+.dash-tile-icon { font-size: 1.4rem; margin-bottom: 10px; }
+.dash-tile h3 { margin-bottom: 5px; font-size: 0.95rem; }
+.dash-tile p { color: var(--text-secondary); font-size: 0.83rem; line-height: 1.5; font-weight: 300; }
+
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 36px; }
+.quick-action { display: flex; align-items: center; gap: 7px; padding: 9px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.84rem; color: var(--text-secondary); transition: all 0.2s var(--ease-out); cursor: pointer; text-decoration: none; }
+.quick-action:hover { border-color: var(--green); color: var(--text); background: var(--green-dim); }
+
+.interests-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.interest-tag { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 100px; background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.12); }
+
+@media (max-width: 768px) {
+  .welcome-card { padding: 22px 18px; border-radius: var(--radius-lg); }
+  .welcome-greeting { font-size: 1.25rem; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
 </style>
 {% endblock %}
+
 {% block body %}
 <div class="home-page">
 {% include "nav.html" %}
 <div class="container">
-<div class="welcome-section"><div class="welcome-card animate-up">
-<div class="welcome-greeting">Welcome, <span>{{ user.full_name.split(' ')[0] }}</span> 👋</div>
-<div class="welcome-sub">Your personalized congress experience starts here.</div>
-<div class="welcome-meta"><span class="badge badge-green">📅 {{ congress_dates }}</span><span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>{% if user.institution %}<span class="badge" style="color:var(--text-secondary);border-color:var(--border);background:transparent;">🏛️ {{ user.institution }}</span>{% endif %}</div>
-{% if user.research_interests %}<div class="interests-display">{% for interest in user.research_interests %}<span class="interest-tag">{{ interest }}</span>{% endfor %}</div>{% endif %}
-</div></div>
-<div class="section-title animate-up delay-1">Quick Actions</div>
-<div class="quick-actions animate-up delay-1">
-<a href="#" class="quick-action">📋 Browse Program</a><a href="#" class="quick-action">🖼️ Poster Gallery</a><a href="#" class="quick-action">🤝 Find Researchers</a><a href="#" class="quick-action">🤖 AI Companion</a><a href="#" class="quick-action">🗺️ Venue Map</a>
-{% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="quick-action" style="border-color:rgba(16,185,129,0.3);color:#10b981;">🛡️ Admin Dashboard</a>{% endif %}
+  <div class="welcome-section">
+    <div class="welcome-card animate-up">
+      <div class="welcome-greeting">Welcome, <span>{{ user.full_name.split(' ')[0] }}</span> 👋</div>
+      <div class="welcome-sub">Your personalized congress experience starts here.</div>
+      <div class="welcome-meta">
+        <span class="badge badge-green">📅 {{ congress_dates }}</span>
+        <span class="badge badge-amber">{{ user.role.value | replace('_', ' ') | title }}</span>
+        {% if user.institution %}<span class="badge" style="color:var(--text-secondary);border-color:var(--border);background:var(--surface-raised);">🏛️ {{ user.institution }}</span>{% endif %}
+      </div>
+      {% if user.research_interests %}
+      <div class="interests-display">{% for interest in user.research_interests %}<span class="interest-tag">{{ interest }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section-title animate-up delay-1">Quick Actions</div>
+  <div class="quick-actions animate-up delay-1">
+    <a href="#" class="quick-action">📋 Browse Program</a>
+    <a href="#" class="quick-action">🖼️ Poster Gallery</a>
+    <a href="#" class="quick-action">🤝 Find Researchers</a>
+    <a href="#" class="quick-action">🤖 AI Companion</a>
+    <a href="#" class="quick-action">🗺️ Venue Map</a>
+    {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="quick-action" style="border-color:rgba(240,180,41,0.25);color:var(--amber);">🛡️ Admin Dashboard</a>{% endif %}
+  </div>
+
+  <div class="section-title animate-up delay-2">Your Dashboard</div>
+  <div class="dash-grid">
+    <div class="dash-tile t-green animate-up delay-2"><div class="dash-tile-icon">📅</div><h3>My Schedule</h3><p>No sessions bookmarked yet. Browse the program to build your personal schedule.</p></div>
+    <div class="dash-tile t-purple animate-up delay-3"><div class="dash-tile-icon">🤝</div><h3>Networking</h3><p>AI matchmaking will activate 2 weeks before the congress.</p></div>
+    <div class="dash-tile t-amber animate-up delay-4"><div class="dash-tile-icon">📄</div><h3>My Papers</h3><p>Submit your research abstract for review. Deadline: {{ congress_deadline }}.</p></div>
+    <div class="dash-tile t-blue animate-up delay-5"><div class="dash-tile-icon">📜</div><h3>CME Credits</h3><p>Attend sessions and scan QR codes to automatically earn CME/CPD credits.</p></div>
+  </div>
 </div>
-<div class="section-title animate-up delay-2">Your Dashboard</div>
-<div class="dash-grid">
-<div class="dash-tile green animate-up delay-2"><div class="dash-tile-icon">📅</div><h3>My Schedule</h3><p>No sessions bookmarked yet. Browse the program to build your personal schedule.</p></div>
-<div class="dash-tile green-light animate-up delay-3"><div class="dash-tile-icon">🤝</div><h3>Networking</h3><p>AI matchmaking will activate 2 weeks before the congress.</p></div>
-<div class="dash-tile gold animate-up delay-4"><div class="dash-tile-icon">📄</div><h3>My Papers</h3><p>Submit your research abstract for review. Deadline: {{ congress_deadline }}.</p></div>
-<div class="dash-tile green-dark animate-up delay-5"><div class="dash-tile-icon">📜</div><h3>CME Credits</h3><p>Attend sessions and scan QR codes to automatically earn CME/CPD credits.</p></div>
-</div></div></div>
+</div>
 {% endblock %}

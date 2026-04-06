@@ -2,27 +2,67 @@
 {% block title %}Register — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.auth-page{min-height:100vh;display:flex;flex-direction:column}.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}.auth-card{width:100%;max-width:480px}.auth-card .card{padding:44px 40px}.auth-header{text-align:center;margin-bottom:32px}.auth-header .badge{margin-bottom:16px}.auth-header h2{margin-bottom:6px}.auth-header h2 span{color:var(--green)}.auth-header p{color:var(--text-secondary);font-size:0.92rem;font-weight:300}.auth-form{display:flex;flex-direction:column;gap:18px}.interests-label{font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px}.interests-grid{display:flex;flex-wrap:wrap;gap:8px}.auth-footer{text-align:center;margin-top:24px;font-size:0.88rem;color:var(--text-secondary)}.auth-footer a{font-weight:600}.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sso-row .btn{font-size:0.85rem;padding:12px}.pw-requirements{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:2px}.pw-req{font-size:0.72rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;transition:color 0.2s}.pw-req.met{color:var(--green)}
-@media(max-width:540px){.auth-card .card{padding:28px 18px;border-radius:var(--radius-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+.auth-page { min-height: 100vh; display: flex; flex-direction: column; }
+.auth-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.auth-card { width: 100%; max-width: 460px; }
+.auth-card .card { padding: 40px 36px; }
+.auth-header { text-align: center; margin-bottom: 28px; }
+.auth-header .badge { margin-bottom: 14px; }
+.auth-header h2 { margin-bottom: 6px; }
+.auth-header h2 span { color: var(--green); }
+.auth-header p { color: var(--text-secondary); font-size: 0.9rem; font-weight: 300; }
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+.interests-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px; }
+.interests-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.auth-footer { text-align: center; margin-top: 22px; font-size: 0.86rem; color: var(--text-secondary); }
+.auth-footer a { font-weight: 600; }
+.sso-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sso-row .btn { font-size: 0.84rem; padding: 11px; }
+.pw-requirements { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
+.pw-req { font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; transition: color 0.2s; }
+.pw-req.met { color: var(--green); }
+@media (max-width: 540px) {
+  .auth-card .card { padding: 26px 18px; border-radius: var(--radius-lg); }
+  .auth-card { max-width: 100%; }
+  .sso-row { grid-template-columns: 1fr; }
+  .auth-body { padding: 24px 16px; }
+}
 </style>
 {% endblock %}
+
 {% block body %}
-<div class="auth-page"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div>
-<div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-<div class="auth-header"><div class="badge badge-teal">🧬 New Registration</div><h2>Create Your <span>Account</span></h2><p>Join 500+ researchers at the congress</p></div>
-<form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
-<div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
-<div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
-<div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
-<div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-requirements"><span class="pw-req" id="pw-len">✕ 8+ chars</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
-<div class="form-group"><label class="interests-label">Research Interests</label><div class="interests-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
-<button type="submit" class="btn btn-primary w-full" id="submitBtn">Create Account</button>
-<div class="divider">or register with</div>
-<div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
-</form>
-<div class="auth-footer">Already registered? <a href="/login">Sign in</a></div>
-</div></div></div></div>
+<div class="auth-page">
+  <div class="container">
+    <nav class="topnav animate-in">
+      <a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a>
+      <div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div>
+    </nav>
+  </div>
+  <div class="auth-body">
+    <div class="auth-card animate-scale">
+      <div class="card">
+        <div class="auth-header">
+          <div class="badge badge-green">🧬 New Registration</div>
+          <h2>Create Your <span>Account</span></h2>
+          <p>Join 500+ researchers at the congress</p>
+        </div>
+        <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+          <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
+          <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
+          <div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
+          <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-requirements"><span class="pw-req" id="pw-len">✕ 8+ chars</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
+          <div class="form-group"><label class="interests-label">Research Interests</label><div class="interests-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
+          <button type="submit" class="btn btn-primary w-full" id="submitBtn">Create Account</button>
+          <div class="divider">or register with</div>
+          <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
+        </form>
+        <div class="auth-footer">Already registered? <a href="/login">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 function checkPassword(){const pw=document.getElementById('password').value;const toggle=(id,met)=>{const el=document.getElementById(id);el.classList.toggle('met',met);el.textContent=(met?'✓ ':'✕ ')+el.textContent.slice(2)};toggle('pw-len',pw.length>=8);toggle('pw-upper',/[A-Z]/.test(pw));toggle('pw-num',/\d/.test(pw))}

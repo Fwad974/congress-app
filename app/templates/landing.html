@@ -2,52 +2,124 @@
 {% block title %}{{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.hero{min-height:100vh;display:flex;flex-direction:column;position:relative}
-.hero-content{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:80px 24px;position:relative;z-index:1}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;flex-wrap:wrap;justify-content:center}
-.hero-date,.hero-venue{font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;padding:7px 16px;border-radius:100px}
-.hero-date{color:var(--green);border:1px solid rgba(16,185,129,0.2);background:var(--green-dim)}
-.hero-venue{color:var(--green-light);border:1px solid rgba(52,211,153,0.2);background:rgba(52,211,153,0.08)}
-.hero h1{max-width:800px;margin-bottom:20px}.hero h1 .accent{color:var(--green)}.hero h1 .gold{color:var(--green-light)}
-.hero-sub{font-size:1.15rem;font-weight:300;color:var(--text-secondary);max-width:560px;line-height:1.6;margin-bottom:40px}
-.hero-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-.stats-strip{display:flex;justify-content:center;gap:48px;padding:40px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap}
-.stat{text-align:center}.stat-value{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--green);line-height:1;margin-bottom:6px}
-.stat-label{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted)}
-.features-section{padding:80px 24px}.features-section h2{text-align:center;margin-bottom:12px}.features-section h2 span{color:var(--green)}
-.features-sub{text-align:center;color:var(--text-secondary);font-weight:300;margin-bottom:48px;font-size:1rem}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1000px;margin:0 auto}
-.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 24px;transition:all 0.35s var(--ease-out);position:relative;overflow:hidden}
-.feature-card:hover{border-color:rgba(16,185,129,0.2);transform:translateY(-4px);box-shadow:0 12px 40px -8px rgba(0,0,0,0.4)}
-.feature-icon{width:48px;height:48px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:16px;background:var(--green-dim);border:1px solid rgba(16,185,129,0.1)}
-.feature-card h3{margin-bottom:8px}.feature-card p{font-size:0.88rem;color:var(--text-secondary);line-height:1.5;font-weight:300}
-.cta-section{padding:80px 24px;text-align:center}
-.cta-card{max-width:640px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:56px 40px;position:relative;overflow:hidden}
-.cta-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0.3}
-.cta-card h2 span{color:var(--green)}.cta-card p{color:var(--text-secondary);font-weight:300;margin-bottom:32px;font-size:1rem;line-height:1.6}
-.footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;font-size:0.8rem;color:var(--text-muted)}
-@media(max-width:768px){.hero-content{padding:60px 16px}.hero-eyebrow{flex-direction:column;gap:8px}.hero-actions{flex-direction:column;width:100%;max-width:320px}.hero-actions .btn{width:100%}.features-grid{grid-template-columns:1fr}.stats-strip{gap:20px}.cta-card{padding:36px 20px}}
-@media(max-width:480px){.hero h1{font-size:1.7rem}.stat-value{font-size:1.3rem}}
+.hero { min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+.hero-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 100px 24px 80px; position: relative; z-index: 1; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+.hero-date, .hero-venue { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 7px 16px; border-radius: 100px; }
+.hero-date { color: var(--green); border: 1px solid rgba(16,185,129,0.2); background: var(--green-dim); }
+.hero-venue { color: var(--amber); border: 1px solid rgba(240,180,41,0.18); background: var(--amber-dim); }
+.hero h1 { max-width: 780px; margin-bottom: 20px; line-height: 1.08; }
+.hero h1 .accent { color: var(--green); }
+.hero h1 .gold { color: var(--amber); }
+.hero-sub { font-size: 1.12rem; font-weight: 300; color: var(--text-secondary); max-width: 540px; line-height: 1.65; margin-bottom: 44px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+.stats-strip { display: flex; justify-content: center; gap: 56px; padding: 48px 24px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg-elevated); flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-value { font-family: var(--font-mono); font-size: 2.2rem; font-weight: 700; color: var(--green); line-height: 1; margin-bottom: 6px; }
+.stat-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+
+.features-section { padding: 100px 24px; }
+.features-section h2 { text-align: center; margin-bottom: 10px; }
+.features-section h2 span { color: var(--green); }
+.features-sub { text-align: center; color: var(--text-secondary); font-weight: 300; margin-bottom: 56px; font-size: 1rem; line-height: 1.6; }
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; max-width: 960px; margin: 0 auto; }
+.feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 24px; transition: all 0.3s var(--ease-out); position: relative; overflow: hidden; }
+.feature-card::before { content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, rgba(16,185,129,0.15), transparent); }
+.feature-card:hover { border-color: rgba(16,185,129,0.18); transform: translateY(-3px); box-shadow: 0 8px 32px -8px rgba(0,0,0,0.5); }
+.feature-icon { width: 44px; height: 44px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 14px; background: var(--green-dim); border: 1px solid rgba(16,185,129,0.1); }
+.feature-card h3 { margin-bottom: 6px; font-size: 1rem; }
+.feature-card p { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.55; font-weight: 300; }
+
+.cta-section { padding: 80px 24px; text-align: center; }
+.cta-card { max-width: 600px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 52px 36px; position: relative; overflow: hidden; }
+.cta-card::before { content: ''; position: absolute; top: 0; left: 32px; right: 32px; height: 1px; background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.2; }
+.cta-card h2 { margin-bottom: 12px; }
+.cta-card h2 span { color: var(--green); }
+.cta-card p { color: var(--text-secondary); font-weight: 300; margin-bottom: 32px; font-size: 1rem; line-height: 1.65; }
+
+.footer { border-top: 1px solid var(--border); padding: 36px 24px; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .hero-content { padding: 60px 16px 50px; }
+  .hero-eyebrow { flex-direction: column; gap: 8px; }
+  .hero-actions { flex-direction: column; width: 100%; max-width: 320px; }
+  .hero-actions .btn { width: 100%; }
+  .features-grid { grid-template-columns: 1fr; }
+  .stats-strip { gap: 24px; padding: 32px 16px; }
+  .cta-card { padding: 32px 20px; }
+  .features-section { padding: 64px 16px; }
+}
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.65rem; }
+  .stat-value { font-size: 1.4rem; }
+}
 </style>
 {% endblock %}
+
 {% block body %}
-<div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
-<section class="hero"><div class="hero-content">
-<div class="hero-eyebrow animate-up"><span class="hero-date">📅 {{ congress_dates }}</span><span class="hero-venue">📍 {{ congress_venue }}</span></div>
-<h1 class="animate-up delay-1">Dubai <span class="accent">Stem Cell</span><br>Congress <span class="gold">{{ congress_year }}</span></h1>
-<p class="hero-sub animate-up delay-2">The premier gathering for regenerative medicine researchers, clinicians, and biotech innovators. Three days of science, networking, and breakthroughs.</p>
-<div class="hero-actions animate-up delay-3"><a href="/signup" class="btn btn-primary btn-lg">Register Now</a><a href="#features" class="btn btn-ghost btn-lg">Explore Program</a></div>
-</div></section>
-<div class="stats-strip"><div class="stat animate-up"><div class="stat-value">500+</div><div class="stat-label">Researchers</div></div><div class="stat animate-up delay-1"><div class="stat-value">80+</div><div class="stat-label">Sessions</div></div><div class="stat animate-up delay-2"><div class="stat-value">40+</div><div class="stat-label">Countries</div></div><div class="stat animate-up delay-3"><div class="stat-value">3</div><div class="stat-label">Days</div></div></div>
-<section class="features-section" id="features"><div class="container"><h2 class="animate-up">Your Congress, <span>Reimagined</span></h2><p class="features-sub animate-up delay-1">AI-powered networking, live session interaction, and a personal congress companion.</p>
-<div class="features-grid">
-<div class="feature-card animate-up delay-1"><div class="feature-icon">🤖</div><h3>AI Congress Companion</h3><p>Context-aware AI that adapts to your location, schedule, and interests.</p></div>
-<div class="feature-card animate-up delay-2"><div class="feature-icon">🤝</div><h3>Smart Networking</h3><p>AI matches you with researchers in your field with smart icebreakers.</p></div>
-<div class="feature-card animate-up delay-3"><div class="feature-icon">🎤</div><h3>Live Interaction</h3><p>Submit Q&A, vote in polls, and react with emoji pulses during talks.</p></div>
-<div class="feature-card animate-up delay-4"><div class="feature-icon">🖼️</div><h3>Interactive Posters</h3><p>Browse, vote, and comment on research posters with QR scan integration.</p></div>
-<div class="feature-card animate-up delay-5"><div class="feature-icon">🧬</div><h3>Knowledge Graph</h3><p>Every talk, poster, and researcher connected by topic.</p></div>
-<div class="feature-card animate-up delay-5"><div class="feature-icon">📜</div><h3>CME Certificates</h3><p>Automatic attendance tracking via QR scans with downloadable certificates.</p></div>
-</div></div></section>
-<section class="cta-section"><div class="cta-card animate-up"><h2>Ready to <span>Join</span>?</h2><p>Register now to build your personalized schedule and discover AI-matched connections.</p><div class="hero-actions"><a href="/signup" class="btn btn-primary btn-lg">Create Account</a><a href="/login" class="btn btn-ghost btn-lg">Sign In</a></div></div></section>
-<footer class="footer"><p>© {{ congress_year }} {{ congress_name }}. All rights reserved.</p></footer>
+<div class="container">
+  <nav class="topnav animate-in">
+    <a href="/" class="topnav-brand">
+      <div class="topnav-logo">🧬</div>
+      <span class="topnav-name">{{ congress_short }}</span>
+    </a>
+    <div class="topnav-links gap-sm">
+      <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
+      <a href="/signup" class="btn btn-primary btn-sm">Register</a>
+    </div>
+  </nav>
+</div>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow animate-up">
+      <span class="hero-date">📅 {{ congress_dates }}</span>
+      <span class="hero-venue">📍 {{ congress_venue }}</span>
+    </div>
+    <h1 class="animate-up delay-1">Dubai <span class="accent">Stem Cell</span><br>Congress <span class="gold">{{ congress_year }}</span></h1>
+    <p class="hero-sub animate-up delay-2">The premier gathering for regenerative medicine researchers, clinicians, and biotech innovators. Three days of science, networking, and breakthroughs.</p>
+    <div class="hero-actions animate-up delay-3">
+      <a href="/signup" class="btn btn-primary btn-lg">Register Now</a>
+      <a href="#features" class="btn btn-ghost btn-lg">Explore Program</a>
+    </div>
+  </div>
+</section>
+
+<div class="stats-strip">
+  <div class="stat animate-up"><div class="stat-value">500+</div><div class="stat-label">Researchers</div></div>
+  <div class="stat animate-up delay-1"><div class="stat-value">80+</div><div class="stat-label">Sessions</div></div>
+  <div class="stat animate-up delay-2"><div class="stat-value">40+</div><div class="stat-label">Countries</div></div>
+  <div class="stat animate-up delay-3"><div class="stat-value">3</div><div class="stat-label">Days</div></div>
+</div>
+
+<section class="features-section" id="features">
+  <div class="container">
+    <h2 class="animate-up">Your Congress, <span>Reimagined</span></h2>
+    <p class="features-sub animate-up delay-1">AI-powered networking, live session interaction, and a personal congress companion.</p>
+    <div class="features-grid">
+      <div class="feature-card animate-up delay-1"><div class="feature-icon">🤖</div><h3>AI Congress Companion</h3><p>Context-aware AI that adapts to your location, schedule, and interests.</p></div>
+      <div class="feature-card animate-up delay-2"><div class="feature-icon">🤝</div><h3>Smart Networking</h3><p>AI matches you with researchers in your field with smart icebreakers.</p></div>
+      <div class="feature-card animate-up delay-3"><div class="feature-icon">🎤</div><h3>Live Interaction</h3><p>Submit Q&A, vote in polls, and react with emoji pulses during talks.</p></div>
+      <div class="feature-card animate-up delay-4"><div class="feature-icon">🖼️</div><h3>Interactive Posters</h3><p>Browse, vote, and comment on research posters with QR scan integration.</p></div>
+      <div class="feature-card animate-up delay-5"><div class="feature-icon">🧬</div><h3>Knowledge Graph</h3><p>Every talk, poster, and researcher connected by topic.</p></div>
+      <div class="feature-card animate-up delay-5"><div class="feature-icon">📜</div><h3>CME Certificates</h3><p>Automatic attendance tracking via QR scans with downloadable certificates.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-card animate-up">
+    <h2>Ready to <span>Join</span>?</h2>
+    <p>Register now to build your personalized schedule and discover AI-matched connections.</p>
+    <div class="hero-actions">
+      <a href="/signup" class="btn btn-primary btn-lg">Create Account</a>
+      <a href="/login" class="btn btn-ghost btn-lg">Sign In</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>&copy; {{ congress_year }} {{ congress_name }}. All rights reserved.</p>
+</footer>
 {% endblock %}
