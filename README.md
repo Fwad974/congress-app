@@ -1,4 +1,4 @@
-# Dubai Stem Cell Congress 2026 — Conference App
+# Dubai Stem Cell Congress 2027 — Conference App
 
 FastAPI + PostgreSQL web application with **secure Admin User Management Dashboard**.
 

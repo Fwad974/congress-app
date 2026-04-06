@@ -1,5 +1,5 @@
 """
-Admin Security Layer — Dubai Stem Cell Congress 2026
+Admin Security Layer — Dubai Stem Cell Congress 2027
 RBAC enforcement, rate limiting, audit logging, IP tracking
 """
 import time

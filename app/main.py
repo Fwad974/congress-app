@@ -1,5 +1,5 @@
 """
-Dubai Stem Cell Congress 2026 — Conference App
+Dubai Stem Cell Congress 2027 — Conference App
 FastAPI Backend with Admin Dashboard
 """
 from fastapi import FastAPI
@@ -21,7 +21,7 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="Dubai Stem Cell Congress 2026",
+    title="Dubai Stem Cell Congress 2027",
     version="1.0.0",
     lifespan=lifespan,
 )

@@ -29,7 +29,7 @@ def create_super_admin():
             print(f"     Log in and go to /admin\n")
             return
 
-        print("\n  🧬 Dubai Stem Cell Congress 2026 — First Admin Setup\n")
+        print("\n  🧬 Dubai Stem Cell Congress 2027 — First Admin Setup\n")
         print("  Create your Super Admin account:\n")
 
         email = input("  📧 Email: ").strip()
