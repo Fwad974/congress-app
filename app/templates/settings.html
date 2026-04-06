@@ -5,34 +5,28 @@
 .page-wrap { min-height: 100vh; }
 .home-header { border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 0; }
 .page-title-bar { display: flex; align-items: center; gap: 14px; margin: 28px 0 24px; }
-.page-title-bar .back-link { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; font-size: 1rem; transition: all 0.2s; }
-.page-title-bar .back-link:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.page-title-bar .back-link { width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; font-size: 1rem; background: rgba(255,255,255,0.03); transition: all 0.2s; }
+.page-title-bar .back-link:hover { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.06); }
 .page-title-bar h2 span { color: var(--green); }
-.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px 28px; margin-bottom: 20px; max-width: 580px; }
-.settings-card h3 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.settings-card { background: var(--surface); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 28px 30px; margin-bottom: 20px; max-width: 580px; position: relative; overflow: hidden; }
+.settings-card::before { content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, rgba(16,185,129,0.15), transparent); }
+.settings-card h3 { font-size: 1rem; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
 </style>
 {% endblock %}
-
 {% block body %}
-<div class="page-wrap">
-  {% include "nav.html" %}
-  <div class="container">
-    <div class="page-title-bar animate-up"><a href="/home" class="back-link">←</a><h2><span>Settings</span></h2></div>
-    <div class="settings-card animate-up delay-1">
-      <h3>🔒 Change Password</h3>
-      <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:12px;">
-        <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
-        <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
-        <div class="form-group"><label class="form-label">Confirm</label><input type="password" class="form-input" id="confPw" required></div>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px;"><button type="submit" class="btn btn-primary btn-sm" id="pwBtn">Update Password</button></div>
-      </form>
-    </div>
+<div class="page-wrap">{% include "nav.html" %}<div class="container">
+  <div class="page-title-bar animate-up"><a href="/home" class="back-link">←</a><h2><span>Settings</span></h2></div>
+  <div class="settings-card animate-up delay-1">
+    <h3>🔒 Change Password</h3>
+    <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
+      <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
+      <div class="form-group"><label class="form-label">Confirm</label><input type="password" class="form-input" id="confPw" required></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:4px;"><button type="submit" class="btn btn-primary btn-sm" id="pwBtn">Update Password</button></div>
+    </form>
   </div>
-</div>
+</div></div>
 {% endblock %}
-
-{% block scripts %}
-<script>
+{% block scripts %}<script>
 async function handlePwChange(e){e.preventDefault();if(document.getElementById('newPw').value!==document.getElementById('confPw').value){showToast('Passwords do not match','error');return}const btn=document.getElementById('pwBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const res=await fetch('/api/auth/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:document.getElementById('curPw').value,new_password:document.getElementById('newPw').value}),credentials:'same-origin'});const d=await res.json();if(!res.ok)throw new Error(d.detail);showToast('Password updated!','success');e.target.reset()}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Update Password';btn.disabled=false}}
-</script>
-{% endblock %}
+</script>{% endblock %}

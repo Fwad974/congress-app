@@ -5,47 +5,35 @@
 .page-wrap { min-height: 100vh; }
 .home-header { border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 0; }
 .page-title-bar { display: flex; align-items: center; gap: 14px; margin: 28px 0 24px; }
-.page-title-bar .back-link { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; transition: all 0.2s; font-size: 1rem; }
-.page-title-bar .back-link:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.page-title-bar .back-link { width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; transition: all 0.2s; font-size: 1rem; background: rgba(255,255,255,0.03); }
+.page-title-bar .back-link:hover { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.06); }
 .page-title-bar h2 { font-size: 1.3rem; }
 .page-title-bar h2 span { color: var(--green); }
-.profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; }
-.avatar-large { width: 72px; height: 72px; border-radius: 50%; background: var(--green-dim); border: 2px solid rgba(16,185,129,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--green); font-weight: 700; margin-bottom: 14px; }
-.textarea { width: 100%; min-height: 100px; padding: 12px 16px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-family: var(--font-sans); font-size: 0.92rem; resize: vertical; outline: none; line-height: 1.5; }
+.profile-card { background: var(--surface); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 32px; margin-bottom: 24px; position: relative; overflow: hidden; }
+.profile-card::before { content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, rgba(16,185,129,0.2), transparent); }
+.avatar-large { width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05)); border: 2px solid rgba(16,185,129,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--green-light); font-weight: 700; margin-bottom: 16px; }
+.textarea { width: 100%; min-height: 100px; padding: 13px 16px; background: rgba(0,0,0,0.3); border: 1.5px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text); font-family: var(--font-sans); font-size: 0.92rem; resize: vertical; outline: none; line-height: 1.55; backdrop-filter: blur(4px); }
 .textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-dim); }
 .interests-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-@media (max-width: 540px) {
-  .profile-card { padding: 20px 16px; }
-}
+@media (max-width: 540px) { .profile-card { padding: 22px 18px; } }
 </style>
 {% endblock %}
-
 {% block body %}
-<div class="page-wrap">
-  {% include "nav.html" %}
-  <div class="container">
-    <div class="page-title-bar animate-up"><a href="/home" class="back-link">←</a><h2>My <span>Profile</span></h2></div>
-    <div class="profile-card animate-up delay-1">
-      <div class="avatar-large">{{ user.full_name[0] }}</div>
-      <h3>{{ user.full_name }}</h3>
-      <p style="color:var(--text-secondary);margin-bottom:16px;font-size:0.9rem;">{{ user.email }}</p>
-      <form id="profileForm" onsubmit="handleProfileSave(event)" style="display:flex;flex-direction:column;gap:14px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required></div>
-          <div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}"></div>
-        </div>
-        <div class="form-group"><label class="form-label">ORCID ID</label><input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000"></div>
-        <div class="form-group"><label class="form-label">Bio</label><textarea class="textarea" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
-        <div class="form-group"><label class="form-label">Research Interests</label><div class="interests-grid" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;"><a href="/home" class="btn btn-ghost btn-sm">Cancel</a><button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button></div>
-      </form>
-    </div>
+<div class="page-wrap">{% include "nav.html" %}<div class="container">
+  <div class="page-title-bar animate-up"><a href="/home" class="back-link">←</a><h2>My <span>Profile</span></h2></div>
+  <div class="profile-card animate-up delay-1">
+    <div class="avatar-large">{{ user.full_name[0] }}</div>
+    <h3>{{ user.full_name }}</h3><p style="color:var(--text-secondary);margin-bottom:16px;font-size:0.9rem;">{{ user.email }}</p>
+    <form id="profileForm" onsubmit="handleProfileSave(event)" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required></div><div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}"></div></div>
+      <div class="form-group"><label class="form-label">ORCID ID</label><input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="textarea" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
+      <div class="form-group"><label class="form-label">Research Interests</label><div class="interests-grid" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;"><a href="/home" class="btn btn-ghost btn-sm">Cancel</a><button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button></div>
+    </form>
   </div>
-</div>
+</div></div>
 {% endblock %}
-
-{% block scripts %}
-<script>
+{% block scripts %}<script>
 async function handleProfileSave(e){e.preventDefault();const btn=document.getElementById('saveBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{const interests=getSelectedChips(document.getElementById('interestsGrid'));const res=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:document.getElementById('fullName').value,institution:document.getElementById('institution').value||null,bio:document.getElementById('bio').value||null,orcid_id:document.getElementById('orcidId').value||null,research_interests:interests}),credentials:'same-origin'});if(!res.ok){const d=await res.json();throw new Error(d.detail||'Failed')}showToast('Profile updated!','success')}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Save Changes';btn.disabled=false}}
-</script>
-{% endblock %}
+</script>{% endblock %}

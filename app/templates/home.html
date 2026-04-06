@@ -5,37 +5,38 @@
 .home-page { min-height: 100vh; }
 .home-header { border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 0; }
 .welcome-section { padding: 36px 0 0; }
-.welcome-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; margin-bottom: 32px; position: relative; overflow: hidden; }
-.welcome-card::before { content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px; background: linear-gradient(90deg, transparent, var(--green), var(--amber), transparent); opacity: 0.2; }
-.welcome-greeting { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-.welcome-greeting span { color: var(--green); }
+.welcome-card { background: var(--surface); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: var(--radius-xl); padding: 36px; margin-bottom: 36px; position: relative; overflow: hidden; }
+.welcome-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--green), var(--cyan), var(--green-dark)); opacity: 0.35; }
+.welcome-card::after { content: ''; position: absolute; top: -80px; right: -40px; width: 250px; height: 200px; background: radial-gradient(circle, rgba(16,185,129,0.06), transparent 70%); pointer-events: none; }
+.welcome-greeting { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+.welcome-greeting span { background: linear-gradient(135deg, var(--green-light), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .welcome-sub { color: var(--text-secondary); font-weight: 300; font-size: 0.95rem; }
-.welcome-meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-.section-title { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+.welcome-meta { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.section-title { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
 
-.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 36px; }
-.dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; transition: all 0.25s var(--ease-out); cursor: pointer; position: relative; overflow: hidden; }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 40px; }
+.dash-tile { background: var(--surface); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: all 0.3s var(--ease-out); cursor: pointer; position: relative; overflow: hidden; }
 .dash-tile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
-.dash-tile:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+.dash-tile:hover { border-color: var(--border-light); transform: translateY(-3px); box-shadow: 0 12px 36px -8px rgba(0,0,0,0.4); }
 .dash-tile:hover::before { width: 4px; }
-.dash-tile.t-green::before { background: var(--green); }
-.dash-tile.t-purple::before { background: var(--purple); }
-.dash-tile.t-amber::before { background: var(--amber); }
-.dash-tile.t-blue::before { background: var(--blue); }
-.dash-tile-icon { font-size: 1.4rem; margin-bottom: 10px; }
-.dash-tile h3 { margin-bottom: 5px; font-size: 0.95rem; }
-.dash-tile p { color: var(--text-secondary); font-size: 0.83rem; line-height: 1.5; font-weight: 300; }
+.dash-tile.t-green::before { background: linear-gradient(180deg, var(--green-light), var(--green-dark)); }
+.dash-tile.t-purple::before { background: linear-gradient(180deg, #c4b5fd, #7c3aed); }
+.dash-tile.t-amber::before { background: linear-gradient(180deg, #fde68a, #d97706); }
+.dash-tile.t-blue::before { background: linear-gradient(180deg, #93c5fd, #2563eb); }
+.dash-tile-icon { font-size: 1.5rem; margin-bottom: 12px; }
+.dash-tile h3 { margin-bottom: 6px; font-size: 0.98rem; }
+.dash-tile p { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.5; font-weight: 300; }
 
-.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 36px; }
-.quick-action { display: flex; align-items: center; gap: 7px; padding: 9px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.84rem; color: var(--text-secondary); transition: all 0.2s var(--ease-out); cursor: pointer; text-decoration: none; }
-.quick-action:hover { border-color: var(--green); color: var(--text); background: var(--green-dim); }
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 40px; }
+.quick-action { display: flex; align-items: center; gap: 7px; padding: 10px 18px; background: var(--surface); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.84rem; color: var(--text-secondary); transition: all 0.2s var(--ease-out); cursor: pointer; text-decoration: none; }
+.quick-action:hover { border-color: var(--green); color: var(--green-light); background: rgba(16,185,129,0.06); }
 
-.interests-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
-.interest-tag { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 100px; background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.12); }
+.interests-display { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.interest-tag { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; padding: 5px 12px; border-radius: 100px; background: rgba(16,185,129,0.1); color: var(--green-light); border: 1px solid rgba(16,185,129,0.15); }
 
 @media (max-width: 768px) {
-  .welcome-card { padding: 22px 18px; border-radius: var(--radius-lg); }
-  .welcome-greeting { font-size: 1.25rem; }
+  .welcome-card { padding: 24px 20px; border-radius: var(--radius-lg); }
+  .welcome-greeting { font-size: 1.3rem; }
   .dash-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -52,7 +53,7 @@
       <div class="welcome-meta">
         <span class="badge badge-green">📅 {{ congress_dates }}</span>
         <span class="badge badge-amber">{{ user.role.value | replace('_', ' ') | title }}</span>
-        {% if user.institution %}<span class="badge" style="color:var(--text-secondary);border-color:var(--border);background:var(--surface-raised);">🏛️ {{ user.institution }}</span>{% endif %}
+        {% if user.institution %}<span class="badge" style="color:var(--text-secondary);border-color:var(--border-subtle);background:rgba(255,255,255,0.03);">🏛️ {{ user.institution }}</span>{% endif %}
       </div>
       {% if user.research_interests %}
       <div class="interests-display">{% for interest in user.research_interests %}<span class="interest-tag">{{ interest }}</span>{% endfor %}</div>
@@ -67,7 +68,7 @@
     <a href="#" class="quick-action">🤝 Find Researchers</a>
     <a href="#" class="quick-action">🤖 AI Companion</a>
     <a href="#" class="quick-action">🗺️ Venue Map</a>
-    {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="quick-action" style="border-color:rgba(240,180,41,0.25);color:var(--amber);">🛡️ Admin Dashboard</a>{% endif %}
+    {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="quick-action" style="border-color:rgba(251,191,36,0.2);color:var(--amber);">🛡️ Admin Dashboard</a>{% endif %}
   </div>
 
   <div class="section-title animate-up delay-2">Your Dashboard</div>
