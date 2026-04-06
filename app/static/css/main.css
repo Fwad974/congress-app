@@ -171,7 +171,7 @@ a:hover{color:var(--gold-l)}
 .mobile-menu-links{display:flex;flex-direction:column;gap:2px}
 .mobile-menu-link{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:var(--r);font:.9rem var(--f);color:var(--w5);text-decoration:none;transition:.15s}
 .mobile-menu-link:hover{background:var(--ga2);color:var(--w9)}
-.mobile-menu-link.logout{color:var(--red);margin-top:8px;border-top:1px solid var(--ga2);padding-top:16px}
+.mobile-menu-link.logout{color:var(--w5);margin-top:8px;border-top:1px solid var(--ga2);padding-top:16px}
 .mobile-menu-section{font:.55rem var(--f);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-d);padding:16px 14px 6px;font-weight:600}
 
 /* ═══ RESPONSIVE ═══ */
