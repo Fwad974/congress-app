@@ -2,27 +2,25 @@
 {% block title %}Register — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.auth-page { min-height: 100vh; display: flex; flex-direction: column; position: relative; }
-.auth-page::before { content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(circle, rgba(16,185,129,0.08), transparent 70%); pointer-events: none; }
+.auth-page { min-height: 100vh; display: flex; flex-direction: column; }
 .auth-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
 .auth-card { width: 100%; max-width: 460px; }
 .auth-card .card { padding: 44px 38px; }
 .auth-header { text-align: center; margin-bottom: 28px; }
 .auth-header .badge { margin-bottom: 16px; }
-.auth-header h2 { margin-bottom: 6px; }
-.auth-header h2 span { color: var(--green); }
-.auth-header p { color: var(--text-secondary); font-size: 0.9rem; font-weight: 300; }
+.auth-header h2 { margin-bottom: 6px; } .auth-header h2 span { color: var(--green); }
+.auth-header p { color: var(--white-60); font-size: 0.9rem; font-weight: 300; }
 .auth-form { display: flex; flex-direction: column; gap: 16px; }
-.interests-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px; }
+.interests-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--white-40); margin-bottom: 4px; }
 .interests-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.auth-footer { text-align: center; margin-top: 24px; font-size: 0.86rem; color: var(--text-secondary); }
+.auth-footer { text-align: center; margin-top: 24px; font-size: 0.86rem; color: var(--white-60); }
 .auth-footer a { font-weight: 600; }
 .sso-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sso-row .btn { font-size: 0.84rem; padding: 11px; }
 .pw-requirements { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
-.pw-req { font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; transition: color 0.2s; }
+.pw-req { font-size: 0.72rem; color: var(--white-20); display: flex; align-items: center; gap: 4px; transition: 0.2s; }
 .pw-req.met { color: var(--green); }
-@media (max-width: 540px) { .auth-card .card { padding: 28px 20px; } .auth-card { max-width: 100%; } .sso-row { grid-template-columns: 1fr; } .auth-body { padding: 24px 16px; } }
+@media(max-width:540px){.auth-card .card{padding:28px 20px;border-radius:var(--r-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
 {% block body %}
@@ -44,9 +42,7 @@
   </div></div></div>
 </div>
 {% endblock %}
-{% block scripts %}
-<script>
+{% block scripts %}<script>
 function checkPassword(){const pw=document.getElementById('password').value;const toggle=(id,met)=>{const el=document.getElementById(id);el.classList.toggle('met',met);el.textContent=(met?'✓ ':'✕ ')+el.textContent.slice(2)};toggle('pw-len',pw.length>=8);toggle('pw-upper',/[A-Z]/.test(pw));toggle('pw-num',/\d/.test(pw))}
 async function handleSignup(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Creating...';btn.disabled=true;try{const interests=getSelectedChips(document.getElementById('interestsGrid'));await api('/api/auth/signup',{email:document.getElementById('email').value,password:document.getElementById('password').value,full_name:document.getElementById('fullName').value,institution:document.getElementById('institution').value||null,research_interests:interests});showToast('Account created!','success');setTimeout(()=>window.location.href='/home',800)}catch(err){showToast(err.message,'error');btn.innerHTML='Create Account';btn.disabled=false}}
-</script>
-{% endblock %}
+</script>{% endblock %}

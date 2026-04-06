@@ -1,24 +1,21 @@
 <!-- Shared top nav for authenticated pages -->
 <style>
   .nav-user-menu { position: relative; }
-  .nav-user-btn { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: rgba(255,255,255,0.03); color: var(--text); cursor: pointer; font-family: var(--font-sans); font-size: 0.86rem; transition: all 0.2s; backdrop-filter: blur(8px); }
-  .nav-user-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
-  .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.06)); border: 1.5px solid rgba(16,185,129,0.25); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: var(--green-light); font-weight: 700; }
-  .nav-user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-solid); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 5px; min-width: 190px; display: none; z-index: 100; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+  .nav-user-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--white-10); border-radius: var(--r); background: var(--white-05); color: var(--white-90); cursor: pointer; font-family: var(--sans); font-size: 0.86rem; transition: 0.2s; }
+  .nav-user-btn:hover { background: var(--white-10); }
+  .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--green-deep)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #000; font-weight: 800; }
+  .nav-user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-2); border: 1px solid var(--border-mid); border-radius: var(--r); padding: 5px; min-width: 190px; display: none; z-index: 100; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
   .nav-user-dropdown.open { display: block; }
-  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.86rem; color: var(--text-secondary); cursor: pointer; transition: all 0.12s; text-decoration: none; width: 100%; }
-  .nav-dd-item:hover { background: rgba(16,185,129,0.06); color: var(--text); }
-  .nav-quick { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-size: 0.78rem; color: var(--text-secondary); transition: all 0.2s; cursor: pointer; text-decoration: none; backdrop-filter: blur(8px); }
-  .nav-quick:hover { border-color: var(--green); color: var(--green-light); background: rgba(16,185,129,0.06); }
+  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; color: var(--white-60); cursor: pointer; transition: 0.12s; text-decoration: none; width: 100%; }
+  .nav-dd-item:hover { background: var(--green-10); color: var(--white-90); }
+  .nav-quick { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--white-05); border: 1px solid var(--white-10); border-radius: var(--r); font-size: 0.78rem; color: var(--white-60); transition: 0.2s; cursor: pointer; text-decoration: none; }
+  .nav-quick:hover { border-color: var(--green); color: var(--green-light); background: var(--green-10); }
   @media (max-width: 768px) { .nav-user-menu { display: none; } .nav-desktop-logout { display: none; } .nav-desktop-link { display: none; } }
 </style>
 
 <div class="container">
   <nav class="topnav home-header animate-in">
-    <a href="/home" class="topnav-brand">
-      <div class="topnav-logo">🧬</div>
-      <span class="topnav-name">{{ congress_short }}</span>
-    </a>
+    <a href="/home" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a>
     <div class="topnav-links gap-sm">
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
@@ -31,7 +28,7 @@
           <span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
         </button>
         <div class="nav-user-dropdown">
-          <a href="/profile" class="nav-dd-item">👤 My Profile</a>
+          <a href="/profile" class="nav-dd-item">👤 Profile</a>
           <a href="/certificates" class="nav-dd-item">📜 Certificates</a>
           <a href="/settings" class="nav-dd-item">⚙️ Settings</a>
           {% if user.role.value in ['admin', 'super_admin'] %}
@@ -67,7 +64,7 @@
     {% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link">👤 My Profile</a>
-    <a href="/certificates" class="mobile-menu-link">📜 My Certificates</a>
+    <a href="/certificates" class="mobile-menu-link">📜 Certificates</a>
     <a href="/settings" class="mobile-menu-link">⚙️ Settings</a>
     <a href="/logout" class="mobile-menu-link logout">Sign Out</a>
   </div>
@@ -82,9 +79,7 @@
 </nav>
 
 <script>
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.nav-user-menu')) document.querySelectorAll('.nav-user-dropdown').forEach(d => d.classList.remove('open'));
-});
+document.addEventListener('click', (e) => { if (!e.target.closest('.nav-user-menu')) document.querySelectorAll('.nav-user-dropdown').forEach(d => d.classList.remove('open')); });
 function openMobileMenu() { document.getElementById('mobileOverlay').classList.add('open'); document.getElementById('mobilePanel').classList.add('open'); document.body.style.overflow = 'hidden'; }
 function closeMobileMenu() { document.getElementById('mobileOverlay').classList.remove('open'); document.getElementById('mobilePanel').classList.remove('open'); document.body.style.overflow = ''; }
 </script>
