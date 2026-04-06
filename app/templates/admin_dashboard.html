@@ -29,7 +29,7 @@
 .stat-card-label { font-family: var(--m); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--w3); }
 .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .search-box { flex: 1; min-width: 200px; padding: 10px 14px; background: var(--glass); border: 1.5px solid var(--b); border-radius: var(--r); color: var(--w9); font-family: var(--f); font-size: 0.86rem; outline: none; backdrop-filter: blur(4px); }
-.search-box:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px var(--gb); }
+.search-box:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px var(--ga2); }
 .search-box::placeholder { color: var(--w3); }
 .filter-select { padding: 10px 14px; background: var(--glass); border: 1px solid var(--b); border-radius: var(--r); color: var(--w5); font-size: 0.84rem; font-family: var(--f); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555e73'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 .toolbar-btn { padding: 9px 16px; border: 1px solid var(--b); border-radius: var(--r); background: var(--glass); color: var(--w5); font-size: 0.84rem; cursor: pointer; transition: all 0.2s; font-family: var(--f); display: inline-flex; align-items: center; gap: 6px; }
@@ -45,11 +45,11 @@
 .users-table tbody tr:hover { background: var(--glass2); }
 .users-table tbody td { padding: 11px 14px; color: var(--w5); vertical-align: middle; }
 .user-cell { display: flex; align-items: center; gap: 10px; }
-.user-cell-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; background: var(--gb); color: var(--emerald); border: 1px solid rgba(16,185,129,0.15); }
+.user-cell-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; background: var(--ga2); color: var(--emerald); border: 1px solid rgba(16,185,129,0.15); }
 .user-cell-name { font-weight: 600; color: var(--w9); font-size: 0.88rem; }
 .user-cell-email { font-size: 0.76rem; color: var(--w3); }
 .role-pill { font-family: var(--m); font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; display: inline-flex; }
-.role-pill.super_admin{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.18)} .role-pill.admin{background:rgba(212,175,55,0.1);color:var(--gold);border:1px solid rgba(212,175,55,0.18);font-weight:600} .role-pill.moderator{background:rgba(96,165,250,0.1);color:var(--blue);border:1px solid rgba(96,165,250,0.18)} .role-pill.review_chair,.role-pill.session_chair{background:rgba(167,139,250,0.1);color:var(--purple);border:1px solid rgba(167,139,250,0.18)} .role-pill.speaker,.role-pill.reviewer{background:var(--gb);color:var(--emerald);border:1px solid rgba(16,185,129,0.18)} .role-pill.attendee{background:rgba(255,255,255,0.03);color:var(--w3);border:1px solid var(--b)}
+.role-pill.super_admin{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.18)} .role-pill.admin{background:rgba(212,175,55,0.1);color:var(--gold);border:1px solid rgba(212,175,55,0.18);font-weight:600} .role-pill.moderator{background:rgba(96,165,250,0.1);color:var(--blue);border:1px solid rgba(96,165,250,0.18)} .role-pill.review_chair,.role-pill.session_chair{background:rgba(167,139,250,0.1);color:var(--purple);border:1px solid rgba(167,139,250,0.18)} .role-pill.speaker,.role-pill.reviewer{background:var(--ga2);color:var(--emerald);border:1px solid rgba(16,185,129,0.18)} .role-pill.attendee{background:rgba(255,255,255,0.03);color:var(--w3);border:1px solid var(--b)}
 .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .status-dot.active { background: var(--emerald); } .status-dot.suspended { background: var(--red); }
 .action-group { display: flex; gap: 5px; }
@@ -59,7 +59,7 @@
 .action-btn.del-btn { color: var(--red); border-color: rgba(244,63,94,0.2); }
 .action-btn.del-btn:hover { background: rgba(244,63,94,0.1); border-color: var(--red); }
 .action-btn.green-btn { color: var(--emerald); border-color: rgba(16,185,129,0.2); }
-.action-btn.green-btn:hover { background: var(--gb); border-color: var(--emerald); }
+.action-btn.green-btn:hover { background: var(--ga2); border-color: var(--emerald); }
 .action-btn.warn-btn { color: var(--gold); border-color: rgba(212,175,55,0.2); }
 .action-btn.warn-btn:hover { background: rgba(251,191,36,0.1); border-color: var(--gold); }
 .select-checkbox { width: 15px; height: 15px; accent-color: var(--emerald); cursor: pointer; }
@@ -94,7 +94,7 @@
 .audit-detail-severity.info{background:rgba(96,165,250,0.1);color:var(--blue);border:1px solid rgba(96,165,250,0.18)} .audit-detail-severity.warning{background:rgba(212,175,55,0.1);color:var(--gold);border:1px solid rgba(212,175,55,0.18)} .audit-detail-severity.critical{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.18)}
 .audit-change-block { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .audit-change-old { padding: 3px 9px; border-radius: 6px; background: rgba(244,63,94,0.1); color: var(--red); border: 1px solid rgba(244,63,94,0.12); text-decoration: line-through; font-size: 0.84rem; }
-.audit-change-new { padding: 3px 9px; border-radius: 6px; background: var(--gb); color: var(--emerald); border: 1px solid rgba(16,185,129,0.12); font-size: 0.84rem; }
+.audit-change-new { padding: 3px 9px; border-radius: 6px; background: var(--ga2); color: var(--emerald); border: 1px solid rgba(16,185,129,0.12); font-size: 0.84rem; }
 .empty-state { text-align: center; padding: 44px 20px; color: var(--w3); font-size: 0.88rem; }
 .loading-bar { height: 2px; background: linear-gradient(90deg, transparent, var(--emerald), transparent); animation: loading-slide 1.5s ease infinite; display: none; }
 .loading-bar.active { display: block; }
@@ -143,7 +143,7 @@
     <button class="toolbar-btn" onclick="exportCSV()">Export CSV</button>
     <button class="toolbar-btn primary" onclick="openCreateModal()">+ New User</button>
   </div>
-  <div id="bulkBar" style="display:none;padding:11px 16px;background:var(--gb);border:1px solid rgba(16,185,129,0.15);border-radius:var(--r);margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
+  <div id="bulkBar" style="display:none;padding:11px 16px;background:var(--ga2);border:1px solid rgba(16,185,129,0.15);border-radius:var(--r);margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
     <span style="font-family:var(--m);font-size:0.68rem;color:var(--emerald);" id="bulkCount">0</span>
     <button class="toolbar-btn" style="font-size:0.78rem;padding:6px 14px;" onclick="bulkAction('activate')">Activate</button>
     <button class="toolbar-btn danger" style="font-size:0.78rem;padding:6px 14px;" onclick="bulkAction('suspend')">Suspend</button>
