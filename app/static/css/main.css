@@ -47,8 +47,11 @@
 html{scroll-behavior:smooth;overflow-x:hidden}
 body{background:var(--bg);color:var(--t);font:400 1rem/1.65 var(--f);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
-/* No grain/glow on light theme — clean */
+/* Hide dark-theme effects */
 .grain,.glow,.glow-1,.glow-2{display:none}
+
+/* Smooth page-wide selection color */
+::selection{background:var(--fg);color:#fff}
 
 /* ═══ TYPOGRAPHY ═══ */
 h1,h2,h3,h4{font-weight:700;line-height:1.15;letter-spacing:-.02em;color:var(--fg)}
@@ -67,9 +70,9 @@ a:hover{color:var(--fg)}
 
 /* ═══ BUTTONS ═══ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 .9rem var(--f);padding:14px 34px;border:none;border-radius:var(--rx);cursor:pointer;transition:.25s;white-space:nowrap}
-.btn-primary{background:var(--fg);color:#fff}
-.btn-primary:hover{background:var(--fg-l);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,62,30,.18)}
-.btn-primary:active{transform:translateY(0)}
+.btn-primary{background:var(--fg);color:#fff;box-shadow:0 1px 3px rgba(0,62,30,.1)}
+.btn-primary:hover{background:var(--fg-l);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,62,30,.2)}
+.btn-primary:active{transform:translateY(0);box-shadow:0 1px 3px rgba(0,62,30,.1)}
 .btn-outline{background:transparent;color:var(--fg);border:2px solid var(--fg)}
 .btn-outline:hover{background:var(--fg);color:#fff}
 .btn-ghost{background:transparent;color:var(--fg);border:1.5px solid var(--b3)}
@@ -86,11 +89,11 @@ a:hover{color:var(--fg)}
 .form-label{font:600 .68rem var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
 .form-input{width:100%;padding:14px 16px;background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font:.95rem var(--f);transition:.2s;outline:none}
 .form-input::placeholder{color:var(--t4)}
-.form-input:focus{border-color:var(--fg);box-shadow:0 0 0 3px var(--fg1)}
+.form-input:focus{border-color:var(--fg-l);box-shadow:0 0 0 3px var(--fg1),0 1px 2px rgba(0,62,30,.06)}
 .form-input:hover:not(:focus){border-color:var(--b3)}
 
 /* ═══ CARDS ═══ */
-.card{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);padding:44px;position:relative}
+.card{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);padding:44px;position:relative;box-shadow:0 1px 4px rgba(0,62,30,.04)}
 
 /* ═══ BADGES ═══ */
 .badge{display:inline-flex;align-items:center;gap:5px;font:600 .62rem var(--m);letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:100px}
@@ -107,11 +110,12 @@ a:hover{color:var(--fg)}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--b2)}
 
 /* ═══ NAV ═══ */
-.topnav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
 .topnav-brand{display:flex;align-items:center;gap:12px;text-decoration:none}
-.topnav-logo{width:40px;height:40px;background:var(--fg);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff}
+.topnav-logo{width:42px;height:42px;background:var(--fg);border-radius:var(--rl);display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#fff;box-shadow:0 2px 8px rgba(0,62,30,.12)}
 .topnav-name{font:700 .72rem/1 var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--fg)}
-.topnav-links{display:flex;align-items:center;gap:8px}
+.topnav-links{display:flex;align-items:center;gap:10px}
+.landing-nav{border-bottom:1.5px solid var(--b);padding-bottom:18px}
 
 /* ═══ ANIMATIONS ═══ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}

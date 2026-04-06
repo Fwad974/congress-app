@@ -2,85 +2,100 @@
 {% block title %}{{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-/* ═══ HERO — dark green banner like FSG ═══ */
+/* ═══ HERO ═══ */
 .hero{background:var(--fg);color:#fff;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M40 0L50 15H70L55 25L60 40L40 30L20 40L25 25L10 15H30Z' fill='none' stroke='%23fff' stroke-width='.5'/%3E%3C/svg%3E")}
-.hero-inner{max-width:1140px;margin:0 auto;padding:100px 24px 80px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center}
-.hero-tag{font:600 .62rem var(--m);letter-spacing:.2em;text-transform:uppercase;color:var(--cream);margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.hero-tag::before,.hero-tag::after{content:'';width:28px;height:1px;background:var(--cream-d)}
-.hero h1{font-size:clamp(2.2rem,5vw,3.4rem);color:#fff;max-width:700px;margin-bottom:20px;line-height:1.12}
+.hero::before{content:'';position:absolute;inset:0;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M40 0L50 15H70L55 25L60 40L40 30L20 40L25 25L10 15H30Z' fill='none' stroke='%23fff' stroke-width='.5'/%3E%3C/svg%3E")}
+.hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--bg);border-radius:60px 60px 0 0;z-index:2}
+.hero-inner{max-width:1140px;margin:0 auto;padding:110px 24px 100px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+.hero-tag{font:600 .62rem var(--m);letter-spacing:.22em;text-transform:uppercase;color:var(--cream);margin-bottom:28px;opacity:.85}
+.hero h1{font-size:clamp(2.2rem,5vw,3.4rem);color:#fff;max-width:720px;margin-bottom:22px;line-height:1.12}
 .hero h1 em{font-style:normal;color:var(--cream)}
-.hero-sub{font:300 1.08rem/1.7 var(--f);color:rgba(255,255,255,.7);max-width:480px;margin-bottom:40px}
-.hero-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:48px}
-.hero .btn-cream{border-radius:var(--rx);padding:15px 36px;font-size:.95rem}
-.hero .btn-wh{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:var(--rx);padding:15px 36px;font-size:.95rem}
-.hero .btn-wh:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.6)}
-.hero-info{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
-.hero-info-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6)}
+.hero-sub{font:300 1.08rem/1.75 var(--f);color:rgba(255,255,255,.68);max-width:500px;margin-bottom:44px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:52px}
+.hero .btn-cream{border-radius:var(--rx);padding:15px 38px;font-size:.95rem;font-weight:700;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.hero .btn-cream:hover{box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.hero .btn-wh{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:var(--rx);padding:15px 38px;font-size:.95rem;font-weight:600}
+.hero .btn-wh:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.5)}
+.hero-info{display:flex;gap:36px;flex-wrap:wrap;justify-content:center}
+.hero-info-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.55)}
 .hero-info-item .dot{width:5px;height:5px;border-radius:50%;background:var(--cream)}
-.hero-info-item span{font:.7rem var(--m);letter-spacing:.06em;text-transform:uppercase}
+.hero-info-item span{font:.7rem var(--m);letter-spacing:.08em;text-transform:uppercase}
 
-/* ═══ STATS — cream bar ═══ */
-.stats{background:var(--cream);padding:0;border-bottom:1.5px solid var(--cream-d)}
+/* ═══ TRUST BAR ═══ */
+.trust{padding:32px 24px 16px;text-align:center}
+.trust-label{font:.58rem var(--m);letter-spacing:.2em;text-transform:uppercase;color:var(--t4);margin-bottom:16px}
+.trust-logos{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap;opacity:.45}
+.trust-logos span{font:600 .92rem var(--f);color:var(--t3);letter-spacing:.02em}
+
+/* ═══ STATS ═══ */
+.stats{background:var(--surface);border-top:1.5px solid var(--b);border-bottom:1.5px solid var(--b)}
 .stats-inner{display:grid;grid-template-columns:repeat(4,1fr);max-width:900px;margin:0 auto}
-.st{text-align:center;padding:40px 16px;position:relative}
-.st+.st::before{content:'';position:absolute;left:0;top:25%;bottom:25%;width:1px;background:var(--cream-d)}
-.st-val{font:800 2.4rem/1 var(--f);color:var(--fg);margin-bottom:6px}
-.st-label{font:.56rem var(--m);letter-spacing:.16em;text-transform:uppercase;color:var(--t3)}
+.st{text-align:center;padding:44px 16px;position:relative}
+.st+.st::before{content:'';position:absolute;left:0;top:25%;bottom:25%;width:1px;background:var(--b2)}
+.st-val{font:800 2.6rem/1 var(--f);color:var(--fg);margin-bottom:6px}
+.st-label{font:.56rem var(--m);letter-spacing:.16em;text-transform:uppercase;color:var(--t4)}
 
-/* ═══ FEATURES — cream cards on light bg ═══ */
-.features{padding:80px 24px}
+/* ═══ FEATURES ═══ */
+.features{padding:80px 24px 60px}
 .section-tag{font:600 .6rem var(--m);letter-spacing:.2em;text-transform:uppercase;color:var(--fg-l);text-align:center;margin-bottom:10px}
-.section-heading{text-align:center;margin-bottom:6px}
-.section-sub{text-align:center;color:var(--t3);font-weight:300;margin-bottom:48px;font-size:.98rem;line-height:1.6;max-width:440px;margin-left:auto;margin-right:auto}
-.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:0 auto}
-.fc{background:var(--cream);border-radius:var(--rx);padding:36px 28px;transition:.3s;position:relative}
-.fc:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,62,30,.08)}
-.fc-ico{width:52px;height:52px;border-radius:var(--rl);background:var(--fg);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:18px;color:#fff}
-.fc h3{margin-bottom:8px;font-size:1rem;color:var(--fg)}
-.fc p{font-size:.88rem;color:var(--t2);line-height:1.6;font-weight:300}
-.fc p strong{color:var(--fg);font-weight:600;text-decoration:underline;text-decoration-color:var(--fg2);text-underline-offset:2px}
+.section-heading{text-align:center;margin-bottom:8px}
+.section-sub{text-align:center;color:var(--t3);font-weight:300;margin-bottom:52px;font-size:.98rem;line-height:1.65;max-width:460px;margin-left:auto;margin-right:auto}
+.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:960px;margin:0 auto}
+.fc{background:var(--cream);border-radius:var(--rx);padding:36px 28px;transition:.3s;position:relative;border:1px solid transparent}
+.fc:hover{transform:translateY(-5px);box-shadow:0 16px 40px rgba(0,62,30,.08);border-color:var(--cream-d)}
+.fc-ico{width:54px;height:54px;border-radius:var(--rl);background:var(--fg);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:20px;color:#fff;box-shadow:0 2px 8px rgba(0,62,30,.15)}
+.fc h3{margin-bottom:8px;font-size:1.02rem;color:var(--fg)}
+.fc p{font-size:.88rem;color:var(--t2);line-height:1.65;font-weight:400}
+.fc p strong{color:var(--fg);font-weight:600}
 
-/* ═══ WHY — alternating layout ═══ */
-.why{padding:60px 24px 80px}
-.why-banner{background:var(--fg);border-radius:var(--r2);padding:56px 48px;max-width:960px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;color:#fff}
-.why-text h2{color:#fff;margin-bottom:16px;font-size:1.6rem}
-.why-text p{color:rgba(255,255,255,.7);font-weight:300;line-height:1.7;font-size:.95rem}
-.why-list{display:flex;flex-direction:column;gap:16px}
+/* ═══ WHY BANNER ═══ */
+.why{padding:40px 24px 80px}
+.why-banner{background:var(--fg);border-radius:var(--r2);padding:60px 52px;max-width:960px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;color:#fff;position:relative;overflow:hidden}
+.why-banner::before{content:'';position:absolute;top:-60px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.03)}
+.why-text h2{color:#fff;margin-bottom:16px;font-size:1.6rem;line-height:1.2}
+.why-text p{color:rgba(255,255,255,.65);font-weight:300;line-height:1.7;font-size:.95rem}
+.why-list{display:flex;flex-direction:column;gap:18px}
 .why-item{display:flex;gap:14px;align-items:flex-start}
-.why-num{width:32px;height:32px;border-radius:50%;background:var(--cream);color:var(--fg);font:700 .82rem var(--f);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.why-item p{color:rgba(255,255,255,.8);font-size:.9rem;line-height:1.5}
+.why-num{width:34px;height:34px;border-radius:50%;background:var(--cream);color:var(--fg);font:700 .85rem var(--f);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.why-item p{color:rgba(255,255,255,.78);font-size:.9rem;line-height:1.55}
 
 /* ═══ CTA ═══ */
-.cta{padding:40px 24px 100px}
-.cta-box{max-width:720px;margin:0 auto;background:var(--cream);border-radius:var(--r2);padding:56px 48px;text-align:center}
-.cta-box h2{margin-bottom:12px}
-.cta-box p{color:var(--t3);font-weight:300;margin-bottom:32px;font-size:.98rem;line-height:1.65;max-width:460px;margin-left:auto;margin-right:auto}
+.cta{padding:20px 24px 100px}
+.cta-box{max-width:740px;margin:0 auto;background:var(--cream);border-radius:var(--r2);padding:60px 52px;text-align:center;position:relative;overflow:hidden}
+.cta-box::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--fg)}
+.cta-box h2{margin-bottom:14px;font-size:1.6rem}
+.cta-box p{color:var(--t2);font-weight:400;margin-bottom:36px;font-size:1rem;line-height:1.7;max-width:480px;margin-left:auto;margin-right:auto}
 .cta-acts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 
 /* ═══ FOOTER ═══ */
-.footer{border-top:1.5px solid var(--b2);padding:36px 24px;text-align:center;background:var(--surface)}
-.footer-brand{font:700 .62rem var(--m);letter-spacing:.16em;text-transform:uppercase;color:var(--fg);margin-bottom:4px}
-.footer p{font-size:.78rem;color:var(--t4)}
+.footer{border-top:1.5px solid var(--b2);padding:40px 24px 32px;text-align:center;background:var(--surface)}
+.footer-inner{max-width:600px;margin:0 auto}
+.footer-brand{font:700 .66rem var(--m);letter-spacing:.16em;text-transform:uppercase;color:var(--fg);margin-bottom:6px}
+.footer p{font-size:.8rem;color:var(--t4);line-height:1.6}
+.footer-links{display:flex;justify-content:center;gap:20px;margin-top:14px}
+.footer-links a{font-size:.8rem;color:var(--t3)}
+.footer-links a:hover{color:var(--fg)}
 
 @media(max-width:768px){
-  .hero-inner{padding:70px 16px 50px}
+  .hero-inner{padding:80px 16px 70px}
+  .hero::after{height:40px}
   .hero-cta{flex-direction:column;width:100%;max-width:300px}.hero-cta .btn,.hero-cta .btn-wh,.hero-cta .btn-cream{width:100%}
   .stats-inner{grid-template-columns:repeat(2,1fr)}
   .fg{grid-template-columns:1fr}
-  .why-banner{grid-template-columns:1fr;padding:40px 24px}
+  .why-banner{grid-template-columns:1fr;padding:40px 24px;gap:28px}
   .st{padding:28px 12px}.st-val{font-size:1.5rem}
   .features,.why{padding:48px 16px}
   .cta-box{padding:40px 24px}
   .hero-info{gap:16px}
+  .trust-logos{gap:24px}
 }
-@media(max-width:480px){.hero h1{font-size:1.65rem}.st-val{font-size:1.3rem}}
+@media(max-width:480px){.hero h1{font-size:1.7rem}.st-val{font-size:1.3rem}}
 </style>
 {% endblock %}
 
 {% block body %}
 <div class="container">
-  <nav class="topnav animate-in">
+  <nav class="topnav landing-nav animate-in">
     <a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a>
     <div class="topnav-links gap-sm"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a><a href="/signup" class="btn btn-primary btn-sm">Register</a></div>
   </nav>
@@ -88,7 +103,7 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-tag animate-up">International Stem Cell Congress</div>
+    <div class="hero-tag animate-up">Dubai Stem Cell Congress {{ congress_year }}</div>
     <h1 class="animate-up delay-1">The Future of<br><em>Regenerative Medicine</em><br>Starts Here</h1>
     <p class="hero-sub animate-up delay-2">Join 500+ leading researchers, clinicians, and biotech pioneers at the Gulf's most prestigious stem cell congress.</p>
     <div class="hero-cta animate-up delay-3">
@@ -102,6 +117,16 @@
     </div>
   </div>
 </section>
+
+<div class="trust animate-up">
+  <div class="trust-label">In collaboration with</div>
+  <div class="trust-logos">
+    <span>First Stem Cell Lab</span>
+    <span>Eppendorf</span>
+    <span>CAP Accredited</span>
+    <span>GMP Certified</span>
+  </div>
+</div>
 
 <div class="stats">
   <div class="stats-inner">
@@ -136,9 +161,9 @@
     </div>
     <div class="why-list">
       <div class="why-item"><div class="why-num">1</div><p>AI matchmaking connects you with the right collaborators before you arrive</p></div>
-      <div class="why-item"><div class="why-num">2</div><p>Live engagement in every session — questions, polls, reactions in real time</p></div>
+      <div class="why-item"><div class="why-num">2</div><p>Live engagement in every session — questions, polls, and reactions</p></div>
       <div class="why-item"><div class="why-num">3</div><p>Automatic CME credit tracking via QR code — no paperwork needed</p></div>
-      <div class="why-item"><div class="why-num">4</div><p>Personal AI companion adapts your schedule and suggests sessions for you</p></div>
+      <div class="why-item"><div class="why-num">4</div><p>Personal AI companion that adapts your schedule in real time</p></div>
     </div>
   </div>
 </section>
@@ -155,7 +180,14 @@
 </section>
 
 <footer class="footer">
-  <div class="footer-brand">{{ congress_name }}</div>
-  <p>&copy; {{ congress_year }} All rights reserved.</p>
+  <div class="footer-inner">
+    <div class="footer-brand">{{ congress_name }}</div>
+    <p>&copy; {{ congress_year }} All rights reserved. Dubai, UAE.</p>
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Contact Us</a>
+    </div>
+  </div>
 </footer>
 {% endblock %}
