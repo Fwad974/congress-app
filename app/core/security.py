@@ -52,7 +52,7 @@ async def get_current_user_optional(request: Request, db: Session = Depends(get_
 
 
 async def get_current_user(request: Request, db: Session = Depends(get_db)):
-    """Requires authenticated user — redirects to login if not."""
+    """Requires authenticated user — raises 401 if not."""
     user = await get_current_user_optional(request, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")

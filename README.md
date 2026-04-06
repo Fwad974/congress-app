@@ -1,118 +1,290 @@
-# Dubai Stem Cell Congress 2026 — Conference App
+# Dubai Stem Cell Congress 2027 — Conference App
 
-FastAPI + PostgreSQL web application for the Dubai Stem Cell Congress.
+FastAPI + PostgreSQL web application with **secure Admin User Management Dashboard**.
+
+## What's New: Admin Dashboard
+
+Full-stack User Management dashboard at `/admin` with:
+
+### Backend Security
+
+| Rule | Implementation |
+|------|---------------|
+| **AUTH-01** | 2FA flagged for admin roles |
+| **AUTH-02** | Admin session timeout: 30 min. Regular: 24h |
+| **AUTH-03** | 5 failed logins → 15 min lock. 10 → manual unlock only |
+| **ROLE-01** | Only Super Admin can create other Super Admins |
+| **ROLE-02** | Admins can assign up to Moderator level only |
+| **ROLE-04** | Self-demotion/role-change prohibited |
+| **MOD-04** | Escalation: warn → 24h mute → suspend |
+| **AUDIT-01** | All admin actions logged: who, what, when, target, IP hash |
+| **AUDIT-02** | Logs are write-once, immutable (no updated_at column) |
+| **DATA-03** | PII exports are admin-only and logged |
+
+### Security Features
+
+- **RBAC Enforcement** — Role hierarchy with 8 levels (attendee → super_admin)
+- **Rate Limiting** — 120 req/min per IP on admin endpoints
+- **Login Lockout** — Sliding window: 5 failures = 15m lock, 10 = permanent
+- **Audit Trail** — Every admin action recorded with IP hash, user agent, request path
+- **Role Assignment Rules** — Admins can only manage users below their level
+- **Bulk Action Safety** — Cannot bulk-modify users at or above your role level
+- **CSV Export Logging** — All data exports logged per DATA-03
+
+### API Endpoints
+
+| Method | Endpoint | Description | Min Role |
+|--------|----------|-------------|----------|
+| GET | `/api/admin/stats` | Dashboard statistics | Admin |
+| GET | `/api/admin/users` | List users (paginated, searchable) | Admin |
+| GET | `/api/admin/users/{id}` | Get single user | Admin |
+| POST | `/api/admin/users` | Create user | Admin |
+| PUT | `/api/admin/users/{id}` | Update user profile | Admin |
+| PUT | `/api/admin/users/{id}/role` | Change user role | Admin |
+| POST | `/api/admin/users/{id}/suspend` | Suspend user (with reason) | Admin |
+| POST | `/api/admin/users/{id}/activate` | Activate suspended user | Admin |
+| POST | `/api/admin/users/{id}/unlock` | Unlock locked login | Admin |
+| DELETE | `/api/admin/users/{id}` | Delete user | **Super Admin** |
+| POST | `/api/admin/users/bulk` | Bulk suspend/activate/role change | Admin |
+| GET | `/api/admin/users/export/csv` | Export users to CSV | Admin |
+| GET | `/api/admin/audit` | Audit log (filterable) | Admin |
+
+### Frontend Dashboard
+
+- **Overview Tab** — Stats cards, role breakdown, recent activity
+- **Users Tab** — Full CRUD table with search, filter, sort, pagination
+- **Audit Tab** — Filterable audit log with severity indicators
+- **Modals** — Create user, edit user, change role (with reason), suspend (with reason)
+- **Bulk Actions** — Select multiple users for batch operations
+- **CSV Export** — One-click user export
 
 ## Architecture
 
 ```
-dubai-congress/
+congress-app/
 ├── app/
 │   ├── api/
-│   │   ├── auth.py          # POST /api/auth/signup, /login, /logout, /me
-│   │   └── pages.py         # GET /, /signup, /login, /home
+│   │   ├── admin.py           # Admin REST API (RBAC-protected)
+│   │   ├── admin_pages.py     # Admin dashboard page route
+│   │   ├── auth.py            # Auth API (login tracking + audit)
+│   │   └── pages.py           # Public page routes
 │   ├── core/
-│   │   ├── config.py        # Environment settings (Pydantic)
-│   │   ├── database.py      # SQLAlchemy engine & session
-│   │   └── security.py      # Password hashing, JWT, auth dependencies
+│   │   ├── admin_security.py  # RBAC, rate limiter, login tracker
+│   │   ├── audit_service.py   # Audit log writer
+│   │   ├── config.py          # Environment settings
+│   │   ├── database.py        # SQLAlchemy engine
+│   │   └── security.py        # JWT, password hashing
 │   ├── models/
-│   │   └── user.py          # User SQLAlchemy model (roles, profile, interests)
+│   │   ├── audit_log.py       # Immutable audit log model
+│   │   └── user.py            # User model (8 roles)
 │   ├── schemas/
-│   │   └── user.py          # Pydantic request/response schemas
-│   ├── templates/            # Jinja2 HTML templates
-│   │   ├── base.html
-│   │   ├── landing.html
-│   │   ├── signup.html
-│   │   ├── login.html
-│   │   └── home.html
+│   │   ├── admin.py           # Admin request/response schemas
+│   │   └── user.py            # Auth schemas
+│   ├── templates/
+│   │   ├── admin_dashboard.html  # Admin UI (3 tabs)
+│   │   ├── nav.html              # Shared nav (with admin link)
+│   │   └── ...                   # Other pages
 │   ├── static/
 │   │   ├── css/main.css
 │   │   └── js/main.js
-│   └── main.py              # FastAPI app entry point
-├── .env                      # Environment config
-├── requirements.txt
-└── README.md
+│   └── main.py
+├── tests/
+│   ├── conftest.py            # Test fixtures (SQLite DB, user factories)
+│   ├── test_auth.py           # Auth endpoint tests (17 tests)
+│   ├── test_admin.py          # Admin endpoint & RBAC tests (42 tests)
+│   ├── test_security.py       # Security unit tests (38 tests)
+│   └── test_schemas.py        # Schema validation tests (11 tests)
+├── docker-compose.yml         # Full stack: app + PostgreSQL + Redis + pgAdmin
+├── Dockerfile                 # Production container image
+├── .dockerignore
+├── entrypoint.sh              # Auto-creates super admin from env vars
+├── seed_admin.py              # Interactive super admin setup script
+├── .env
+└── requirements.txt
 ```
 
 ## Setup
 
-### 1. PostgreSQL Database
+### Local Development
 
 ```bash
-# Create database and user
+# 1. Create PostgreSQL database
 sudo -u postgres psql
 CREATE USER congress_user WITH PASSWORD 'congress_pass';
 CREATE DATABASE dubai_congress OWNER congress_user;
 \q
-```
 
-### 2. Install Dependencies
-
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure Environment
+# 3. Generate a proper secret key
+openssl rand -hex 32  # Put in .env
 
-Edit `.env` with your database URL and generate a proper secret key:
-
-```bash
-openssl rand -hex 32    # Generate SECRET_KEY
-```
-
-### 4. Run the Server
-
-```bash
-cd dubai-congress
+# 4. Run
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 5. Open browser
+# Landing: http://localhost:8000
+# Admin:   http://localhost:8000/admin (requires admin role)
 ```
 
-### 5. Open in Browser
+### Docker Compose (recommended)
 
-- **Landing page:** http://localhost:8000
-- **Sign up:** http://localhost:8000/signup
-- **Sign in:** http://localhost:8000/login
-- **Dashboard:** http://localhost:8000/home (requires login)
+Starts the full stack: **app + PostgreSQL + Redis + pgAdmin**.
 
-## API Endpoints
+**Option A: Using `.env` file (recommended)**
 
-| Method | Endpoint          | Description                 |
-|--------|-------------------|-----------------------------|
-| POST   | /api/auth/signup  | Create account              |
-| POST   | /api/auth/login   | Sign in (sets cookie)       |
-| POST   | /api/auth/logout  | Clear auth cookie           |
-| GET    | /api/auth/me      | Get current user profile    |
+Add the super admin credentials to your `.env` file:
 
-## User Roles
+```bash
+echo 'SUPER_ADMIN_EMAIL=admin@example.com' >> .env
+echo 'SUPER_ADMIN_PASSWORD=SecurePass123' >> .env
+```
 
-- `attendee` (default)
-- `speaker`
-- `reviewer`
-- `session_chair`
-- `review_chair`
-- `moderator`
-- `admin`
-- `super_admin`
+Then start normally — Docker Compose reads `.env` automatically:
 
-## Features Implemented
+```bash
+docker compose up -d
+```
 
-- [x] Landing page with congress info and CTAs
-- [x] User registration with research interests
-- [x] Login with JWT cookie auth
-- [x] Password validation (8+ chars, uppercase, number)
-- [x] Post-login personalized dashboard
-- [x] Role-based user model (8 roles from spec)
-- [x] Auto-redirect (logged-in users skip landing/login)
-- [x] Toast notifications for success/error feedback
-- [x] Responsive dark biotech design
-- [x] SSO placeholders (Google, ORCID)
+**Option B: Inline environment variables**
 
-## Next Steps
+```bash
+SUPER_ADMIN_EMAIL=admin@example.com \
+SUPER_ADMIN_PASSWORD=SecurePass123 \
+docker compose up -d
+```
 
-- Paper submission & review workflow
-- Session schedule CRUD
-- AI matchmaking engine
-- Live Q&A / polling during sessions
-- Poster gallery with voting
-- Push notifications
-- Admin dashboard & permissions
-- CME certificate generation
+> **Important:** The env vars must be set when running `docker compose up`. Running `docker compose up` without them will skip super admin creation.
+
+**Common commands:**
+
+```bash
+# View logs (verify super admin creation)
+docker compose logs app | grep -i "super admin"
+
+# Follow live logs
+docker compose logs -f app
+
+# Stop all services
+docker compose down
+
+# Stop and remove data volumes (full reset)
+docker compose down -v
+```
+
+**Troubleshooting login:**
+- Check logs for `Created super admin:` or `Super admin ... updated` message
+- If no message appears, the env vars were not passed — add them to `.env` and restart
+- To reset everything: `docker compose down -v && docker compose up -d`
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **App** | http://localhost:8000 | Congress application |
+| **pgAdmin** | http://localhost:5050 | Database admin UI (login: `admin@congress.com` / `admin123`) |
+| **PostgreSQL** | localhost:5432 | Database (user: `congress_user`, pass: `congress_pass`) |
+| **Redis** | localhost:6379 | Cache/session store |
+
+To connect pgAdmin to the database, add a server with host `db`, port `5432`, user `congress_user`, password `congress_pass`.
+
+### Docker (standalone)
+
+```bash
+# Build the image
+docker build -t congress-app .
+
+# Run with auto super admin creation
+docker run -p 8000:8000 \
+  -e DATABASE_URL=postgresql://user:pass@db-host:5432/dubai_congress \
+  -e SECRET_KEY=$(openssl rand -hex 32) \
+  -e SUPER_ADMIN_EMAIL=admin@example.com \
+  -e SUPER_ADMIN_PASSWORD=SecurePass123 \
+  -e SUPER_ADMIN_NAME="Admin Name" \
+  congress-app
+```
+
+#### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SECRET_KEY` | Yes | JWT signing key (generate with `openssl rand -hex 32`) |
+| `ALGORITHM` | No | JWT algorithm (default: `HS256`) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiry in minutes (default: `1440`) |
+| `SUPER_ADMIN_EMAIL` | No | Auto-create super admin with this email on startup |
+| `SUPER_ADMIN_PASSWORD` | No | Password for auto-created super admin |
+| `SUPER_ADMIN_NAME` | No | Full name for auto-created super admin (default: `Super Admin`) |
+| `SUPER_ADMIN_INSTITUTION` | No | Institution for auto-created super admin |
+
+## Creating First Super Admin
+
+### Option 1: Docker with `.env` file (recommended)
+
+Add to your `.env` file:
+
+```env
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=SecurePass123
+SUPER_ADMIN_NAME=Admin Name
+```
+
+Then run `docker compose up -d`. The super admin is created/updated automatically on every startup. Check logs to confirm:
+
+```bash
+docker compose logs app | grep -i "super admin"
+# Expected: "Created super admin: admin@example.com"
+```
+
+> **Note:** The entrypoint resets the super admin password on every startup to match the env var, so you can change the password by updating `.env` and restarting.
+
+### Option 2: Interactive script (local development)
+
+```bash
+python seed_admin.py
+```
+
+Prompts for email, name, password, and institution interactively.
+
+### Option 3: SQL (manual)
+
+```sql
+UPDATE users SET role = 'super_admin' WHERE email = 'your@email.com';
+```
+
+Once created, access `/admin` to manage all users from the dashboard.
+
+## Role Permissions
+
+| Action | Super Admin | Admin | Moderator & below |
+|--------|:-----------:|:-----:|:-----------------:|
+| View admin dashboard | Yes | Yes | No |
+| Create users (attendee–moderator) | Yes | Yes | No |
+| Create admin/super_admin users | Yes | No | No |
+| Edit users below own role | Yes | Yes | No |
+| Edit same-level or higher users | Yes | No | No |
+| Change roles (attendee–moderator) | Yes | Yes | No |
+| Assign admin/super_admin role | Yes | No | No |
+| Suspend/activate lower users | Yes | Yes | No |
+| Suspend same-level or higher | Yes | No | No |
+| Delete users | Yes | No | No |
+| Export CSV | Yes | Yes | No |
+| View audit logs | Yes | Yes | No |
+
+## Testing
+
+```bash
+# Install test dependencies
+pip install pytest httpx
+
+# Run all 124 tests
+pytest tests/ -v
+```
+
+### Test Coverage
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test_auth.py` | 17 | Signup, login, logout, profile, password, login lockout |
+| `test_admin.py` | 48 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
+| `test_security.py` | 38 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
+| `test_schemas.py` | 11 | Pydantic validation for all request schemas |

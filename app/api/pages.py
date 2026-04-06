@@ -12,9 +12,8 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/logout")
 async def logout_page():
-    """Top-level logout — clears cookie and redirects to landing."""
     resp = RedirectResponse(url="/", status_code=302)
-    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates"]:
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin"]:
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=True, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=False, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0)
