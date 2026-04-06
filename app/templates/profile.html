@@ -4,33 +4,31 @@
 .page-wrap{min-height:100vh}
 .home-header{border-bottom:1px solid var(--b);padding-bottom:16px;margin-bottom:0}
 .ptbar{display:flex;align-items:center;gap:12px;margin:24px 0 20px}
-.ptbar .back{width:34px;height:34px;border-radius:8px;border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--w5);text-decoration:none;transition:.2s;font-size:.95rem;background:var(--w1)}
-.ptbar .back:hover{border-color:var(--g2);color:var(--gl);background:var(--g1)}
-.ptbar h2 em{font-style:normal;color:var(--g)}
-.pcard{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rx);padding:32px;margin-bottom:20px;position:relative}
-.pcard::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--g2),transparent)}
-.av{width:72px;height:72px;border-radius:50%;background:var(--gdd);display:flex;align-items:center;justify-content:center;font:1.8rem/1 var(--f);color:var(--gp);font-weight:700;margin-bottom:14px}
-.textarea{width:100%;min-height:90px;padding:13px 16px;background:var(--bg);border:1px solid var(--b2);border-radius:var(--r);color:var(--w);font:.92rem/1.5 var(--f);resize:vertical;outline:none}
-.textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g1)}
-.igrid{display:flex;flex-wrap:wrap;gap:6px}
-@media(max-width:540px){.pcard{padding:22px 16px}}
+.ptbar .bk{width:34px;height:34px;border-radius:8px;border:1px solid var(--gold2);display:flex;align-items:center;justify-content:center;color:var(--gold);text-decoration:none;transition:.2s;font-size:.95rem;background:var(--gold1)}
+.ptbar .bk:hover{background:var(--gold2);color:var(--gold-l)}
+.ptbar h2 em{font-style:normal;color:var(--gl)}
+.pc{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rx);padding:34px;margin-bottom:20px;position:relative;overflow:hidden}
+.pc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gd),var(--gold),var(--gd))}
+.av{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--g),var(--gd));border:2px solid var(--gold2);display:flex;align-items:center;justify-content:center;font:1.8rem var(--f);color:#000;font-weight:800;margin-bottom:14px}
+.ta{width:100%;min-height:90px;padding:13px 16px;background:rgba(4,18,11,.7);border:1px solid var(--b2);border-radius:var(--r);color:var(--w);font:.92rem/1.5 var(--f);resize:vertical;outline:none}
+.ta:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold1)}
+.ig{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:540px){.pc{padding:22px 16px}}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
-  <div class="ptbar animate-up"><a href="/home" class="back">←</a><h2>My <em>Profile</em></h2></div>
-  <div class="pcard animate-up delay-1">
+  <div class="ptbar animate-up"><a href="/home" class="bk">←</a><h2>My <em>Profile</em></h2></div>
+  <div class="pc animate-up delay-1">
     <div class="av">{{ user.full_name[0] }}</div>
     <h3>{{ user.full_name }}</h3><p style="color:var(--w5);margin-bottom:14px;font-size:.88rem">{{ user.email }}</p>
     <form id="profileForm" onsubmit="handleProfileSave(event)" style="display:flex;flex-direction:column;gap:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required></div><div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}"></div></div>
       <div class="form-group"><label class="form-label">ORCID ID</label><input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000"></div>
-      <div class="form-group"><label class="form-label">Bio</label><textarea class="textarea" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
-      <div class="form-group"><label class="form-label">Research Interests</label><div class="igrid" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="ta" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
+      <div class="form-group"><label class="form-label">Research Interests</label><div class="ig" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><a href="/home" class="btn btn-ghost btn-sm">Cancel</a><button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button></div>
     </form>
   </div>
 </div></div>
 {% endblock %}
-{% block scripts %}<script>
-async function handleProfileSave(e){e.preventDefault();const btn=document.getElementById('saveBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{const interests=getSelectedChips(document.getElementById('interestsGrid'));const res=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:document.getElementById('fullName').value,institution:document.getElementById('institution').value||null,bio:document.getElementById('bio').value||null,orcid_id:document.getElementById('orcidId').value||null,research_interests:interests}),credentials:'same-origin'});if(!res.ok){const d=await res.json();throw new Error(d.detail||'Failed')}showToast('Profile updated!','success')}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Save Changes';btn.disabled=false}}
-</script>{% endblock %}
+{% block scripts %}<script>async function handleProfileSave(e){e.preventDefault();const btn=document.getElementById('saveBtn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;try{const interests=getSelectedChips(document.getElementById('interestsGrid'));const res=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:document.getElementById('fullName').value,institution:document.getElementById('institution').value||null,bio:document.getElementById('bio').value||null,orcid_id:document.getElementById('orcidId').value||null,research_interests:interests}),credentials:'same-origin'});if(!res.ok){const d=await res.json();throw new Error(d.detail||'Failed')}showToast('Profile updated!','success')}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Save Changes';btn.disabled=false}}</script>{% endblock %}

@@ -1,15 +1,16 @@
-<!-- Shared nav for authenticated pages -->
+<!-- Shared nav -->
 <style>
   .nav-user-menu{position:relative}
-  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--b2);border-radius:var(--r);background:var(--w1);color:var(--w9);cursor:pointer;font:.86rem var(--f);transition:.2s}
-  .nav-user-btn:hover{background:var(--b)}
-  .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:var(--gdd);display:flex;align-items:center;justify-content:center;font:.7rem var(--f);color:var(--gp);font-weight:700}
-  .nav-user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--b2);border-radius:var(--r);padding:4px;min-width:180px;display:none;z-index:100;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--gold2);border-radius:var(--r);background:var(--gold1);color:var(--w9);cursor:pointer;font:.86rem var(--f);transition:.2s}
+  .nav-user-btn:hover{background:var(--gold2)}
+  .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--g),var(--gd));border:1.5px solid var(--gold2);display:flex;align-items:center;justify-content:center;font:.7rem var(--f);color:#000;font-weight:800}
+  .nav-user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface2);border:1px solid var(--b2);border-radius:var(--r);padding:4px;min-width:180px;display:none;z-index:100;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .nav-user-dropdown::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
   .nav-user-dropdown.open{display:block}
   .nav-dd-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:6px;font-size:.86rem;color:var(--w5);cursor:pointer;transition:.1s;text-decoration:none;width:100%}
   .nav-dd-item:hover{background:var(--g1);color:var(--w9)}
-  .nav-quick{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--w1);border:1px solid var(--b);border-radius:var(--r);font:.76rem var(--f);color:var(--w5);transition:.2s;cursor:pointer;text-decoration:none}
-  .nav-quick:hover{border-color:var(--g2);color:var(--gl);background:var(--g1)}
+  .nav-quick{display:flex;align-items:center;gap:5px;padding:7px 13px;background:var(--gold1);border:1px solid var(--gold2);border-radius:var(--r);font:.76rem var(--f);color:var(--gold);transition:.2s;cursor:pointer;text-decoration:none}
+  .nav-quick:hover{background:var(--gold2);color:var(--gold-l)}
   @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}}
 </style>
 
@@ -19,21 +20,14 @@
     <div class="topnav-links gap-sm">
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
-      {% if user.role.value in ['admin', 'super_admin'] %}
-      <a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold);border-color:var(--gold2)">🛡️ Admin</a>
-      {% endif %}
+      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link">🛡️ Admin</a>{% endif %}
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
-          <div class="nav-user-avatar">{{ user.full_name[0] }}</div>
-          <span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
+          <div class="nav-user-avatar">{{ user.full_name[0] }}</div><span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
         </button>
         <div class="nav-user-dropdown">
-          <a href="/profile" class="nav-dd-item">👤 Profile</a>
-          <a href="/certificates" class="nav-dd-item">📜 Certificates</a>
-          <a href="/settings" class="nav-dd-item">⚙️ Settings</a>
-          {% if user.role.value in ['admin', 'super_admin'] %}
-          <a href="/admin" class="nav-dd-item" style="color:var(--gold)">🛡️ Admin</a>
-          {% endif %}
+          <a href="/profile" class="nav-dd-item">👤 Profile</a><a href="/certificates" class="nav-dd-item">📜 Certificates</a><a href="/settings" class="nav-dd-item">⚙️ Settings</a>
+          {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-dd-item" style="color:var(--gold)">🛡️ Admin</a>{% endif %}
           <a href="/logout" class="nav-dd-item" style="color:var(--red)">Sign Out</a>
         </div>
       </div>
@@ -42,42 +36,18 @@
     </div>
   </nav>
 </div>
-
 <div class="mobile-menu-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 <div class="mobile-menu-panel" id="mobilePanel">
-  <div class="mobile-menu-header">
-    <div class="mobile-menu-user">
-      <div class="avatar">{{ user.full_name[0] }}</div>
-      <div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div>
-    </div>
-    <button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button>
-  </div>
+  <div class="mobile-menu-header"><div class="mobile-menu-user"><div class="avatar">{{ user.full_name[0] }}</div><div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div></div><button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button></div>
   <div class="mobile-menu-links">
     <div class="mobile-menu-section">Navigate</div>
-    <a href="/home" class="mobile-menu-link">🏠 Home</a>
-    <a href="#" class="mobile-menu-link">📅 Program</a>
-    <a href="#" class="mobile-menu-link">🖼️ Posters</a>
-    <a href="#" class="mobile-menu-link">🤝 Connect</a>
-    {% if user.role.value in ['admin', 'super_admin'] %}
-    <div class="mobile-menu-section">Admin</div>
-    <a href="/admin" class="mobile-menu-link" style="color:var(--gold)">🛡️ User Management</a>
-    {% endif %}
+    <a href="/home" class="mobile-menu-link">🏠 Home</a><a href="#" class="mobile-menu-link">📅 Program</a><a href="#" class="mobile-menu-link">🖼️ Posters</a><a href="#" class="mobile-menu-link">🤝 Connect</a>
+    {% if user.role.value in ['admin', 'super_admin'] %}<div class="mobile-menu-section">Admin</div><a href="/admin" class="mobile-menu-link" style="color:var(--gold)">🛡️ Management</a>{% endif %}
     <div class="mobile-menu-section">Account</div>
-    <a href="/profile" class="mobile-menu-link">👤 My Profile</a>
-    <a href="/certificates" class="mobile-menu-link">📜 Certificates</a>
-    <a href="/settings" class="mobile-menu-link">⚙️ Settings</a>
-    <a href="/logout" class="mobile-menu-link logout">Sign Out</a>
+    <a href="/profile" class="mobile-menu-link">👤 Profile</a><a href="/certificates" class="mobile-menu-link">📜 Certificates</a><a href="/settings" class="mobile-menu-link">⚙️ Settings</a><a href="/logout" class="mobile-menu-link logout">Sign Out</a>
   </div>
 </div>
-
-<nav class="mobile-bottom-nav">
-  <a href="/home" class="mobile-nav-item"><span>🏠</span>Home</a>
-  <a href="#" class="mobile-nav-item"><span>📅</span>Program</a>
-  <a href="#" class="mobile-nav-item"><span>🖼️</span>Posters</a>
-  <a href="#" class="mobile-nav-item"><span>🤝</span>Connect</a>
-  <a href="/profile" class="mobile-nav-item"><span>👤</span>Me</a>
-</nav>
-
+<nav class="mobile-bottom-nav"><a href="/home" class="mobile-nav-item"><span>🏠</span>Home</a><a href="#" class="mobile-nav-item"><span>📅</span>Program</a><a href="#" class="mobile-nav-item"><span>🖼️</span>Posters</a><a href="#" class="mobile-nav-item"><span>🤝</span>Connect</a><a href="/profile" class="mobile-nav-item"><span>👤</span>Me</a></nav>
 <script>
 document.addEventListener('click',e=>{if(!e.target.closest('.nav-user-menu'))document.querySelectorAll('.nav-user-dropdown').forEach(d=>d.classList.remove('open'))});
 function openMobileMenu(){document.getElementById('mobileOverlay').classList.add('open');document.getElementById('mobilePanel').classList.add('open');document.body.style.overflow='hidden'}

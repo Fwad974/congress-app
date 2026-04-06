@@ -5,20 +5,20 @@
 .auth-page{min-height:100vh;display:flex;flex-direction:column}
 .auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
 .auth-card{width:100%;max-width:420px}
-.auth-card .card{padding:44px 36px}
-.auth-header{text-align:center;margin-bottom:28px}
-.auth-header .badge{margin-bottom:14px}
-.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--g)}
+.auth-card .card{padding:48px 40px}
+.auth-header{text-align:center;margin-bottom:30px}
+.auth-header .badge{margin-bottom:16px}
+.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--gold)}
 .auth-header p{color:var(--w5);font-size:.88rem;font-weight:300}
 .auth-form{display:flex;flex-direction:column;gap:14px}
-.form-extras{display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
-.form-extras label{display:flex;align-items:center;gap:5px;color:var(--w5);cursor:pointer}
-.form-extras a{color:var(--w5)}.form-extras a:hover{color:var(--gl)}
-.auth-footer{text-align:center;margin-top:20px;font-size:.84rem;color:var(--w5)}
-.auth-footer a{font-weight:600}
+.fe{display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
+.fe label{display:flex;align-items:center;gap:5px;color:var(--w5);cursor:pointer}
+.fe a{color:var(--gold)}.fe a:hover{color:var(--gold-l)}
+.auth-footer{text-align:center;margin-top:22px;font-size:.84rem;color:var(--w5)}
+.auth-footer a{font-weight:600;color:var(--gold)}
 .sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sso-row .btn{font-size:.82rem;padding:11px}
-@media(max-width:540px){.auth-card .card{padding:28px 20px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+@media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
 {% block body %}
@@ -29,7 +29,7 @@
     <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required autofocus></div>
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Enter your password" required></div>
-      <div class="form-extras"><label><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
+      <div class="fe"><label><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
       <button type="submit" class="btn btn-primary w-full" id="submitBtn">Sign In</button>
       <div class="divider">or continue with</div>
       <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
@@ -38,6 +38,4 @@
   </div></div></div>
 </div>
 {% endblock %}
-{% block scripts %}<script>
-async function handleLogin(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Signing in...';btn.disabled=true;try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});showToast('Welcome back!','success');setTimeout(()=>window.location.href='/home',600)}catch(err){showToast(err.message,'error');btn.innerHTML='Sign In';btn.disabled=false}}
-</script>{% endblock %}
+{% block scripts %}<script>async function handleLogin(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Signing in...';btn.disabled=true;try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});showToast('Welcome back!','success');setTimeout(()=>window.location.href='/home',600)}catch(err){showToast(err.message,'error');btn.innerHTML='Sign In';btn.disabled=false}}</script>{% endblock %}

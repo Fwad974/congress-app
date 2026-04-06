@@ -5,22 +5,22 @@
 .auth-page{min-height:100vh;display:flex;flex-direction:column}
 .auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
 .auth-card{width:100%;max-width:460px}
-.auth-card .card{padding:44px 36px}
-.auth-header{text-align:center;margin-bottom:28px}
-.auth-header .badge{margin-bottom:14px}
-.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--g)}
+.auth-card .card{padding:48px 40px}
+.auth-header{text-align:center;margin-bottom:30px}
+.auth-header .badge{margin-bottom:16px}
+.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--gold)}
 .auth-header p{color:var(--w5);font-size:.88rem;font-weight:300}
 .auth-form{display:flex;flex-direction:column;gap:14px}
-.interests-label{font:.62rem var(--m);letter-spacing:.12em;text-transform:uppercase;color:var(--w5);margin-bottom:2px}
-.interests-grid{display:flex;flex-wrap:wrap;gap:6px}
-.auth-footer{text-align:center;margin-top:20px;font-size:.84rem;color:var(--w5)}
-.auth-footer a{font-weight:600}
+.int-label{font:.6rem var(--m);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
+.int-grid{display:flex;flex-wrap:wrap;gap:6px}
+.auth-footer{text-align:center;margin-top:22px;font-size:.84rem;color:var(--w5)}
+.auth-footer a{font-weight:600;color:var(--gold)}
 .sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sso-row .btn{font-size:.82rem;padding:11px}
-.pw-requirements{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px}
+.pw-reqs{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px}
 .pw-req{font-size:.7rem;color:var(--w3);display:flex;align-items:center;gap:3px;transition:.2s}
-.pw-req.met{color:var(--g)}
-@media(max-width:540px){.auth-card .card{padding:28px 20px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+.pw-req.met{color:var(--gl)}
+@media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
 {% block body %}
@@ -32,8 +32,8 @@
       <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
       <div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
-      <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-requirements"><span class="pw-req" id="pw-len">✕ 8+ chars</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
-      <div class="form-group"><label class="interests-label">Research Interests</label><div class="interests-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-reqs"><span class="pw-req" id="pw-len">✕ 8+ chars</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
+      <div class="form-group"><label class="int-label">Research Interests</label><div class="int-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
       <button type="submit" class="btn btn-primary w-full" id="submitBtn">Create Account</button>
       <div class="divider">or register with</div>
       <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>

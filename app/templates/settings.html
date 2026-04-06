@@ -4,18 +4,17 @@
 .page-wrap{min-height:100vh}
 .home-header{border-bottom:1px solid var(--b);padding-bottom:16px;margin-bottom:0}
 .ptbar{display:flex;align-items:center;gap:12px;margin:24px 0 20px}
-.ptbar .back{width:34px;height:34px;border-radius:8px;border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--w5);text-decoration:none;font-size:.95rem;background:var(--w1);transition:.2s}
-.ptbar .back:hover{border-color:var(--g2);color:var(--gl);background:var(--g1)}
-.ptbar h2 em{font-style:normal;color:var(--g)}
-.scard{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rx);padding:28px 30px;margin-bottom:16px;max-width:540px;position:relative}
-.scard::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--g2),transparent)}
-.scard h3{font-size:.98rem;margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.ptbar .bk{width:34px;height:34px;border-radius:8px;border:1px solid var(--gold2);display:flex;align-items:center;justify-content:center;color:var(--gold);text-decoration:none;font-size:.95rem;background:var(--gold1);transition:.2s}
+.ptbar .bk:hover{background:var(--gold2);color:var(--gold-l)}
+.ptbar h2 em{font-style:normal;color:var(--gl)}
+.sc{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rx);padding:30px 32px;margin-bottom:16px;max-width:540px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gd),var(--gold),var(--gd))}
+.sc h3{font-size:.98rem;margin-bottom:18px;display:flex;align-items:center;gap:7px}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
-  <div class="ptbar animate-up"><a href="/home" class="back">←</a><h2><em>Settings</em></h2></div>
-  <div class="scard animate-up delay-1">
-    <h3>🔒 Change Password</h3>
+  <div class="ptbar animate-up"><a href="/home" class="bk">←</a><h2><em>Settings</em></h2></div>
+  <div class="sc animate-up delay-1"><h3>🔒 Change Password</h3>
     <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:12px">
       <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
       <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
@@ -25,6 +24,4 @@
   </div>
 </div></div>
 {% endblock %}
-{% block scripts %}<script>
-async function handlePwChange(e){e.preventDefault();if(document.getElementById('newPw').value!==document.getElementById('confPw').value){showToast('Passwords do not match','error');return}const btn=document.getElementById('pwBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const res=await fetch('/api/auth/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:document.getElementById('curPw').value,new_password:document.getElementById('newPw').value}),credentials:'same-origin'});const d=await res.json();if(!res.ok)throw new Error(d.detail);showToast('Password updated!','success');e.target.reset()}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Update Password';btn.disabled=false}}
-</script>{% endblock %}
+{% block scripts %}<script>async function handlePwChange(e){e.preventDefault();if(document.getElementById('newPw').value!==document.getElementById('confPw').value){showToast('Passwords do not match','error');return}const btn=document.getElementById('pwBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const res=await fetch('/api/auth/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:document.getElementById('curPw').value,new_password:document.getElementById('newPw').value}),credentials:'same-origin'});const d=await res.json();if(!res.ok)throw new Error(d.detail);showToast('Password updated!','success');e.target.reset()}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Update Password';btn.disabled=false}}</script>{% endblock %}
