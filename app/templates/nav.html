@@ -71,4 +71,6 @@
 document.addEventListener('click',e=>{if(!e.target.closest('.nav-user-menu'))document.querySelectorAll('.nav-user-dropdown').forEach(d=>d.classList.remove('open'))});
 function openMobileMenu(){document.getElementById('mobileOverlay').classList.add('open');document.getElementById('mobilePanel').classList.add('open');document.body.style.overflow='hidden'}
 function closeMobileMenu(){document.getElementById('mobileOverlay').classList.remove('open');document.getElementById('mobilePanel').classList.remove('open');document.body.style.overflow=''}
+// Highlight active bottom nav item based on current page
+(function(){var p=window.location.pathname;document.querySelectorAll('.mobile-bottom-nav .mobile-nav-item').forEach(function(a){var h=a.getAttribute('href');if(h&&h!=='#'&&p.startsWith(h)){a.classList.add('active')}});if(p==='/home'){var first=document.querySelector('.mobile-bottom-nav .mobile-nav-item');if(first)first.classList.add('active')}})();
 </script>
