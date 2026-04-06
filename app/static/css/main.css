@@ -148,12 +148,12 @@ a:hover{color:var(--gold-l)}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* ═══ MOBILE ═══ */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(6,31,23,.97),rgba(4,15,11,.99));backdrop-filter:blur(24px);border-top:1px solid rgba(201,169,98,.25);padding:8px 4px env(safe-area-inset-bottom,10px);z-index:900;justify-content:space-around;box-shadow:0 -6px 24px rgba(0,0,0,.4)}
-.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px;font:600 .58rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.4);text-decoration:none;transition:.25s;border-radius:var(--r)}
-.mobile-nav-item svg{width:22px;height:22px;stroke-width:1.8}
-.mobile-nav-item.active{color:var(--gold);background:rgba(201,169,98,.08)}
-.mobile-nav-item.active svg{stroke-width:2}
-.mobile-nav-item:hover{color:var(--w)}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(180deg,rgba(6,31,23,.98),rgba(4,12,8,.99));backdrop-filter:blur(24px);border-top:2px solid rgba(201,169,98,.3);padding:10px 0 env(safe-area-inset-bottom,12px);z-index:900;justify-content:space-around;box-shadow:0 -8px 32px rgba(0,0,0,.5)}
+.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 14px;font:700 .64rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5);text-decoration:none;transition:.25s;border-radius:var(--r)}
+.mobile-nav-item svg{width:28px;height:28px;stroke-width:2}
+.mobile-nav-item.active{color:var(--gold)}
+.mobile-nav-item.active svg{stroke-width:2.2;filter:drop-shadow(0 0 4px rgba(201,169,98,.3))}
+.mobile-nav-item:hover{color:#fff}
 
 .mobile-menu-btn{display:none;width:36px;height:36px;border:1px solid var(--ga2);border-radius:var(--r);background:var(--ga2);color:var(--gold);cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;transition:.2s}
 .mobile-menu-btn:hover{background:var(--ga2)}
