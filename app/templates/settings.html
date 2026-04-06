@@ -2,22 +2,29 @@
 {% block title %}Settings — {{ congress_short }}{% endblock %}
 {% block head %}<style>
 .page-wrap{min-height:100vh;background:var(--bg)}
-.ptbar{display:flex;align-items:center;gap:12px;margin:24px 0 20px}
-.ptbar .bk{width:36px;height:36px;border-radius:var(--r);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--t3);text-decoration:none;font-size:.95rem;background:var(--surface);transition:.2s}
-.ptbar .bk:hover{background:var(--fg-pale);border-color:var(--fg2);color:var(--fg)}
-.sc{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);padding:32px;margin-bottom:16px;max-width:540px}
-.sc h3{font-size:1rem;margin-bottom:18px;display:flex;align-items:center;gap:7px}
+.page-header{display:flex;align-items:center;gap:14px;margin:28px 0 24px}
+.back-btn{width:38px;height:38px;border-radius:var(--r);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--t3);text-decoration:none;font-size:1rem;background:var(--surface);transition:.2s}
+.back-btn:hover{background:var(--fg);border-color:var(--fg);color:#fff}
+.settings-card{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);overflow:hidden;margin-bottom:20px;max-width:560px;box-shadow:0 1px 4px rgba(0,62,30,.04)}
+.settings-header{background:var(--cream);padding:20px 32px;border-bottom:1.5px solid var(--b);display:flex;align-items:center;gap:10px}
+.settings-header h3{font-size:1rem;color:var(--fg)}
+.settings-body{padding:28px 32px}
+.form-actions{display:flex;justify-content:flex-end;margin-top:8px;padding-top:16px;border-top:1.5px solid var(--b)}
+@media(max-width:540px){.settings-header{padding:16px 20px}.settings-body{padding:20px}}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
-  <div class="ptbar animate-up"><a href="/home" class="bk">←</a><h2>Settings</h2></div>
-  <div class="sc animate-up delay-1"><h3>🔒 Change Password</h3>
-    <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:14px">
-      <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
-      <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
-      <div class="form-group"><label class="form-label">Confirm</label><input type="password" class="form-input" id="confPw" required></div>
-      <div style="display:flex;justify-content:flex-end;margin-top:4px"><button type="submit" class="btn btn-primary btn-sm" id="pwBtn">Update Password</button></div>
-    </form>
+  <div class="page-header animate-up"><a href="/home" class="back-btn">←</a><h2>Settings</h2></div>
+  <div class="settings-card animate-up delay-1">
+    <div class="settings-header"><span style="font-size:1.1rem">🔒</span><h3>Change Password</h3></div>
+    <div class="settings-body">
+      <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
+        <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" id="confPw" required></div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary btn-sm" id="pwBtn">Update Password</button></div>
+      </form>
+    </div>
   </div>
 </div></div>
 {% endblock %}

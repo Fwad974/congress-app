@@ -1,34 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Sign In — {{ congress_full }}{% endblock %}
 {% block head %}<style>
-.auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
-.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
-.auth-card{width:100%;max-width:430px}
-.auth-card .card{padding:48px 40px}
-.auth-header{text-align:center;margin-bottom:30px}
-.auth-header .badge{margin-bottom:16px}.auth-header h2{margin-bottom:4px}.auth-header p{color:var(--t3);font-size:.9rem;font-weight:300}
-.auth-form{display:flex;flex-direction:column;gap:14px}
-.fe{display:flex;justify-content:space-between;align-items:center;font-size:.8rem}
-.fe label{display:flex;align-items:center;gap:5px;color:var(--t3);cursor:pointer}
-.fe a{color:var(--fg-l)}.fe a:hover{color:var(--fg)}
-.auth-footer{text-align:center;margin-top:22px;font-size:.86rem;color:var(--t3)}.auth-footer a{font-weight:600;color:var(--fg)}
-.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sso-row .btn{font-size:.84rem;padding:12px}
-@media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+.auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg2)}
+.auth-nav{border-bottom:1.5px solid var(--b);background:var(--bg);padding-bottom:0}
+.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 24px}
+.auth-card{width:100%;max-width:440px}
+.auth-card .card{padding:48px 44px;box-shadow:0 2px 12px rgba(0,62,30,.05)}
+.auth-header{text-align:center;margin-bottom:32px}
+.auth-header h2{margin-bottom:6px;font-size:1.5rem}
+.auth-header p{color:var(--t3);font-size:.92rem;font-weight:400}
+.auth-form{display:flex;flex-direction:column;gap:16px}
+.fe{display:flex;justify-content:space-between;align-items:center;font-size:.82rem}
+.fe label{display:flex;align-items:center;gap:6px;color:var(--t3);cursor:pointer}
+.fe a{color:var(--fg-l);font-weight:500}.fe a:hover{color:var(--fg);text-decoration:underline}
+.auth-footer{text-align:center;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--b);font-size:.88rem;color:var(--t3)}
+.auth-footer a{font-weight:600;color:var(--fg)}
+.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sso-row .btn{font-size:.86rem;padding:13px;font-weight:500}
+@media(max-width:540px){.auth-card .card{padding:32px 24px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:32px 16px}}
 </style>{% endblock %}
 {% block body %}
 <div class="auth-page">
-  <div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
+  <div class="container"><nav class="topnav auth-nav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links gap-sm"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-    <div class="auth-header"><div class="badge badge-green">Welcome Back</div><h2>Sign In</h2><p>Access your congress dashboard</p></div>
+    <div class="auth-header">
+      <h2>Welcome Back</h2>
+      <p>Sign in to access your congress dashboard</p>
+    </div>
     <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
-      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required autofocus></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required autofocus></div>
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Enter your password" required></div>
       <div class="fe"><label><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
       <button type="submit" class="btn btn-primary w-full" id="submitBtn">Sign In</button>
       <div class="divider">or continue with</div>
       <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
     </form>
-    <div class="auth-footer">New here? <a href="/signup">Create an account</a></div>
+    <div class="auth-footer">Don't have an account? <a href="/signup">Register now</a></div>
   </div></div></div>
 </div>
 {% endblock %}

@@ -2,29 +2,41 @@
 {% block title %}My Profile — {{ congress_short }}{% endblock %}
 {% block head %}<style>
 .page-wrap{min-height:100vh;background:var(--bg)}
-.ptbar{display:flex;align-items:center;gap:12px;margin:24px 0 20px}
-.ptbar .bk{width:36px;height:36px;border-radius:var(--r);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--t3);text-decoration:none;transition:.2s;font-size:.95rem;background:var(--surface)}
-.ptbar .bk:hover{background:var(--fg-pale);border-color:var(--fg2);color:var(--fg)}
-.pc{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);padding:36px;margin-bottom:20px}
-.av{width:72px;height:72px;border-radius:50%;background:var(--fg);display:flex;align-items:center;justify-content:center;font:1.8rem var(--f);color:#fff;font-weight:700;margin-bottom:14px}
-.ta{width:100%;min-height:90px;padding:14px 16px;background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font:.94rem/1.55 var(--f);resize:vertical;outline:none}
-.ta:focus{border-color:var(--fg);box-shadow:0 0 0 3px var(--fg1)}
-.ig{display:flex;flex-wrap:wrap;gap:6px}
-@media(max-width:540px){.pc{padding:24px 18px}}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin:28px 0 24px}
+.page-header-left{display:flex;align-items:center;gap:14px}
+.back-btn{width:38px;height:38px;border-radius:var(--r);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--t3);text-decoration:none;transition:.2s;font-size:1rem;background:var(--surface)}
+.back-btn:hover{background:var(--fg);border-color:var(--fg);color:#fff}
+.page-header h2{font-size:1.3rem}
+.profile-card{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);overflow:hidden;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,62,30,.04)}
+.profile-top{background:var(--fg);padding:32px 36px;display:flex;align-items:center;gap:20px;color:#fff}
+.profile-av{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font:1.6rem var(--f);color:#fff;font-weight:700;flex-shrink:0}
+.profile-info h3{color:#fff;margin-bottom:2px;font-size:1.1rem}
+.profile-info p{color:rgba(255,255,255,.65);font-size:.88rem}
+.profile-body{padding:32px 36px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ig{display:flex;flex-wrap:wrap;gap:8px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;padding-top:20px;border-top:1.5px solid var(--b)}
+.ta{width:100%;min-height:100px;padding:14px 16px;background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font:.94rem/1.6 var(--f);resize:vertical;outline:none}
+.ta:focus{border-color:var(--fg-l);box-shadow:0 0 0 3px var(--fg1)}
+@media(max-width:540px){.profile-top{padding:24px 20px;flex-direction:column;text-align:center}.profile-body{padding:24px 20px}.form-grid{grid-template-columns:1fr}}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
-  <div class="ptbar animate-up"><a href="/home" class="bk">←</a><h2>My Profile</h2></div>
-  <div class="pc animate-up delay-1">
-    <div class="av">{{ user.full_name[0] }}</div>
-    <h3 style="margin-bottom:2px">{{ user.full_name }}</h3><p style="color:var(--t3);margin-bottom:16px;font-size:.9rem">{{ user.email }}</p>
-    <form id="profileForm" onsubmit="handleProfileSave(event)" style="display:flex;flex-direction:column;gap:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required></div><div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}"></div></div>
-      <div class="form-group"><label class="form-label">ORCID ID</label><input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000"></div>
-      <div class="form-group"><label class="form-label">Bio</label><textarea class="ta" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
-      <div class="form-group"><label class="form-label">Research Interests</label><div class="ig" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><a href="/home" class="btn btn-ghost btn-sm">Cancel</a><button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button></div>
-    </form>
+  <div class="page-header animate-up"><div class="page-header-left"><a href="/home" class="back-btn">←</a><h2>My Profile</h2></div></div>
+  <div class="profile-card animate-up delay-1">
+    <div class="profile-top">
+      <div class="profile-av">{{ user.full_name[0] }}</div>
+      <div class="profile-info"><h3>{{ user.full_name }}</h3><p>{{ user.email }}</p></div>
+    </div>
+    <div class="profile-body">
+      <form id="profileForm" onsubmit="handleProfileSave(event)" style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-grid"><div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" value="{{ user.full_name }}" required></div><div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" value="{{ user.institution or '' }}"></div></div>
+        <div class="form-group"><label class="form-label">ORCID ID</label><input type="text" class="form-input" id="orcidId" value="{{ user.orcid_id or '' }}" placeholder="0000-0000-0000-0000"></div>
+        <div class="form-group"><label class="form-label">Bio</label><textarea class="ta" id="bio" placeholder="Tell other researchers about your work...">{{ user.bio or '' }}</textarea></div>
+        <div class="form-group"><label class="form-label">Research Interests</label><div class="ig" id="interestsGrid">{% set all_interests = ['iPSC','MSC','Gene Therapy','Exosomes','CAR-T','Organoids','Clinical Trials','Biomaterials','Regenerative Medicine','CRISPR'] %}{% for interest in all_interests %}<span class="chip {% if user.research_interests and interest in user.research_interests %}selected{% endif %}" data-value="{{ interest }}">{{ interest }}</span>{% endfor %}</div></div>
+        <div class="form-actions"><a href="/home" class="btn btn-ghost btn-sm">Cancel</a><button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button></div>
+      </form>
+    </div>
   </div>
 </div></div>
 {% endblock %}
