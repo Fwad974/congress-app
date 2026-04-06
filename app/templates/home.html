@@ -2,33 +2,29 @@
 {% block title %}Home — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.home-page{min-height:100vh;background:var(--bg)}
+.home-page{min-height:100vh}
 .welcome{padding:28px 0 0}
-.wc{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);overflow:hidden;margin-bottom:36px;box-shadow:0 1px 4px rgba(0,62,30,.04)}
-.wc-top{background:var(--fg);padding:28px 36px;color:#fff}
-.wc-hi{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:4px}
-.wc-sub{color:rgba(255,255,255,.65);font-weight:300;font-size:.92rem}
-.wc-body{padding:24px 36px}
+.wc{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--gb2);border-radius:var(--rx);overflow:hidden;margin-bottom:32px}
+.wc-top{background:linear-gradient(135deg,rgba(201,169,98,.12),rgba(201,169,98,.04));padding:28px 32px;border-bottom:1px solid var(--gb2)}
+.wc-hi{font:600 1.4rem var(--fh);color:var(--w);margin-bottom:4px}
+.wc-hi em{font-style:normal;color:var(--gold)}
+.wc-sub{font:.88rem var(--f);color:var(--w5)}
+.wc-body{padding:20px 32px}
 .wc-meta{display:flex;gap:8px;flex-wrap:wrap}
-.stitle{font:600 .62rem var(--m);letter-spacing:.18em;text-transform:uppercase;color:var(--fg-l);margin-bottom:14px}
-
-.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-bottom:40px}
-.dt{background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rl);padding:0;transition:.25s;cursor:pointer;overflow:hidden;box-shadow:0 1px 3px rgba(0,62,30,.03);display:flex}
-.dt:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,62,30,.07);border-color:var(--fg2)}
-.dt-stripe{width:4px;flex-shrink:0}
-.dt.tg .dt-stripe{background:var(--fg)}.dt.tp .dt-stripe{background:var(--purple)}.dt.ta .dt-stripe{background:var(--gold)}.dt.tb .dt-stripe{background:var(--blue)}
-.dt-content{padding:24px 22px}
+.stitle{font:600 .72rem var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:36px}
+.dt{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--gb2);border-radius:var(--rl);padding:24px;transition:.3s;cursor:pointer;position:relative;overflow:hidden}
+.dt::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:.3s}
+.dt:hover{transform:translateY(-4px);border-color:var(--gb3)}.dt:hover::before{opacity:1}
 .dt-ico{font-size:1.4rem;margin-bottom:10px}
-.dt h3{margin-bottom:4px;font-size:.95rem;color:var(--fg)}.dt p{color:var(--t3);font-size:.84rem;line-height:1.55}
-
-.qa{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:40px}
-.qi{display:flex;align-items:center;gap:7px;padding:11px 20px;background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--rx);font-size:.86rem;color:var(--t2);transition:.25s;cursor:pointer;text-decoration:none;font-weight:500}
-.qi:hover{background:var(--fg);border-color:var(--fg);color:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,62,30,.1)}
-
-.itags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.itag{font:500 .62rem var(--m);letter-spacing:.04em;padding:5px 12px;border-radius:100px;background:var(--fg-pale);color:var(--fg-l);border:1px solid var(--fg2)}
-
-@media(max-width:768px){.wc-top,.wc-body{padding:20px}.wc-hi{font-size:1.25rem}.dg{grid-template-columns:1fr}}
+.dt h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:4px}
+.dt p{font:.84rem/1.55 var(--f);color:var(--w5)}
+.qa{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px}
+.qi{display:flex;align-items:center;gap:6px;padding:10px 20px;background:var(--gb);border:1px solid var(--gb2);border-radius:50px;font:.82rem var(--f);color:var(--w5);transition:.25s;cursor:pointer;text-decoration:none}
+.qi:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.12)}
+.itags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.itag{font:500 .68rem var(--f);padding:4px 12px;border-radius:50px;background:var(--gb);color:var(--gold);border:1px solid var(--gb2)}
+@media(max-width:768px){.wc-top,.wc-body{padding:20px}.dg{grid-template-columns:1fr}}
 </style>
 {% endblock %}
 {% block body %}
@@ -36,32 +32,20 @@
 {% include "nav.html" %}
 <div class="container">
   <div class="welcome"><div class="wc animate-up">
-    <div class="wc-top">
-      <div class="wc-hi">Welcome back, {{ user.full_name.split(' ')[0] }}</div>
-      <div class="wc-sub">Your personalized congress experience starts here.</div>
-    </div>
+    <div class="wc-top"><div class="wc-hi">Welcome back, <em>{{ user.full_name.split(' ')[0] }}</em></div><div class="wc-sub">Your personalized congress experience starts here.</div></div>
     <div class="wc-body">
-      <div class="wc-meta">
-        <span class="badge badge-green">📅 {{ congress_dates }}</span>
-        <span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>
-        {% if user.institution %}<span class="badge" style="color:var(--t3);border-color:var(--b2);background:var(--surface2)">🏛️ {{ user.institution }}</span>{% endif %}
-      </div>
+      <div class="wc-meta"><span class="badge badge-green">📅 {{ congress_dates }}</span><span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>{% if user.institution %}<span class="badge" style="color:var(--w5);border-color:var(--w1);background:var(--w05)">🏛️ {{ user.institution }}</span>{% endif %}</div>
       {% if user.research_interests %}<div class="itags">{% for interest in user.research_interests %}<span class="itag">{{ interest }}</span>{% endfor %}</div>{% endif %}
     </div>
   </div></div>
-
   <div class="stitle animate-up delay-1">Quick Actions</div>
-  <div class="qa animate-up delay-1">
-    <a href="#" class="qi">📋 Program</a><a href="#" class="qi">🖼️ Posters</a><a href="#" class="qi">🤝 Researchers</a><a href="#" class="qi">🤖 AI Companion</a><a href="#" class="qi">🗺️ Venue Map</a>
-    {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="qi" style="font-weight:600">🛡️ Admin Panel</a>{% endif %}
-  </div>
-
+  <div class="qa animate-up delay-1"><a href="#" class="qi">📋 Program</a><a href="#" class="qi">🖼️ Posters</a><a href="#" class="qi">🤝 Researchers</a><a href="#" class="qi">🤖 AI Companion</a><a href="#" class="qi">🗺️ Venue Map</a>{% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="qi" style="color:var(--gold)">🛡️ Admin</a>{% endif %}</div>
   <div class="stitle animate-up delay-2">Your Dashboard</div>
   <div class="dg">
-    <div class="dt tg animate-up delay-2"><div class="dt-stripe"></div><div class="dt-content"><div class="dt-ico">📅</div><h3>My Schedule</h3><p>Browse the program to build your personal schedule.</p></div></div>
-    <div class="dt tp animate-up delay-3"><div class="dt-stripe"></div><div class="dt-content"><div class="dt-ico">🤝</div><h3>Networking</h3><p>AI matchmaking activates 2 weeks before the congress.</p></div></div>
-    <div class="dt ta animate-up delay-4"><div class="dt-stripe"></div><div class="dt-content"><div class="dt-ico">📄</div><h3>My Papers</h3><p>Submit your abstract. Deadline: {{ congress_deadline }}.</p></div></div>
-    <div class="dt tb animate-up delay-5"><div class="dt-stripe"></div><div class="dt-content"><div class="dt-ico">📜</div><h3>CME Credits</h3><p>Scan QR codes at sessions to earn credits.</p></div></div>
+    <div class="dt animate-up delay-2"><div class="dt-ico">📅</div><h3>My Schedule</h3><p>Browse the program to build your personal schedule.</p></div>
+    <div class="dt animate-up delay-3"><div class="dt-ico">🤝</div><h3>Networking</h3><p>AI matchmaking activates 2 weeks before the congress.</p></div>
+    <div class="dt animate-up delay-4"><div class="dt-ico">📄</div><h3>My Papers</h3><p>Submit your abstract. Deadline: {{ congress_deadline }}.</p></div>
+    <div class="dt animate-up delay-5"><div class="dt-ico">📜</div><h3>CME Credits</h3><p>Scan QR codes at sessions to earn credits.</p></div>
   </div>
 </div></div>
 {% endblock %}

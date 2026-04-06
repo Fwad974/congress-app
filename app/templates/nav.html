@@ -1,15 +1,15 @@
-<!-- Shared nav -->
+<!-- Nav -->
 <style>
   .nav-user-menu{position:relative}
-  .nav-user-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--b2);border-radius:var(--r);background:var(--surface);color:var(--t);cursor:pointer;font:.84rem var(--f);transition:.2s}
-  .nav-user-btn:hover{background:var(--fg-pale);border-color:var(--fg2)}
-  .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:var(--fg);display:flex;align-items:center;justify-content:center;font:.7rem var(--f);color:#fff;font-weight:700}
-  .nav-user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1.5px solid var(--b2);border-radius:var(--r);padding:4px;min-width:180px;display:none;z-index:100;box-shadow:0 8px 28px rgba(0,0,0,.1)}
+  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--gb2);border-radius:50px;background:var(--gb);color:var(--w9);cursor:pointer;font:.84rem var(--f);transition:.2s}
+  .nav-user-btn:hover{border-color:var(--gb3);background:var(--gb2)}
+  .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-d));display:flex;align-items:center;justify-content:center;font:.7rem var(--fh);color:var(--bg);font-weight:600}
+  .nav-user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg2);border:1px solid var(--gb2);border-radius:var(--r);padding:5px;min-width:190px;display:none;z-index:100;box-shadow:0 12px 40px rgba(0,0,0,.5)}
   .nav-user-dropdown.open{display:block}
-  .nav-dd-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;font-size:.86rem;color:var(--t2);cursor:pointer;transition:.1s;text-decoration:none;width:100%}
-  .nav-dd-item:hover{background:var(--fg-pale);color:var(--fg)}
-  .nav-quick{display:flex;align-items:center;gap:4px;padding:6px 12px;background:var(--surface);border:1px solid var(--b2);border-radius:var(--r);font:.78rem var(--f);color:var(--t3);transition:.2s;cursor:pointer;text-decoration:none}
-  .nav-quick:hover{background:var(--fg-pale);border-color:var(--fg2);color:var(--fg)}
+  .nav-dd-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font:.86rem var(--f);color:var(--w5);cursor:pointer;transition:.12s;text-decoration:none;width:100%}
+  .nav-dd-item:hover{background:var(--gb);color:var(--w9)}
+  .nav-quick{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--gb);border:1px solid var(--gb2);border-radius:50px;font:.76rem var(--f);color:var(--w5);transition:.2s;cursor:pointer;text-decoration:none}
+  .nav-quick:hover{border-color:var(--gold);color:var(--gold)}
   @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}}
 </style>
 
@@ -20,18 +20,18 @@
     <div class="topnav-links gap-sm">
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
-      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--fg);font-weight:600">🛡️ Admin</a>{% endif %}
+      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold)">🛡️ Admin</a>{% endif %}
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
           <div class="nav-user-avatar">{{ user.full_name[0] }}</div><span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
         </button>
         <div class="nav-user-dropdown">
           <a href="/profile" class="nav-dd-item">👤 Profile</a><a href="/certificates" class="nav-dd-item">📜 Certificates</a><a href="/settings" class="nav-dd-item">⚙️ Settings</a>
-          {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-dd-item" style="color:var(--fg);font-weight:600">🛡️ Admin</a>{% endif %}
+          {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-dd-item" style="color:var(--gold)">🛡️ Admin</a>{% endif %}
           <a href="/logout" class="nav-dd-item" style="color:var(--red)">Sign Out</a>
         </div>
       </div>
-      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(220,38,38,.15);font-size:.76rem;padding:6px 12px">Logout</a>
+      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(231,76,60,.2);font-size:.76rem;padding:6px 14px">Logout</a>
       <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
     </div>
   </nav>
@@ -42,7 +42,7 @@
   <div class="mobile-menu-header"><div class="mobile-menu-user"><div class="avatar">{{ user.full_name[0] }}</div><div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div></div><button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button></div>
   <div class="mobile-menu-links">
     <div class="mobile-menu-section">Navigate</div><a href="/home" class="mobile-menu-link">🏠 Home</a><a href="#" class="mobile-menu-link">📅 Program</a><a href="#" class="mobile-menu-link">🖼️ Posters</a><a href="#" class="mobile-menu-link">🤝 Connect</a>
-    {% if user.role.value in ['admin', 'super_admin'] %}<div class="mobile-menu-section">Admin</div><a href="/admin" class="mobile-menu-link" style="color:var(--fg);font-weight:600">🛡️ Management</a>{% endif %}
+    {% if user.role.value in ['admin', 'super_admin'] %}<div class="mobile-menu-section">Admin</div><a href="/admin" class="mobile-menu-link" style="color:var(--gold)">🛡️ Management</a>{% endif %}
     <div class="mobile-menu-section">Account</div><a href="/profile" class="mobile-menu-link">👤 Profile</a><a href="/certificates" class="mobile-menu-link">📜 Certificates</a><a href="/settings" class="mobile-menu-link">⚙️ Settings</a><a href="/logout" class="mobile-menu-link logout">Sign Out</a>
   </div>
 </div>

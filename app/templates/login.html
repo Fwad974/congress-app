@@ -1,36 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Sign In — {{ congress_full }}{% endblock %}
 {% block head %}<style>
-.auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg2)}
+.auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
 .auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 24px}
 .auth-card{width:100%;max-width:440px}
-.auth-card .card{padding:48px 44px;box-shadow:0 2px 12px rgba(0,62,30,.05)}
+.auth-card .card{padding:48px 40px}
 .auth-header{text-align:center;margin-bottom:32px}
-.auth-header h2{margin-bottom:6px;font-size:1.5rem}
-.auth-header p{color:var(--t3);font-size:.92rem;font-weight:400}
+.auth-header h2{font:600 1.5rem var(--fh);color:var(--w);margin-bottom:6px}
+.auth-header p{font:.9rem var(--f);color:var(--w5)}
 .auth-form{display:flex;flex-direction:column;gap:16px}
 .fe{display:flex;justify-content:space-between;align-items:center;font-size:.82rem}
-.fe label{display:flex;align-items:center;gap:6px;color:var(--t3);cursor:pointer}
-.fe a{color:var(--fg-l);font-weight:500}.fe a:hover{color:var(--fg);text-decoration:underline}
-.auth-footer{text-align:center;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--b);font-size:.88rem;color:var(--t3)}
-.auth-footer a{font-weight:600;color:var(--fg)}
-.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.sso-row .btn{font-size:.86rem;padding:13px;font-weight:500}
+.fe label{display:flex;align-items:center;gap:6px;color:var(--w5);cursor:pointer}
+.fe a{color:var(--gold)}.fe a:hover{color:var(--gold-l)}
+.auth-footer{text-align:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--gb2);font:.88rem var(--f);color:var(--w5)}
+.auth-footer a{font-weight:600;color:var(--gold)}
+.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sso-row .btn{font-size:.84rem;padding:12px}
 @media(max-width:540px){.auth-card .card{padding:32px 24px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:32px 16px}}
 </style>{% endblock %}
 {% block body %}
 <div class="auth-page">
-  <div class="nav-bar"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a><div class="topnav-links gap-sm"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div></div>
+  <div class="nav-bar"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a><div class="topnav-links gap-sm"><a href="/signup" class="btn btn-gold btn-sm">Register</a></div></nav></div></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-    <div class="auth-header">
-      <h2>Welcome Back</h2>
-      <p>Sign in to access your congress dashboard</p>
-    </div>
+    <div class="auth-header"><h2>Welcome Back</h2><p>Sign in to access your congress dashboard</p></div>
     <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
       <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required autofocus></div>
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Enter your password" required></div>
       <div class="fe"><label><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
-      <button type="submit" class="btn btn-primary w-full" id="submitBtn">Sign In</button>
+      <button type="submit" class="btn btn-gold w-full" id="submitBtn">Sign In</button>
       <div class="divider">or continue with</div>
       <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">🆔 ORCID</button></div>
     </form>
