@@ -1,15 +1,16 @@
 <!-- Shared top nav for authenticated pages -->
 <style>
   .nav-user-menu { position: relative; }
-  .nav-user-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--white-10); border-radius: var(--r); background: var(--white-05); color: var(--white-90); cursor: pointer; font-family: var(--sans); font-size: 0.86rem; transition: 0.2s; }
-  .nav-user-btn:hover { background: var(--white-10); }
-  .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--green-deep)); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #000; font-weight: 800; }
+  .nav-user-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--gold-20); border-radius: var(--r); background: var(--gold-10); color: var(--white-90); cursor: pointer; font-family: var(--sans); font-size: 0.86rem; transition: 0.2s; }
+  .nav-user-btn:hover { background: var(--gold-15); }
+  .nav-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--green-deep)); border: 2px solid var(--gold-20); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #000; font-weight: 800; }
   .nav-user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface-2); border: 1px solid var(--border-mid); border-radius: var(--r); padding: 5px; min-width: 190px; display: none; z-index: 100; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
+  .nav-user-dropdown::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-20), transparent); }
   .nav-user-dropdown.open { display: block; }
-  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; color: var(--white-60); cursor: pointer; transition: 0.12s; text-decoration: none; width: 100%; }
+  .nav-dd-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; color: var(--white-50); cursor: pointer; transition: 0.12s; text-decoration: none; width: 100%; }
   .nav-dd-item:hover { background: var(--green-10); color: var(--white-90); }
-  .nav-quick { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--white-05); border: 1px solid var(--white-10); border-radius: var(--r); font-size: 0.78rem; color: var(--white-60); transition: 0.2s; cursor: pointer; text-decoration: none; }
-  .nav-quick:hover { border-color: var(--green); color: var(--green-light); background: var(--green-10); }
+  .nav-quick { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--gold-10); border: 1px solid var(--gold-20); border-radius: var(--r); font-size: 0.78rem; color: var(--gold); transition: 0.2s; cursor: pointer; text-decoration: none; }
+  .nav-quick:hover { background: var(--gold-15); color: var(--gold-light); }
   @media (max-width: 768px) { .nav-user-menu { display: none; } .nav-desktop-logout { display: none; } .nav-desktop-link { display: none; } }
 </style>
 
@@ -20,7 +21,7 @@
       <a href="#" class="nav-quick nav-desktop-link">📅 Program</a>
       <a href="#" class="nav-quick nav-desktop-link">🤝 Connect</a>
       {% if user.role.value in ['admin', 'super_admin'] %}
-      <a href="/admin" class="nav-quick nav-desktop-link" style="border-color:rgba(251,191,36,0.2);color:var(--amber);">🛡️ Admin</a>
+      <a href="/admin" class="nav-quick nav-desktop-link">🛡️ Admin</a>
       {% endif %}
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
@@ -32,12 +33,12 @@
           <a href="/certificates" class="nav-dd-item">📜 Certificates</a>
           <a href="/settings" class="nav-dd-item">⚙️ Settings</a>
           {% if user.role.value in ['admin', 'super_admin'] %}
-          <a href="/admin" class="nav-dd-item" style="color:var(--amber);">🛡️ Admin</a>
+          <a href="/admin" class="nav-dd-item" style="color:var(--gold);">🛡️ Admin</a>
           {% endif %}
           <a href="/logout" class="nav-dd-item" style="color:var(--red);">Sign Out</a>
         </div>
       </div>
-      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(244,63,94,0.2);font-size:0.78rem;padding:7px 14px;">Logout</a>
+      <a href="/logout" class="btn btn-ghost btn-sm nav-desktop-logout" style="color:var(--red);border-color:rgba(244,63,94,0.15);font-size:0.78rem;padding:7px 14px;">Logout</a>
       <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
     </div>
   </nav>
@@ -60,7 +61,7 @@
     <a href="#" class="mobile-menu-link">🤝 Connect</a>
     {% if user.role.value in ['admin', 'super_admin'] %}
     <div class="mobile-menu-section">Admin</div>
-    <a href="/admin" class="mobile-menu-link" style="color:var(--amber);">🛡️ User Management</a>
+    <a href="/admin" class="mobile-menu-link" style="color:var(--gold);">🛡️ User Management</a>
     {% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link">👤 My Profile</a>

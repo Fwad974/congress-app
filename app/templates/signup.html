@@ -4,23 +4,23 @@
 <style>
 .auth-page { min-height: 100vh; display: flex; flex-direction: column; }
 .auth-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
-.auth-card { width: 100%; max-width: 460px; }
-.auth-card .card { padding: 44px 38px; }
-.auth-header { text-align: center; margin-bottom: 28px; }
+.auth-card { width: 100%; max-width: 470px; }
+.auth-card .card { padding: 48px 40px; }
+.auth-header { text-align: center; margin-bottom: 32px; }
 .auth-header .badge { margin-bottom: 16px; }
 .auth-header h2 { margin-bottom: 6px; } .auth-header h2 span { color: var(--green); }
-.auth-header p { color: var(--white-60); font-size: 0.9rem; font-weight: 300; }
+.auth-header p { color: var(--white-50); font-size: 0.9rem; font-weight: 300; }
 .auth-form { display: flex; flex-direction: column; gap: 16px; }
-.interests-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--white-40); margin-bottom: 4px; }
+.interests-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
 .interests-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.auth-footer { text-align: center; margin-top: 24px; font-size: 0.86rem; color: var(--white-60); }
-.auth-footer a { font-weight: 600; }
+.auth-footer { text-align: center; margin-top: 24px; font-size: 0.86rem; color: var(--white-50); }
+.auth-footer a { font-weight: 600; color: var(--gold); }
 .sso-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.sso-row .btn { font-size: 0.84rem; padding: 11px; }
+.sso-row .btn { font-size: 0.84rem; padding: 12px; }
 .pw-requirements { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
-.pw-req { font-size: 0.72rem; color: var(--white-20); display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+.pw-req { font-size: 0.72rem; color: var(--white-30); display: flex; align-items: center; gap: 4px; transition: 0.2s; }
 .pw-req.met { color: var(--green); }
-@media(max-width:540px){.auth-card .card{padding:28px 20px;border-radius:var(--r-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
+@media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--r-lg)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
 </style>
 {% endblock %}
 {% block body %}
