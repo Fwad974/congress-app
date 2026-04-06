@@ -1,31 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Sign In — {{ congress_full }}{% endblock %}
-{% block head %}
-<style>
-.auth-page{min-height:100vh;display:flex;flex-direction:column}
+{% block head %}<style>
+.auth-page{min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
 .auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
-.auth-card{width:100%;max-width:420px}
+.auth-card{width:100%;max-width:430px}
 .auth-card .card{padding:48px 40px}
 .auth-header{text-align:center;margin-bottom:30px}
-.auth-header .badge{margin-bottom:16px}
-.auth-header h2{margin-bottom:4px}.auth-header h2 em{font-style:normal;color:var(--gold)}
-.auth-header p{color:var(--w5);font-size:.88rem;font-weight:300}
+.auth-header .badge{margin-bottom:16px}.auth-header h2{margin-bottom:4px}.auth-header p{color:var(--t3);font-size:.9rem;font-weight:300}
 .auth-form{display:flex;flex-direction:column;gap:14px}
-.fe{display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
-.fe label{display:flex;align-items:center;gap:5px;color:var(--w5);cursor:pointer}
-.fe a{color:var(--gold)}.fe a:hover{color:var(--gold-l)}
-.auth-footer{text-align:center;margin-top:22px;font-size:.84rem;color:var(--w5)}
-.auth-footer a{font-weight:600;color:var(--gold)}
-.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.sso-row .btn{font-size:.82rem;padding:11px}
+.fe{display:flex;justify-content:space-between;align-items:center;font-size:.8rem}
+.fe label{display:flex;align-items:center;gap:5px;color:var(--t3);cursor:pointer}
+.fe a{color:var(--fg-l)}.fe a:hover{color:var(--fg)}
+.auth-footer{text-align:center;margin-top:22px;font-size:.86rem;color:var(--t3)}.auth-footer a{font-weight:600;color:var(--fg)}
+.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sso-row .btn{font-size:.84rem;padding:12px}
 @media(max-width:540px){.auth-card .card{padding:30px 22px;border-radius:var(--rl)}.auth-card{max-width:100%}.sso-row{grid-template-columns:1fr}.auth-body{padding:24px 16px}}
-</style>
-{% endblock %}
+</style>{% endblock %}
 {% block body %}
 <div class="auth-page">
   <div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-    <div class="auth-header"><div class="badge badge-green">Welcome Back</div><h2>Sign <em>In</em></h2><p>Access your congress dashboard</p></div>
+    <div class="auth-header"><div class="badge badge-green">Welcome Back</div><h2>Sign In</h2><p>Access your congress dashboard</p></div>
     <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required autofocus></div>
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Enter your password" required></div>
