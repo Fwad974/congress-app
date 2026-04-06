@@ -1,14 +1,14 @@
 /* Dubai Stem Cell Congress 2027 — v6 clean rebuild */
 
 :root {
-  --bg:       #020804;
-  --bg2:      #071510;
-  --surface:  #0c1e16;
-  --surface2: #112a20;
-  --surface3: #17352a;
-  --b:        rgba(255,255,255,0.06);
-  --b2:       rgba(255,255,255,0.10);
-  --b3:       rgba(255,255,255,0.16);
+  --bg:       #030b07;
+  --bg2:      #081a11;
+  --surface:  #0d2418;
+  --surface2: #133020;
+  --surface3: #1a3d2a;
+  --b:        rgba(16,185,129,0.10);
+  --b2:       rgba(16,185,129,0.16);
+  --b3:       rgba(16,185,129,0.24);
   --w:        #fff;
   --w9:       rgba(255,255,255,.88);
   --w7:       rgba(255,255,255,.62);
@@ -69,11 +69,11 @@ a:hover{color:var(--gb)}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:700 .9rem var(--f);padding:13px 32px;border:none;border-radius:var(--r);cursor:pointer;transition:.25s;white-space:nowrap}
-.btn-primary{background:var(--g);color:#000;box-shadow:0 0 0 1px var(--gd) inset}
-.btn-primary:hover{background:var(--gl);transform:translateY(-1px);box-shadow:0 4px 24px rgba(5,150,105,.25)}
+.btn-primary{background:var(--gl);color:#000;box-shadow:0 0 0 1px var(--g) inset,0 2px 16px rgba(16,185,129,.2)}
+.btn-primary:hover{background:var(--gb);transform:translateY(-1px);box-shadow:0 0 0 1px var(--gl) inset,0 6px 32px rgba(16,185,129,.3)}
 .btn-primary:active{transform:translateY(0)}
-.btn-ghost{background:transparent;color:var(--w9);border:1px solid var(--w3)}
-.btn-ghost:hover{border-color:var(--w5);background:var(--w1)}
+.btn-ghost{background:transparent;color:var(--w9);border:1px solid var(--g2)}
+.btn-ghost:hover{border-color:var(--gl);background:var(--g1);color:var(--gl)}
 .btn-gold{background:var(--gold);color:#000;font-weight:700}
 .btn-gold:hover{background:#d4b65a;transform:translateY(-1px);box-shadow:0 4px 24px rgba(201,168,76,.2)}
 .btn-google{background:var(--w1);border:1px solid var(--b);color:var(--w9)}
@@ -84,14 +84,14 @@ a:hover{color:var(--gb)}
 /* Forms */
 .form-group{display:flex;flex-direction:column;gap:6px}
 .form-label{font:.6rem var(--m);letter-spacing:.12em;text-transform:uppercase;color:var(--w5)}
-.form-input{width:100%;padding:13px 16px;background:var(--bg);border:1px solid var(--b2);border-radius:var(--r);color:var(--w);font:.92rem var(--f);transition:.2s;outline:none}
+.form-input{width:100%;padding:13px 16px;background:rgba(3,11,7,.6);border:1px solid var(--b2);border-radius:var(--r);color:var(--w);font:.92rem var(--f);transition:.2s;outline:none}
 .form-input::placeholder{color:var(--w3)}
 .form-input:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g1)}
 .form-input:hover:not(:focus){border-color:var(--b3)}
 
 /* Card */
 .card{background:var(--surface);border:1px solid var(--b2);border-radius:var(--rx);padding:44px;position:relative}
-.card::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--g2),transparent)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 10%,var(--g) 50%,transparent 90%)}
 
 /* Badge */
 .badge{display:inline-flex;align-items:center;gap:5px;font:.6rem var(--m);letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:100px}
@@ -110,7 +110,7 @@ a:hover{color:var(--gb)}
 /* Topnav */
 .topnav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
 .topnav-brand{display:flex;align-items:center;gap:12px;text-decoration:none}
-.topnav-logo{width:38px;height:38px;background:var(--gdd);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.15rem;border:1px solid var(--g2)}
+.topnav-logo{width:38px;height:38px;background:var(--g);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.15rem;box-shadow:0 0 16px rgba(16,185,129,.15)}
 .topnav-name{font:.68rem/1 var(--m);letter-spacing:.12em;text-transform:uppercase;color:var(--w5)}
 .topnav-links{display:flex;align-items:center;gap:8px}
 
