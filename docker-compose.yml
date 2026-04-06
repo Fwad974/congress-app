@@ -40,6 +40,11 @@ services:
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
       SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-Super Admin}
+      CONGRESS_NAME: ${CONGRESS_NAME:-Dubai Stem Cell Congress}
+      CONGRESS_YEAR: ${CONGRESS_YEAR:-2027}
+      CONGRESS_DATES: ${CONGRESS_DATES:-Feb 15 – 17, 2027}
+      CONGRESS_VENUE: ${CONGRESS_VENUE:-Dubai World Trade Centre}
+      CONGRESS_DEADLINE: ${CONGRESS_DEADLINE:-December 1, 2026}
     depends_on:
       db:
         condition: service_healthy

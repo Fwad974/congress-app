@@ -1,11 +1,12 @@
 """
-Dubai Stem Cell Congress 2027 — Conference App
+Dubai Stem Cell Congress — Conference App
 FastAPI Backend with Admin Dashboard
 """
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
+from app.core.config import get_settings
 from app.core.database import engine, Base
 from app.models.user import User  # noqa – registers model
 from app.models.audit_log import AuditLog  # noqa – registers model
@@ -13,15 +14,33 @@ from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages
 
+settings = get_settings()
+
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
+
+    # Inject congress info into all Jinja2 templates as global variables
+    from app.api.pages import templates as page_tpl
+    from app.api.admin_pages import templates as admin_tpl
+    congress = {
+        "congress_name": settings.CONGRESS_NAME,
+        "congress_year": settings.CONGRESS_YEAR,
+        "congress_dates": settings.CONGRESS_DATES,
+        "congress_venue": settings.CONGRESS_VENUE,
+        "congress_deadline": settings.CONGRESS_DEADLINE,
+        "congress_short": f"DSCC {settings.CONGRESS_YEAR}",
+        "congress_full": f"{settings.CONGRESS_NAME} {settings.CONGRESS_YEAR}",
+    }
+    page_tpl.env.globals.update(congress)
+    admin_tpl.env.globals.update(congress)
+
     yield
 
 
 app = FastAPI(
-    title="Dubai Stem Cell Congress 2027",
+    title=f"{settings.CONGRESS_NAME} {settings.CONGRESS_YEAR}",
     version="1.0.0",
     lifespan=lifespan,
 )

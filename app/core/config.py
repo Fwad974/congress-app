@@ -8,6 +8,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24h for regular users
 
+    # Congress info — edit in .env to change without touching code
+    CONGRESS_NAME: str = "Dubai Stem Cell Congress"
+    CONGRESS_YEAR: str = "2027"
+    CONGRESS_DATES: str = "Feb 15 – 17, 2027"
+    CONGRESS_VENUE: str = "Dubai World Trade Centre"
+    CONGRESS_DEADLINE: str = "December 1, 2026"
+
     class Config:
         env_file = ".env"
 

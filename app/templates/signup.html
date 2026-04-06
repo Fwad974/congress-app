@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Register — Dubai Stem Cell Congress 2027{% endblock %}
+{% block title %}Register — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
 .auth-page{min-height:100vh;display:flex;flex-direction:column}.auth-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}.auth-card{width:100%;max-width:480px}.auth-card .card{padding:44px 40px}.auth-header{text-align:center;margin-bottom:32px}.auth-header .badge{margin-bottom:16px}.auth-header h2{margin-bottom:6px}.auth-header h2 span{color:var(--teal)}.auth-header p{color:var(--text-secondary);font-size:0.92rem;font-weight:300}.auth-form{display:flex;flex-direction:column;gap:18px}.interests-label{font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px}.interests-grid{display:flex;flex-wrap:wrap;gap:8px}.auth-footer{text-align:center;margin-top:24px;font-size:0.88rem;color:var(--text-secondary)}.auth-footer a{font-weight:600}.sso-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sso-row .btn{font-size:0.85rem;padding:12px}.pw-requirements{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:2px}.pw-req{font-size:0.72rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;transition:color 0.2s}.pw-req.met{color:var(--green)}
@@ -7,7 +7,7 @@
 </style>
 {% endblock %}
 {% block body %}
-<div class="auth-page"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">DSCC 2027</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div>
+<div class="auth-page"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div>
 <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
 <div class="auth-header"><div class="badge badge-teal">🧬 New Registration</div><h2>Create Your <span>Account</span></h2><p>Join 500+ researchers at the congress</p></div>
 <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dubai Stem Cell Congress 2027{% endblock %}
+{% block title %}{{ congress_full }}{% endblock %}
 {% block head %}
 <style>
 .hero{min-height:100vh;display:flex;flex-direction:column;position:relative}
@@ -30,10 +30,10 @@
 </style>
 {% endblock %}
 {% block body %}
-<div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">DSCC 2027</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
+<div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo">🧬</div><span class="topnav-name">{{ congress_short }}</span></a><div class="topnav-links"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a><a href="/signup" class="btn btn-primary btn-sm">Register</a></div></nav></div>
 <section class="hero"><div class="hero-content">
-<div class="hero-eyebrow animate-up"><span class="hero-date">📅 Feb 15 – 17, 2027</span><span class="hero-venue">📍 Dubai World Trade Centre</span></div>
-<h1 class="animate-up delay-1">Dubai <span class="accent">Stem Cell</span><br>Congress <span class="gold">2027</span></h1>
+<div class="hero-eyebrow animate-up"><span class="hero-date">📅 {{ congress_dates }}</span><span class="hero-venue">📍 {{ congress_venue }}</span></div>
+<h1 class="animate-up delay-1">Dubai <span class="accent">Stem Cell</span><br>Congress <span class="gold">{{ congress_year }}</span></h1>
 <p class="hero-sub animate-up delay-2">The premier gathering for regenerative medicine researchers, clinicians, and biotech innovators. Three days of science, networking, and breakthroughs.</p>
 <div class="hero-actions animate-up delay-3"><a href="/signup" class="btn btn-primary btn-lg">Register Now</a><a href="#features" class="btn btn-ghost btn-lg">Explore Program</a></div>
 </div></section>
@@ -48,5 +48,5 @@
 <div class="feature-card animate-up delay-5"><div class="feature-icon">📜</div><h3>CME Certificates</h3><p>Automatic attendance tracking via QR scans with downloadable certificates.</p></div>
 </div></div></section>
 <section class="cta-section"><div class="cta-card animate-up"><h2>Ready to <span>Join</span>?</h2><p>Register now to build your personalized schedule and discover AI-matched connections.</p><div class="hero-actions"><a href="/signup" class="btn btn-primary btn-lg">Create Account</a><a href="/login" class="btn btn-ghost btn-lg">Sign In</a></div></div></section>
-<footer class="footer"><p>© 2027 Dubai Stem Cell Congress. All rights reserved.</p></footer>
+<footer class="footer"><p>© {{ congress_year }} {{ congress_name }}. All rights reserved.</p></footer>
 {% endblock %}
