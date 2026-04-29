@@ -53,9 +53,12 @@ html{scroll-behavior:smooth;overflow-x:hidden}
 body{background:var(--bg);color:var(--w9);font:400 .95rem/1.7 var(--f);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
 ::selection{background:var(--gold);color:var(--bg)}
-::-webkit-scrollbar{width:7px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gold),var(--gold-d));border-radius:4px}
+*{scrollbar-width:thin;scrollbar-color:rgba(201,169,98,.22) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(201,169,98,.18);border-radius:4px;border:1px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(201,169,98,.4);background-clip:padding-box}
+::-webkit-scrollbar-corner{background:transparent}
 
 .grain,.glow,.glow-1,.glow-2{display:none}
 
