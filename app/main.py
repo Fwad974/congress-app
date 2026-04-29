@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.core.database import engine, Base
 from app.models.user import User  # noqa – registers model
 from app.models.audit_log import AuditLog, AuditAction, AuditSeverity  # noqa – registers model
-from app.models.schedule import ScheduleItem, ScheduleType  # noqa – registers model
+from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark  # noqa – registers model
 from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages

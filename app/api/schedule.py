@@ -1,12 +1,12 @@
 """
 Schedule API — Public listing + admin CRUD for the congress program.
 
-- Anyone authenticated can list/view schedule items.
-- Only admins (admin/super_admin) can create, update, or delete.
+- Anyone authenticated can list/view schedule items and toggle their own bookmarks.
+- Only admins (admin/super_admin) can create, update, or delete schedule items.
 - All admin mutations are written to the audit log.
 """
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Set
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
@@ -17,7 +17,7 @@ from app.core.security import get_current_user
 from app.core.admin_security import require_admin
 from app.core.audit_service import log_action
 from app.models.user import User
-from app.models.schedule import ScheduleItem, ScheduleType
+from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
 from app.models.audit_log import AuditAction
 from app.schemas.schedule import (
     ScheduleItemCreate, ScheduleItemUpdate,
@@ -28,7 +28,14 @@ from app.schemas.schedule import (
 router = APIRouter()
 
 
-def _serialize(item: ScheduleItem) -> ScheduleItemResponse:
+def _bookmarked_ids(db: Session, user_id: int) -> Set[int]:
+    rows = db.query(ScheduleBookmark.schedule_item_id).filter(
+        ScheduleBookmark.user_id == user_id
+    ).all()
+    return {r[0] for r in rows}
+
+
+def _serialize(item: ScheduleItem, bookmarked: bool = False) -> ScheduleItemResponse:
     """Shape a row for the response, normalizing extra/None to {}."""
     return ScheduleItemResponse(
         id=item.id,
@@ -39,6 +46,7 @@ def _serialize(item: ScheduleItem) -> ScheduleItemResponse:
         start_time=item.start_time,
         end_time=item.end_time,
         extra=item.extra or {},
+        is_bookmarked=bookmarked,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -49,6 +57,7 @@ def _serialize(item: ScheduleItem) -> ScheduleItemResponse:
 @router.get("/", response_model=ScheduleListResponse)
 def list_schedule(
     type: Optional[str] = Query(None),
+    bookmarked: bool = Query(False),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -58,9 +67,16 @@ def list_schedule(
             q = q.filter(ScheduleItem.type == ScheduleType(type))
         except ValueError:
             pass
+
+    bookmarks = _bookmarked_ids(db, user.id)
+    if bookmarked:
+        if not bookmarks:
+            return ScheduleListResponse(items=[], total=0)
+        q = q.filter(ScheduleItem.id.in_(bookmarks))
+
     items = q.order_by(asc(ScheduleItem.start_time)).all()
     return ScheduleListResponse(
-        items=[_serialize(i) for i in items],
+        items=[_serialize(i, bookmarked=i.id in bookmarks) for i in items],
         total=len(items),
     )
 
@@ -74,7 +90,50 @@ def get_schedule_item(
     item = db.query(ScheduleItem).filter(ScheduleItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Schedule item not found")
-    return _serialize(item)
+    bm = db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.user_id == user.id,
+        ScheduleBookmark.schedule_item_id == item_id,
+    ).first() is not None
+    return _serialize(item, bookmarked=bm)
+
+
+# ─── Bookmarks (any authenticated user) ──────────────────────────
+@router.post("/{item_id}/bookmark")
+def add_bookmark(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    item = db.query(ScheduleItem).filter(ScheduleItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Schedule item not found")
+
+    existing = db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.user_id == user.id,
+        ScheduleBookmark.schedule_item_id == item_id,
+    ).first()
+    if existing:
+        return {"message": "Already bookmarked", "is_bookmarked": True}
+
+    bm = ScheduleBookmark(user_id=user.id, schedule_item_id=item_id)
+    db.add(bm)
+    db.commit()
+    return {"message": "Bookmarked", "is_bookmarked": True}
+
+
+@router.delete("/{item_id}/bookmark")
+def remove_bookmark(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    deleted = db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.user_id == user.id,
+        ScheduleBookmark.schedule_item_id == item_id,
+    ).delete(synchronize_session=False)
+    db.commit()
+    return {"message": "Bookmark removed" if deleted else "Not bookmarked",
+            "is_bookmarked": False}
 
 
 # ─── Admin CRUD ───────────────────────────────────────────────────
@@ -106,7 +165,7 @@ def create_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return _serialize(item)
+    return _serialize(item, bookmarked=False)
 
 
 @router.put("/{item_id}", response_model=ScheduleItemResponse)
@@ -155,7 +214,11 @@ def update_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return _serialize(item)
+    bm = db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.user_id == admin.id,
+        ScheduleBookmark.schedule_item_id == item.id,
+    ).first() is not None
+    return _serialize(item, bookmarked=bm)
 
 
 @router.delete("/{item_id}")
@@ -177,6 +240,10 @@ def delete_schedule_item(
         old_value=title,
     )
 
+    # Drop dependent bookmarks first (SQLite doesn't enforce FK cascades by default).
+    db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.schedule_item_id == item_id
+    ).delete(synchronize_session=False)
     db.delete(item)
     db.commit()
     return {"message": f"Schedule item '{title}' deleted"}

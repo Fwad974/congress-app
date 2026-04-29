@@ -139,6 +139,7 @@ class ScheduleItemResponse(BaseModel):
     start_time: datetime
     end_time: datetime
     extra: Dict[str, Any] = {}
+    is_bookmarked: bool = False
     created_at: datetime
     updated_at: datetime
 

@@ -8,7 +8,10 @@ allowed keys per type.
 """
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, Text, Enum as SAEnum, Index, JSON
+from sqlalchemy import (
+    Column, Integer, String, DateTime, Text, Enum as SAEnum, Index, JSON,
+    ForeignKey, UniqueConstraint,
+)
 from app.core.database import Base
 
 
@@ -46,4 +49,21 @@ class ScheduleItem(Base):
 
     __table_args__ = (
         Index("idx_schedule_start", "start_time"),
+    )
+
+
+class ScheduleBookmark(Base):
+    """A single user's bookmark on a schedule item."""
+    __tablename__ = "schedule_bookmarks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
+                     nullable=False, index=True)
+    schedule_item_id = Column(Integer, ForeignKey("schedule_items.id", ondelete="CASCADE"),
+                              nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True),
+                        default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "schedule_item_id", name="uq_schedule_bookmark"),
     )

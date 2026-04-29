@@ -7,8 +7,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.schedule import ScheduleItem, ScheduleType
-from tests.conftest import auth_cookie
+from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
+from tests.conftest import auth_cookie, make_user
+from app.models.user import UserRole
 
 
 def _payload(**overrides):
@@ -291,6 +292,107 @@ class TestScheduleExtraFields:
         assert extra["presenter"] == "Sara"
         assert extra["poster_number"] == "P-12"
         assert "abstract" in extra
+
+
+class TestScheduleBookmarks:
+    def _create_item(self, client, admin):
+        return client.post(
+            "/api/schedule", json=_payload(),
+            cookies=auth_cookie(admin),
+        ).json()
+
+    def test_unauthenticated_cannot_bookmark(self, client, admin_user):
+        item = self._create_item(client, admin_user)
+        resp = client.post(f"/api/schedule/{item['id']}/bookmark")
+        assert resp.status_code == 401
+
+    def test_attendee_can_bookmark(self, client, admin_user, attendee):
+        item = self._create_item(client, admin_user)
+        resp = client.post(f"/api/schedule/{item['id']}/bookmark",
+                           cookies=auth_cookie(attendee))
+        assert resp.status_code == 200
+        assert resp.json()["is_bookmarked"] is True
+
+    def test_bookmark_is_idempotent(self, client, admin_user, attendee):
+        item = self._create_item(client, admin_user)
+        client.post(f"/api/schedule/{item['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+        resp = client.post(f"/api/schedule/{item['id']}/bookmark",
+                           cookies=auth_cookie(attendee))
+        assert resp.status_code == 200
+        assert resp.json()["is_bookmarked"] is True
+
+    def test_remove_bookmark(self, client, admin_user, attendee):
+        item = self._create_item(client, admin_user)
+        client.post(f"/api/schedule/{item['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+        resp = client.delete(f"/api/schedule/{item['id']}/bookmark",
+                             cookies=auth_cookie(attendee))
+        assert resp.status_code == 200
+        assert resp.json()["is_bookmarked"] is False
+
+    def test_bookmark_404_on_missing_item(self, client, attendee):
+        resp = client.post("/api/schedule/9999/bookmark",
+                           cookies=auth_cookie(attendee))
+        assert resp.status_code == 404
+
+    def test_listing_includes_is_bookmarked(self, client, admin_user, attendee, db):
+        item_a = self._create_item(client, admin_user)
+        # Create a second one so we cover both true and false
+        client.post(
+            "/api/schedule",
+            json=_payload(title="Second"),
+            cookies=auth_cookie(admin_user),
+        )
+
+        client.post(f"/api/schedule/{item_a['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+
+        resp = client.get("/api/schedule", cookies=auth_cookie(attendee))
+        assert resp.status_code == 200
+        items = {i["title"]: i for i in resp.json()["items"]}
+        assert items["Opening Keynote"]["is_bookmarked"] is True
+        assert items["Second"]["is_bookmarked"] is False
+
+    def test_bookmark_is_per_user(self, client, admin_user, attendee, db):
+        item = self._create_item(client, admin_user)
+        client.post(f"/api/schedule/{item['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+
+        other = make_user(db, email="other@test.com", role=UserRole.attendee,
+                          full_name="Other Attendee")
+        resp = client.get(f"/api/schedule/{item['id']}",
+                          cookies=auth_cookie(other))
+        assert resp.json()["is_bookmarked"] is False
+
+    def test_bookmark_filter(self, client, admin_user, attendee):
+        a = self._create_item(client, admin_user)
+        client.post(
+            "/api/schedule",
+            json=_payload(title="Not bookmarked"),
+            cookies=auth_cookie(admin_user),
+        )
+        client.post(f"/api/schedule/{a['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+
+        resp = client.get("/api/schedule?bookmarked=true",
+                          cookies=auth_cookie(attendee))
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] == 1
+        assert body["items"][0]["title"] == "Opening Keynote"
+        assert body["items"][0]["is_bookmarked"] is True
+
+    def test_deleting_item_cleans_up_bookmarks(self, client, admin_user, attendee, db):
+        item = self._create_item(client, admin_user)
+        client.post(f"/api/schedule/{item['id']}/bookmark",
+                    cookies=auth_cookie(attendee))
+        assert db.query(ScheduleBookmark).count() == 1
+
+        resp = client.delete(f"/api/schedule/{item['id']}",
+                             cookies=auth_cookie(admin_user))
+        assert resp.status_code == 200
+        assert db.query(ScheduleBookmark).count() == 0
 
 
 class TestSchedulePage:
