@@ -10,6 +10,33 @@
 .settings-header h3{font:600 1rem var(--fh);color:var(--gold)}
 .settings-body{padding:28px 32px}
 .form-actions{display:flex;justify-content:flex-end;margin-top:8px;padding-top:16px;border-top:1px solid var(--ga2)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 0}
+.toggle-row .lbl{font:.92rem var(--f);color:var(--w9)}
+.toggle-row .hint{font:.78rem var(--f);color:var(--w5);margin-top:2px}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;cursor:pointer;inset:0;background:var(--ga2);border:1px solid var(--ga2);border-radius:24px;transition:.2s}
+.switch span::before{content:'';position:absolute;height:18px;width:18px;left:2px;top:2px;background:var(--w7);border-radius:50%;transition:.2s}
+.switch input:checked + span{background:linear-gradient(135deg,var(--gold),var(--gold-d));border-color:var(--gold)}
+.switch input:checked + span::before{transform:translateX(20px);background:var(--bg)}
+.lead-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px}
+.lead-chip{padding:9px 14px;border:1px solid var(--ga2);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .82rem var(--f);cursor:pointer;text-align:center;transition:.2s;user-select:none}
+.lead-chip:hover{border-color:var(--gold);color:var(--gold)}
+.lead-chip.on{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.sound-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sound-row select{flex:1;min-width:140px}
+.test-btn{padding:9px 16px;border:1px solid var(--ga2);border-radius:50px;background:rgba(10,61,46,.3);color:var(--gold);font:500 .82rem var(--f);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s}
+.test-btn:hover{border-color:var(--gold);background:rgba(201,169,98,.06)}
+.test-btn svg{width:14px;height:14px}
+.range-row{display:flex;align-items:center;gap:14px}
+.range-row input[type=range]{flex:1;accent-color:var(--gold)}
+.range-row .pct{font:600 .82rem var(--m);color:var(--gold);min-width:42px;text-align:right}
+.field-block{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-bottom:1px solid var(--ga2)}
+.field-block:last-of-type{border-bottom:none;padding-bottom:6px}
+.field-block .ftitle{font:600 .86rem var(--f);color:var(--w9)}
+.field-block .fhint{font:.76rem var(--f);color:var(--w5)}
+.perm-warn{padding:10px 14px;border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.06);border-radius:var(--r);color:var(--w7);font:.8rem var(--f);display:none;margin-top:8px}
+.perm-warn.show{display:block}
 @media(max-width:540px){.settings-header{padding:16px 20px}.settings-body{padding:20px}}
 </style>{% endblock %}
 {% block body %}
@@ -26,6 +53,121 @@
       </form>
     </div>
   </div>
+
+  <div class="settings-card animate-up delay-2">
+    <div class="settings-header"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><h3>Notifications</h3></div>
+    <div class="settings-body">
+      <div class="field-block">
+        <div class="toggle-row">
+          <div>
+            <div class="ftitle">Schedule reminders</div>
+            <div class="fhint">Notify me before items I've bookmarked.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="n_enabled" onchange="onEnabledChange()"><span></span></label>
+        </div>
+        <div class="perm-warn" id="permWarn">Browser notifications are blocked. Reminders will still appear as in-page toasts and play a sound. Enable notifications in your browser site settings to get system pop-ups.</div>
+      </div>
+      <div class="field-block">
+        <div class="ftitle">Remind me</div>
+        <div class="fhint">Choose one or more lead times.</div>
+        <div class="lead-grid" id="leadChips">
+          <div class="lead-chip" data-min="30">30 min before</div>
+          <div class="lead-chip" data-min="15">15 min before</div>
+          <div class="lead-chip" data-min="10">10 min before</div>
+          <div class="lead-chip" data-min="5">5 min before</div>
+          <div class="lead-chip" data-min="0">At start</div>
+        </div>
+      </div>
+      <div class="field-block">
+        <div class="ftitle">Sound</div>
+        <div class="fhint">Plays when a reminder fires.</div>
+        <div class="sound-row">
+          <select class="form-input" id="n_sound">
+            <option value="bell">Bell</option>
+            <option value="chime">Chime</option>
+            <option value="buzz">Buzz</option>
+            <option value="off">Off</option>
+          </select>
+          <button type="button" class="test-btn" onclick="testSound()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test</button>
+        </div>
+      </div>
+      <div class="field-block">
+        <div class="ftitle">Volume</div>
+        <div class="range-row">
+          <input type="range" id="n_volume" min="0" max="100" step="5">
+          <span class="pct" id="volPct">70%</span>
+        </div>
+      </div>
+      <div class="form-actions"><button type="button" class="btn btn-gold btn-sm" id="notifBtn" onclick="saveNotifPrefs()">Save Preferences</button></div>
+    </div>
+  </div>
 </div></div>
 {% endblock %}
-{% block scripts %}<script>async function handlePwChange(e){e.preventDefault();if(document.getElementById('newPw').value!==document.getElementById('confPw').value){showToast('Passwords do not match','error');return}const btn=document.getElementById('pwBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const res=await fetch('/api/auth/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:document.getElementById('curPw').value,new_password:document.getElementById('newPw').value}),credentials:'same-origin'});const d=await res.json();if(!res.ok)throw new Error(d.detail);showToast('Password updated!','success');e.target.reset()}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Update Password';btn.disabled=false}}</script>{% endblock %}
+{% block scripts %}<script>
+async function handlePwChange(e){e.preventDefault();if(document.getElementById('newPw').value!==document.getElementById('confPw').value){showToast('Passwords do not match','error');return}const btn=document.getElementById('pwBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const res=await fetch('/api/auth/password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:document.getElementById('curPw').value,new_password:document.getElementById('newPw').value}),credentials:'same-origin'});const d=await res.json();if(!res.ok)throw new Error(d.detail);showToast('Password updated!','success');e.target.reset()}catch(err){showToast(err.message,'error')}finally{btn.innerHTML='Update Password';btn.disabled=false}}
+
+let _leadSet=new Set();
+function syncLeadChips(){document.querySelectorAll('#leadChips .lead-chip').forEach(c=>{const m=parseInt(c.dataset.min,10);c.classList.toggle('on',_leadSet.has(m));});}
+document.querySelectorAll('#leadChips .lead-chip').forEach(c=>{c.addEventListener('click',()=>{const m=parseInt(c.dataset.min,10);if(_leadSet.has(m))_leadSet.delete(m);else _leadSet.add(m);syncLeadChips();});});
+document.getElementById('n_volume').addEventListener('input',e=>{document.getElementById('volPct').textContent=e.target.value+'%';});
+
+function showPermWarn(){
+  const has=('Notification' in window);
+  const warn=document.getElementById('permWarn');
+  if(!has){warn.classList.remove('show');return;}
+  warn.classList.toggle('show', Notification.permission==='denied' && document.getElementById('n_enabled').checked);
+}
+
+async function onEnabledChange(){
+  if(document.getElementById('n_enabled').checked){
+    if(window.__schedNotif){
+      const result=await window.__schedNotif.requestPermission();
+      if(result==='denied')showToast('System pop-ups blocked, but reminders will still play in-page','error');
+    }
+  }
+  showPermWarn();
+}
+
+function testSound(){
+  const sound=document.getElementById('n_sound').value;
+  const vol=parseInt(document.getElementById('n_volume').value,10)/100;
+  if(window.__schedNotif)window.__schedNotif.testSound(sound, vol);
+  if(sound==='off')showToast('Sound is set to Off','error');
+}
+
+async function loadNotifPrefs(){
+  try{
+    const r=await fetch('/api/notifications/settings',{credentials:'same-origin'});
+    if(!r.ok)return;
+    const d=await r.json();const p=d.prefs;
+    document.getElementById('n_enabled').checked=!!p.enabled;
+    _leadSet=new Set(p.lead_times||[]);
+    syncLeadChips();
+    document.getElementById('n_sound').value=p.sound||'bell';
+    const v=Math.round((p.volume||0.7)*100);
+    document.getElementById('n_volume').value=v;
+    document.getElementById('volPct').textContent=v+'%';
+    showPermWarn();
+  }catch(e){}
+}
+
+async function saveNotifPrefs(){
+  const btn=document.getElementById('notifBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  const payload={
+    enabled:document.getElementById('n_enabled').checked,
+    lead_times:[..._leadSet],
+    sound:document.getElementById('n_sound').value,
+    volume:parseInt(document.getElementById('n_volume').value,10)/100,
+  };
+  try{
+    const r=await fetch('/api/notifications/settings',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!r.ok){let msg=d.detail||'Failed';if(Array.isArray(msg))msg=msg.map(e=>e.msg).join('. ');throw new Error(msg);}
+    showToast('Notification preferences saved','success');
+    if(window.__schedNotif)window.__schedNotif.refresh();
+  }catch(e){showToast(e.message,'error');}
+  btn.innerHTML='Save Preferences';btn.disabled=false;
+}
+
+document.addEventListener('DOMContentLoaded',loadNotifPrefs);
+</script>{% endblock %}

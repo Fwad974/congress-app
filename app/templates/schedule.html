@@ -250,6 +250,7 @@ async function toggleBookmark(id, btn){
   btn.classList.toggle('on',next);
   try{
     await api('/api/schedule/'+id+'/bookmark', next?'POST':'DELETE');
+    if(window.__schedNotif)window.__schedNotif.refresh();
     if(_bookmarkOnly && !next){
       // Removed from filtered view — drop it
       loadSchedule();
