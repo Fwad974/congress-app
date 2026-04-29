@@ -28,6 +28,10 @@ class AuditAction(str, enum.Enum):
     content_reject = "content_reject"
     content_flag = "content_flag"
     content_remove = "content_remove"
+    # Schedule
+    schedule_create = "schedule_create"
+    schedule_update = "schedule_update"
+    schedule_delete = "schedule_delete"
     # System
     settings_change = "settings_change"
     export_data = "export_data"

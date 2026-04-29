@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_optional
+from app.models.user import UserRole
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -67,3 +68,14 @@ async def certificates_page(request: Request, user=Depends(get_current_user_opti
     if not user:
         return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse("certificates.html", {"request": request, "user": user})
+
+
+@router.get("/schedule", response_class=HTMLResponse)
+async def schedule_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    is_admin = user.role in (UserRole.admin, UserRole.super_admin)
+    return templates.TemplateResponse(
+        "schedule.html",
+        {"request": request, "user": user, "is_admin": is_admin},
+    )

@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}Schedule — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.sched-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.sched-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 18px;flex-wrap:wrap}
+.sched-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
+.sched-title-bar h2 span{color:var(--gold)}
+.sched-meta{font:.82rem var(--f);color:var(--w5)}
+.sched-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.sched-filter{padding:11px 14px;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w7);font:.86rem var(--f);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c9a962'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.sched-btn{padding:10px 18px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .84rem var(--f);cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.sched-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sched-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600;box-shadow:0 4px 16px rgba(201,169,98,.2)}
+.sched-btn.primary:hover{box-shadow:0 6px 24px rgba(201,169,98,.3)}
+.sched-btn.danger{border-color:rgba(231,76,60,.2);color:var(--red)}
+.sched-btn.danger:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
+.sched-day-group{margin-bottom:32px}
+.sched-day-header{font:600 .72rem var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(201,169,98,.15)}
+.sched-day-header strong{color:var(--w);margin-right:8px;font-weight:700}
+.sched-list{display:flex;flex-direction:column;gap:12px}
+.sched-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:18px 22px;display:grid;grid-template-columns:120px 1fr auto;gap:18px;align-items:flex-start;transition:.25s}
+.sched-card:hover{border-color:rgba(201,169,98,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.sched-time{font:600 .82rem var(--m);color:var(--gold);line-height:1.5;text-transform:uppercase;letter-spacing:.05em}
+.sched-time .dur{display:block;font-weight:400;color:var(--w3);font-size:.7rem;margin-top:2px}
+.sched-body h3{font:600 1.05rem var(--fh);color:var(--w);margin-bottom:6px}
+.sched-body .desc{font:.86rem/1.5 var(--f);color:var(--w7);margin-top:8px;white-space:pre-wrap}
+.sched-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sched-tag{font:600 .62rem var(--f);letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:50px}
+.sched-tag.type{background:rgba(201,169,98,.12);color:var(--gold);border:1px solid rgba(201,169,98,.25)}
+.sched-tag.type.keynote{background:rgba(212,175,55,0.15);color:var(--gold-l);border-color:rgba(212,175,55,0.35);font-weight:700}
+.sched-tag.type.workshop{background:rgba(96,165,250,0.1);color:var(--blue);border-color:rgba(96,165,250,0.2)}
+.sched-tag.type.panel{background:rgba(167,139,250,0.1);color:var(--purple);border-color:rgba(167,139,250,0.2)}
+.sched-tag.type.poster{background:rgba(38,166,154,0.1);color:var(--teal);border-color:rgba(38,166,154,0.2)}
+.sched-tag.type.break,.sched-tag.type.networking{background:var(--w05);color:var(--w5);border-color:var(--w1)}
+.sched-tag.location{background:rgba(255,255,255,0.04);color:var(--w7);border:1px solid var(--w1)}
+.sched-tag.speaker{background:var(--ga2);color:var(--gold);border:1px solid var(--ga2)}
+.sched-actions{display:flex;gap:6px;flex-shrink:0}
+.sched-act{width:32px;height:32px;border-radius:8px;border:1px solid rgba(201,169,98,.12);background:none;color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.sched-act:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.06)}
+.sched-act svg{width:14px;height:14px}
+.sched-act.del{color:var(--red);border-color:rgba(231,76,60,.15)}
+.sched-act.del:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
+.sched-empty{text-align:center;padding:60px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.sched-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid rgba(201,169,98,.2);border-radius:var(--rx);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:24px 28px 0}
+.modal-header h3{font:600 1.15rem var(--fh);color:var(--w)}
+.modal-header h3 span{color:var(--gold)}
+.modal-close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(201,169,98,.12);background:none;color:var(--w5);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{border-color:var(--red);color:var(--red);background:rgba(231,76,60,.06)}
+.modal-body{padding:22px 28px;display:flex;flex-direction:column;gap:14px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:0 28px 24px}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.loading-bar{height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:loading-slide 1.5s ease infinite;display:none}
+.loading-bar.active{display:block}
+@keyframes loading-slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@media(max-width:720px){.sched-card{grid-template-columns:1fr;gap:10px}.sched-time{font-size:.76rem}.row-2{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="sched-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="sched-title-bar animate-up">
+    <a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
+    <h2>Congress <span>Schedule</span></h2>
+    <span class="sched-meta">{{ congress_dates }} &middot; {{ congress_venue }}</span>
+  </div>
+  <div class="sched-toolbar animate-up delay-1">
+    <select class="sched-filter" id="typeFilter" onchange="loadSchedule()">
+      <option value="">All Types</option>
+      <option value="keynote">Keynote</option>
+      <option value="talk">Talk</option>
+      <option value="panel">Panel</option>
+      <option value="workshop">Workshop</option>
+      <option value="poster">Poster</option>
+      <option value="break">Break</option>
+      <option value="networking">Networking</option>
+      <option value="other">Other</option>
+    </select>
+    <button class="sched-btn" onclick="loadSchedule()">Refresh</button>
+    {% if is_admin %}
+      <button class="sched-btn primary" onclick="openCreate()">+ Add Item</button>
+    {% endif %}
+  </div>
+  <div class="loading-bar" id="loadingBar"></div>
+  <div id="scheduleContainer" class="animate-up delay-2">
+    <div class="sched-empty">Loading schedule...</div>
+  </div>
+</div>
+</div>
+
+{% if is_admin %}
+<div class="modal-overlay" id="schedModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="schedModalTitle">New <span>Schedule Item</span></h3>
+      <button class="modal-close" onclick="closeSchedModal()">X</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m_id" value="">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-input" id="m_title" required>
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-input" id="m_type">
+            <option value="keynote">Keynote</option>
+            <option value="talk" selected>Talk</option>
+            <option value="panel">Panel</option>
+            <option value="workshop">Workshop</option>
+            <option value="poster">Poster</option>
+            <option value="break">Break</option>
+            <option value="networking">Networking</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Speaker</label>
+          <input type="text" class="form-input" id="m_speaker" placeholder="Speaker name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-input" id="m_location" placeholder="Hall A, Room 2B...">
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input type="datetime-local" class="form-input" id="m_start" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <input type="datetime-local" class="form-input" id="m_end" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="m_desc" rows="4" placeholder="Optional details..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="sched-btn" onclick="closeSchedModal()">Cancel</button>
+      <button class="sched-btn primary" id="m_submit" onclick="submitSched()">Create</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+const ICONS = {
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+};
+let _items = {};
+
+function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+async function api(url, method='GET', body=null){
+  const opts={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  let d={};try{d=await r.json();}catch(e){}
+  if(!r.ok){
+    let msg=d.detail||'Failed';
+    if(Array.isArray(msg))msg=msg.map(e=>e.msg).join('. ');
+    throw new Error(msg);
+  }
+  return d;
+}
+
+function fmtTime(iso){
+  const d=new Date(iso);
+  return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDayKey(iso){
+  const d=new Date(iso);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDayLabel(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function fmtDuration(start,end){
+  const ms=new Date(end)-new Date(start);
+  const min=Math.round(ms/60000);
+  if(min<60)return min+' min';
+  const h=Math.floor(min/60),m=min%60;
+  return m?(h+'h '+m+'m'):(h+'h');
+}
+
+async function loadSchedule(){
+  ld(true);
+  try{
+    const t=document.getElementById('typeFilter').value;
+    const url='/api/schedule'+(t?'?type='+encodeURIComponent(t):'');
+    const d=await api(url);
+    _items={};d.items.forEach(i=>_items[i.id]=i);
+    render(d.items);
+  }catch(e){
+    showToast(e.message,'error');
+    document.getElementById('scheduleContainer').innerHTML='<div class="sched-empty"><strong>Could not load schedule</strong>'+esc(e.message)+'</div>';
+  }
+  ld(false);
+}
+
+function render(items){
+  const c=document.getElementById('scheduleContainer');
+  if(!items.length){
+    c.innerHTML='<div class="sched-empty"><strong>No schedule yet</strong>'+(IS_ADMIN?'Click "Add Item" to start building the program.':'Check back soon — the program is being finalized.')+'</div>';
+    return;
+  }
+  const groups={};
+  items.forEach(i=>{
+    const k=fmtDayKey(i.start_time);
+    if(!groups[k])groups[k]={label:fmtDayLabel(i.start_time),items:[]};
+    groups[k].items.push(i);
+  });
+  const keys=Object.keys(groups).sort();
+  c.innerHTML=keys.map(k=>{
+    const g=groups[k];
+    return '<div class="sched-day-group"><div class="sched-day-header"><strong>'+esc(g.label.split(',')[0])+'</strong>'+esc(g.label.substring(g.label.indexOf(',')+1).trim())+'</div><div class="sched-list">'+
+      g.items.map(card).join('')+
+    '</div></div>';
+  }).join('');
+}
+
+function card(i){
+  const tags=[
+    '<span class="sched-tag type '+esc(i.type)+'">'+esc(i.type)+'</span>',
+    i.speaker?'<span class="sched-tag speaker">'+esc(i.speaker)+'</span>':'',
+    i.location?'<span class="sched-tag location">'+esc(i.location)+'</span>':'',
+  ].filter(Boolean).join('');
+  const adminActs=IS_ADMIN?(
+    '<div class="sched-actions">'+
+      '<button class="sched-act" title="Edit" onclick="openEdit('+i.id+')">'+ICONS.edit+'</button>'+
+      '<button class="sched-act del" title="Delete" onclick="confirmDelete('+i.id+')">'+ICONS.trash+'</button>'+
+    '</div>'
+  ):'';
+  return '<div class="sched-card">'+
+    '<div class="sched-time">'+fmtTime(i.start_time)+' &mdash; '+fmtTime(i.end_time)+'<span class="dur">'+fmtDuration(i.start_time,i.end_time)+'</span></div>'+
+    '<div class="sched-body">'+
+      '<h3>'+esc(i.title)+'</h3>'+
+      '<div class="sched-tags">'+tags+'</div>'+
+      (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
+    '</div>'+
+    adminActs+
+  '</div>';
+}
+
+function toLocalInput(iso){
+  if(!iso)return'';
+  const d=new Date(iso);
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function fromLocalInput(v){
+  if(!v)return null;
+  const d=new Date(v);
+  return d.toISOString();
+}
+
+function openCreate(){
+  document.getElementById('m_id').value='';
+  document.getElementById('m_title').value='';
+  document.getElementById('m_type').value='talk';
+  document.getElementById('m_speaker').value='';
+  document.getElementById('m_location').value='';
+  document.getElementById('m_desc').value='';
+  const now=new Date();
+  now.setMinutes(0,0,0);
+  const later=new Date(now.getTime()+60*60000);
+  document.getElementById('m_start').value=toLocalInput(now.toISOString());
+  document.getElementById('m_end').value=toLocalInput(later.toISOString());
+  document.getElementById('schedModalTitle').innerHTML='New <span>Schedule Item</span>';
+  document.getElementById('m_submit').textContent='Create';
+  document.getElementById('schedModal').classList.add('open');
+}
+
+function openEdit(id){
+  const i=_items[id];if(!i)return;
+  document.getElementById('m_id').value=i.id;
+  document.getElementById('m_title').value=i.title;
+  document.getElementById('m_type').value=i.type;
+  document.getElementById('m_speaker').value=i.speaker||'';
+  document.getElementById('m_location').value=i.location||'';
+  document.getElementById('m_desc').value=i.description||'';
+  document.getElementById('m_start').value=toLocalInput(i.start_time);
+  document.getElementById('m_end').value=toLocalInput(i.end_time);
+  document.getElementById('schedModalTitle').innerHTML='Edit <span>Schedule Item</span>';
+  document.getElementById('m_submit').textContent='Save';
+  document.getElementById('schedModal').classList.add('open');
+}
+
+function closeSchedModal(){document.getElementById('schedModal').classList.remove('open');}
+
+async function submitSched(){
+  const id=document.getElementById('m_id').value;
+  const payload={
+    title:document.getElementById('m_title').value.trim(),
+    type:document.getElementById('m_type').value,
+    speaker:document.getElementById('m_speaker').value.trim()||null,
+    location:document.getElementById('m_location').value.trim()||null,
+    description:document.getElementById('m_desc').value.trim()||null,
+    start_time:fromLocalInput(document.getElementById('m_start').value),
+    end_time:fromLocalInput(document.getElementById('m_end').value),
+  };
+  if(!payload.title){showToast('Title is required','error');return;}
+  if(!payload.start_time||!payload.end_time){showToast('Start and end time are required','error');return;}
+  if(new Date(payload.end_time)<=new Date(payload.start_time)){showToast('End time must be after start time','error');return;}
+  const btn=document.getElementById('m_submit');
+  const orig=btn.textContent;btn.disabled=true;btn.textContent='...';
+  try{
+    if(id){
+      await api('/api/schedule/'+id,'PUT',payload);
+      showToast('Schedule item updated','success');
+    }else{
+      await api('/api/schedule','POST',payload);
+      showToast('Schedule item created','success');
+    }
+    closeSchedModal();
+    loadSchedule();
+  }catch(e){
+    showToast(e.message,'error');
+  }
+  btn.disabled=false;btn.textContent=orig;
+}
+
+async function confirmDelete(id){
+  const i=_items[id];if(!i)return;
+  if(!confirm('Delete "'+i.title+'"? This cannot be undone.'))return;
+  try{
+    await api('/api/schedule/'+id,'DELETE');
+    showToast('Schedule item deleted','success');
+    loadSchedule();
+  }catch(e){
+    showToast(e.message,'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded',loadSchedule);
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+</script>
+{% endblock %}

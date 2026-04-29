@@ -10,9 +10,11 @@ from app.core.config import get_settings
 from app.core.database import engine, Base
 from app.models.user import User  # noqa – registers model
 from app.models.audit_log import AuditLog  # noqa – registers model
+from app.models.schedule import ScheduleItem  # noqa – registers model
 from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages
+from app.api import schedule as schedule_api
 
 settings = get_settings()
 
@@ -54,3 +56,4 @@ app.include_router(pages.router)
 # API routes
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_api.router, prefix="/api/admin", tags=["admin"])
+app.include_router(schedule_api.router, prefix="/api/schedule", tags=["schedule"])
