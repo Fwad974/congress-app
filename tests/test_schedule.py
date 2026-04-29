@@ -18,10 +18,10 @@ def _payload(**overrides):
         "title": "Opening Keynote",
         "description": "Welcome address",
         "type": "keynote",
-        "speaker": "Dr. Example",
         "location": "Main Hall",
         "start_time": start.isoformat(),
         "end_time": end.isoformat(),
+        "extra": {"speaker": "Dr. Example", "affiliation": "ACME Lab"},
     }
     base.update(overrides)
     return base
@@ -94,7 +94,8 @@ class TestScheduleAdminCRUD:
         data = resp.json()
         assert data["title"] == "Opening Keynote"
         assert data["type"] == "keynote"
-        assert data["speaker"] == "Dr. Example"
+        assert data["extra"]["speaker"] == "Dr. Example"
+        assert data["extra"]["affiliation"] == "ACME Lab"
 
     def test_create_rejects_end_before_start(self, client, admin_user):
         start = datetime.now(timezone.utc) + timedelta(days=1)
@@ -129,12 +130,17 @@ class TestScheduleAdminCRUD:
                               cookies=auth_cookie(admin_user)).json()
         resp = client.put(
             f"/api/schedule/{created['id']}",
-            json={"title": "Updated Title", "speaker": "New Speaker"},
+            json={
+                "title": "Updated Title",
+                "extra": {"speaker": "New Speaker", "affiliation": "Other Lab"},
+            },
             cookies=auth_cookie(admin_user),
         )
         assert resp.status_code == 200
-        assert resp.json()["title"] == "Updated Title"
-        assert resp.json()["speaker"] == "New Speaker"
+        body = resp.json()
+        assert body["title"] == "Updated Title"
+        assert body["extra"]["speaker"] == "New Speaker"
+        assert body["extra"]["affiliation"] == "Other Lab"
 
     def test_attendee_cannot_update(self, client, admin_user, attendee):
         created = client.post("/api/schedule", json=_payload(),
@@ -183,6 +189,108 @@ class TestScheduleAdminCRUD:
             cookies=auth_cookie(admin_user),
         )
         assert resp.status_code == 400
+
+
+class TestScheduleExtraFields:
+    def test_unknown_extra_keys_are_dropped(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(extra={"speaker": "Dr. X", "evil_field": "bad", "moderator": "Y"}),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        extra = resp.json()["extra"]
+        assert extra == {"speaker": "Dr. X"}  # type=keynote: only speaker survives
+
+    def test_panel_accepts_panelists_as_list(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="panel", extra={
+                "moderator": "Mod A",
+                "panelists": ["A", "B", "C"],
+            }),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        extra = resp.json()["extra"]
+        assert extra["moderator"] == "Mod A"
+        assert extra["panelists"] == ["A", "B", "C"]
+
+    def test_panel_accepts_panelists_as_newline_string(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="panel", extra={"panelists": "Alice\nBob\n\nCarol"}),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["extra"]["panelists"] == ["Alice", "Bob", "Carol"]
+
+    def test_workshop_capacity_coerces_to_int(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="workshop", extra={
+                "instructor": "Prof Y",
+                "capacity": "30",
+                "prerequisites": "Bring a laptop",
+            }),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        extra = resp.json()["extra"]
+        assert extra["capacity"] == 30
+        assert extra["instructor"] == "Prof Y"
+
+    def test_workshop_invalid_capacity_dropped(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="workshop", extra={"capacity": "not-a-number"}),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        assert "capacity" not in resp.json()["extra"]
+
+    def test_break_drops_all_extras(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="break", extra={"speaker": "anyone", "anything": "x"}),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["extra"] == {}
+
+    def test_changing_type_re_filters_extras(self, client, admin_user):
+        # Start as a talk with speaker
+        created = client.post(
+            "/api/schedule",
+            json=_payload(type="talk", extra={"speaker": "Dr. T"}),
+            cookies=auth_cookie(admin_user),
+        ).json()
+        assert created["extra"]["speaker"] == "Dr. T"
+
+        # Change to panel without specifying extra; speaker is no longer valid
+        resp = client.put(
+            f"/api/schedule/{created['id']}",
+            json={"type": "panel"},
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 200
+        assert "speaker" not in resp.json()["extra"]
+
+    def test_poster_fields(self, client, admin_user):
+        resp = client.post(
+            "/api/schedule",
+            json=_payload(type="poster", extra={
+                "presenter": "Sara",
+                "poster_number": "P-12",
+                "abstract": "Stem cells in regenerative medicine.",
+            }),
+            cookies=auth_cookie(admin_user),
+        )
+        assert resp.status_code == 201
+        extra = resp.json()["extra"]
+        assert extra["presenter"] == "Sara"
+        assert extra["poster_number"] == "P-12"
+        assert "abstract" in extra
 
 
 class TestSchedulePage:

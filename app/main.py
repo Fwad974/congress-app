@@ -49,6 +49,36 @@ def _sync_pg_enum(connection, type_name: str, python_enum):
         ))
 
 
+def _migrate_schedule_table(connection):
+    """Bring the schedule_items table in line with the current model.
+
+    create_all only creates missing tables/columns it knows about; it never
+    drops or alters. We do two surgical changes by hand:
+
+      - drop the legacy `speaker` column (now stored inside `extra`)
+      - add the `extra` JSON column if missing
+
+    Postgres-only; SQLite tests start from a clean DB each run.
+    """
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'schedule_items'"
+        ))
+    }
+    if not cols:
+        return  # table doesn't exist yet — create_all will build it fresh
+    if "extra" not in cols:
+        connection.execute(text(
+            "ALTER TABLE schedule_items "
+            "ADD COLUMN extra JSON NOT NULL DEFAULT '{}'::json"
+        ))
+    if "speaker" in cols:
+        connection.execute(text(
+            "ALTER TABLE schedule_items DROP COLUMN speaker"
+        ))
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -59,6 +89,8 @@ async def lifespan(application: FastAPI):
             _sync_pg_enum(conn, "auditaction", AuditAction)
             _sync_pg_enum(conn, "auditseverity", AuditSeverity)
             _sync_pg_enum(conn, "scheduletype", ScheduleType)
+        with engine.begin() as conn:
+            _migrate_schedule_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl

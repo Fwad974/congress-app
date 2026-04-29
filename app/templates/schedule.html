@@ -112,7 +112,7 @@
       <div class="row-2">
         <div class="form-group">
           <label class="form-label">Type</label>
-          <select class="form-input" id="m_type">
+          <select class="form-input" id="m_type" onchange="renderExtraFields()">
             <option value="keynote">Keynote</option>
             <option value="talk" selected>Talk</option>
             <option value="panel">Panel</option>
@@ -124,13 +124,9 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Speaker</label>
-          <input type="text" class="form-input" id="m_speaker" placeholder="Speaker name">
+          <label class="form-label">Location</label>
+          <input type="text" class="form-input" id="m_location" placeholder="Hall A, Room 2B...">
         </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Location</label>
-        <input type="text" class="form-input" id="m_location" placeholder="Hall A, Room 2B...">
       </div>
       <div class="row-2">
         <div class="form-group">
@@ -142,9 +138,10 @@
           <input type="datetime-local" class="form-input" id="m_end" required>
         </div>
       </div>
+      <div id="m_extra_fields"></div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <textarea class="form-input" id="m_desc" rows="4" placeholder="Optional details..."></textarea>
+        <textarea class="form-input" id="m_desc" rows="3" placeholder="Optional details..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -237,10 +234,110 @@ function render(items){
   }).join('');
 }
 
+// Per-type field spec — must mirror app/schemas/schedule.py:EXTRA_SPEC
+const EXTRA_SPEC = {
+  keynote:    [{k:'speaker',label:'Speaker',kind:'str',ph:'Speaker name'},
+               {k:'affiliation',label:'Affiliation',kind:'str',ph:'Institution / company'},
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'}],
+  talk:       [{k:'speaker',label:'Speaker',kind:'str',ph:'Speaker name'},
+               {k:'affiliation',label:'Affiliation',kind:'str',ph:'Institution / company'},
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'}],
+  panel:      [{k:'moderator',label:'Moderator',kind:'str',ph:'Moderator name'},
+               {k:'panelists',label:'Panelists',kind:'list',ph:'One panelist per line'}],
+  workshop:   [{k:'instructor',label:'Instructor',kind:'str',ph:'Instructor name'},
+               {k:'capacity',label:'Capacity',kind:'int',ph:'Max attendees'},
+               {k:'prerequisites',label:'Prerequisites',kind:'text',ph:'What attendees should bring or know'}],
+  poster:     [{k:'presenter',label:'Presenter',kind:'str',ph:'Presenter name'},
+               {k:'poster_number',label:'Poster #',kind:'str',ph:'e.g. P-12'},
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Poster abstract'}],
+  break:      [],
+  networking: [],
+  other:      [],
+};
+
+function renderExtraFields(prefill){
+  const type=document.getElementById('m_type').value;
+  const spec=EXTRA_SPEC[type]||[];
+  const wrap=document.getElementById('m_extra_fields');
+  if(!spec.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=spec.map(f=>{
+    const id='m_x_'+f.k;
+    const v=prefill&&prefill[f.k]!=null?prefill[f.k]:'';
+    if(f.kind==='text'){
+      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(v)+'</textarea></div>';
+    }
+    if(f.kind==='list'){
+      const text=Array.isArray(v)?v.join('\n'):(v||'');
+      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(text)+'</textarea></div>';
+    }
+    if(f.kind==='int'){
+      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><input type="number" min="0" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+(v===''?'':esc(String(v)))+'"></div>';
+    }
+    return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><input type="text" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+esc(v)+'"></div>';
+  }).join('');
+}
+
+function collectExtra(){
+  const type=document.getElementById('m_type').value;
+  const spec=EXTRA_SPEC[type]||[];
+  const out={};
+  spec.forEach(f=>{
+    const el=document.getElementById('m_x_'+f.k);if(!el)return;
+    const raw=el.value;
+    if(f.kind==='int'){
+      if(raw===''||raw==null)return;
+      const n=parseInt(raw,10);if(!isNaN(n)&&n>=0)out[f.k]=n;
+    }else if(f.kind==='list'){
+      const arr=raw.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(arr.length)out[f.k]=arr;
+    }else{
+      const s=(raw||'').trim();if(s)out[f.k]=s;
+    }
+  });
+  return out;
+}
+
+function extraTags(i){
+  const x=i.extra||{};
+  const t=i.type;
+  const tags=[];
+  const push=(cls,text)=>tags.push('<span class="sched-tag '+cls+'">'+esc(text)+'</span>');
+  if(t==='keynote'||t==='talk'){
+    if(x.speaker)push('speaker',x.speaker);
+    if(x.affiliation)push('location',x.affiliation);
+  }else if(t==='panel'){
+    if(x.moderator)push('speaker','Mod: '+x.moderator);
+    if(Array.isArray(x.panelists)&&x.panelists.length)push('location',x.panelists.length+' panelist'+(x.panelists.length===1?'':'s'));
+  }else if(t==='workshop'){
+    if(x.instructor)push('speaker',x.instructor);
+    if(x.capacity!=null)push('location',x.capacity+' seats');
+  }else if(t==='poster'){
+    if(x.presenter)push('speaker',x.presenter);
+    if(x.poster_number)push('location','#'+x.poster_number);
+  }
+  return tags.join('');
+}
+
+function extraDetails(i){
+  const x=i.extra||{};
+  const t=i.type;
+  const parts=[];
+  if((t==='keynote'||t==='talk'||t==='poster')&&x.abstract){
+    parts.push('<div class="desc"><strong style="color:var(--gold);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;">Abstract</strong>'+esc(x.abstract)+'</div>');
+  }
+  if(t==='panel'&&Array.isArray(x.panelists)&&x.panelists.length){
+    parts.push('<div class="desc"><strong style="color:var(--gold);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;">Panelists</strong>'+x.panelists.map(esc).join(' &middot; ')+'</div>');
+  }
+  if(t==='workshop'&&x.prerequisites){
+    parts.push('<div class="desc"><strong style="color:var(--gold);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;">Prerequisites</strong>'+esc(x.prerequisites)+'</div>');
+  }
+  return parts.join('');
+}
+
 function card(i){
   const tags=[
     '<span class="sched-tag type '+esc(i.type)+'">'+esc(i.type)+'</span>',
-    i.speaker?'<span class="sched-tag speaker">'+esc(i.speaker)+'</span>':'',
+    extraTags(i),
     i.location?'<span class="sched-tag location">'+esc(i.location)+'</span>':'',
   ].filter(Boolean).join('');
   const adminActs=IS_ADMIN?(
@@ -255,6 +352,7 @@ function card(i){
       '<h3>'+esc(i.title)+'</h3>'+
       '<div class="sched-tags">'+tags+'</div>'+
       (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
+      extraDetails(i)+
     '</div>'+
     adminActs+
   '</div>';
@@ -276,7 +374,6 @@ function openCreate(){
   document.getElementById('m_id').value='';
   document.getElementById('m_title').value='';
   document.getElementById('m_type').value='talk';
-  document.getElementById('m_speaker').value='';
   document.getElementById('m_location').value='';
   document.getElementById('m_desc').value='';
   const now=new Date();
@@ -284,6 +381,7 @@ function openCreate(){
   const later=new Date(now.getTime()+60*60000);
   document.getElementById('m_start').value=toLocalInput(now.toISOString());
   document.getElementById('m_end').value=toLocalInput(later.toISOString());
+  renderExtraFields();
   document.getElementById('schedModalTitle').innerHTML='New <span>Schedule Item</span>';
   document.getElementById('m_submit').textContent='Create';
   document.getElementById('schedModal').classList.add('open');
@@ -294,11 +392,11 @@ function openEdit(id){
   document.getElementById('m_id').value=i.id;
   document.getElementById('m_title').value=i.title;
   document.getElementById('m_type').value=i.type;
-  document.getElementById('m_speaker').value=i.speaker||'';
   document.getElementById('m_location').value=i.location||'';
   document.getElementById('m_desc').value=i.description||'';
   document.getElementById('m_start').value=toLocalInput(i.start_time);
   document.getElementById('m_end').value=toLocalInput(i.end_time);
+  renderExtraFields(i.extra||{});
   document.getElementById('schedModalTitle').innerHTML='Edit <span>Schedule Item</span>';
   document.getElementById('m_submit').textContent='Save';
   document.getElementById('schedModal').classList.add('open');
@@ -311,11 +409,11 @@ async function submitSched(){
   const payload={
     title:document.getElementById('m_title').value.trim(),
     type:document.getElementById('m_type').value,
-    speaker:document.getElementById('m_speaker').value.trim()||null,
     location:document.getElementById('m_location').value.trim()||null,
     description:document.getElementById('m_desc').value.trim()||null,
     start_time:fromLocalInput(document.getElementById('m_start').value),
     end_time:fromLocalInput(document.getElementById('m_end').value),
+    extra:collectExtra(),
   };
   if(!payload.title){showToast('Title is required','error');return;}
   if(!payload.start_time||!payload.end_time){showToast('Start and end time are required','error');return;}

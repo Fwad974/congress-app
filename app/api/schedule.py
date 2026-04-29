@@ -22,9 +22,26 @@ from app.models.audit_log import AuditAction
 from app.schemas.schedule import (
     ScheduleItemCreate, ScheduleItemUpdate,
     ScheduleItemResponse, ScheduleListResponse,
+    _coerce_extra,
 )
 
 router = APIRouter()
+
+
+def _serialize(item: ScheduleItem) -> ScheduleItemResponse:
+    """Shape a row for the response, normalizing extra/None to {}."""
+    return ScheduleItemResponse(
+        id=item.id,
+        title=item.title,
+        description=item.description,
+        type=item.type.value,
+        location=item.location,
+        start_time=item.start_time,
+        end_time=item.end_time,
+        extra=item.extra or {},
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
 
 
 # ─── Public (any authenticated user) ──────────────────────────────
@@ -43,7 +60,7 @@ def list_schedule(
             pass
     items = q.order_by(asc(ScheduleItem.start_time)).all()
     return ScheduleListResponse(
-        items=[ScheduleItemResponse.model_validate(i) for i in items],
+        items=[_serialize(i) for i in items],
         total=len(items),
     )
 
@@ -57,7 +74,7 @@ def get_schedule_item(
     item = db.query(ScheduleItem).filter(ScheduleItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Schedule item not found")
-    return ScheduleItemResponse.model_validate(item)
+    return _serialize(item)
 
 
 # ─── Admin CRUD ───────────────────────────────────────────────────
@@ -73,10 +90,10 @@ def create_schedule_item(
         title=req.title.strip(),
         description=req.description,
         type=ScheduleType(req.type),
-        speaker=req.speaker,
         location=req.location,
         start_time=req.start_time,
         end_time=req.end_time,
+        extra=req.extra or {},
         created_by=admin.id,
     )
     db.add(item)
@@ -89,7 +106,7 @@ def create_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return ScheduleItemResponse.model_validate(item)
+    return _serialize(item)
 
 
 @router.put("/{item_id}", response_model=ScheduleItemResponse)
@@ -113,8 +130,6 @@ def update_schedule_item(
         item.description = req.description
     if req.type is not None:
         item.type = ScheduleType(req.type)
-    if req.speaker is not None:
-        item.speaker = req.speaker
     if req.location is not None:
         item.location = req.location
     if req.start_time is not None:
@@ -124,6 +139,11 @@ def update_schedule_item(
 
     if item.end_time <= item.start_time:
         raise HTTPException(status_code=400, detail="end_time must be after start_time")
+
+    # Coerce extras against the (possibly new) type
+    if req.extra is not None or req.type is not None:
+        raw_extra = req.extra if req.extra is not None else (item.extra or {})
+        item.extra = _coerce_extra(item.type.value, raw_extra)
 
     item.updated_at = datetime.now(timezone.utc)
     db.flush()
@@ -135,7 +155,7 @@ def update_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return ScheduleItemResponse.model_validate(item)
+    return _serialize(item)
 
 
 @router.delete("/{item_id}")
