@@ -46,14 +46,21 @@
 .sched-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px)}
 .modal-overlay.open{display:flex}
-.modal{background:var(--bg2);border:1px solid rgba(201,169,98,.2);border-radius:var(--rx);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative}
+.modal{background:var(--bg2);border:1px solid rgba(201,169,98,.2);border-radius:var(--rx);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;scrollbar-width:thin;scrollbar-color:rgba(201,169,98,.25) transparent}
+.modal::-webkit-scrollbar{width:4px}
+.modal::-webkit-scrollbar-track{background:transparent}
+.modal::-webkit-scrollbar-thumb{background:rgba(201,169,98,.18);border-radius:4px}
+.modal::-webkit-scrollbar-thumb:hover{background:rgba(201,169,98,.35)}
 .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:24px 28px 0}
 .modal-header h3{font:600 1.15rem var(--fh);color:var(--w)}
 .modal-header h3 span{color:var(--gold)}
 .modal-close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(201,169,98,.12);background:none;color:var(--w5);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:.2s}
 .modal-close:hover{border-color:var(--red);color:var(--red);background:rgba(231,76,60,.06)}
-.modal-body{padding:22px 28px;display:flex;flex-direction:column;gap:14px}
+.modal-body{padding:22px 28px;display:flex;flex-direction:column;gap:16px}
+.modal-body .form-group{gap:8px}
+#m_extra_fields{display:flex;flex-direction:column;gap:16px}
+#m_extra_fields:empty{display:none}
 .modal-footer{display:flex;gap:10px;justify-content:flex-end;padding:0 28px 24px}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .loading-bar{height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:loading-slide 1.5s ease infinite;display:none}
