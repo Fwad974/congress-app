@@ -54,6 +54,12 @@ Full-stack User Management dashboard at `/admin` with:
 | POST | `/api/notes` | Create a note (optionally linked to a session) | Any user |
 | PUT | `/api/notes/{id}` | Update my note | Any user |
 | DELETE | `/api/notes/{id}` | Delete my note | Any user |
+| GET | `/api/sessions/{id}/questions` | List a session's Q&A | Any user |
+| POST | `/api/sessions/{id}/questions` | Ask a question | Any user |
+| GET | `/api/sessions/{id}/qa/stream` | Live Q&A event stream (SSE) | Any user |
+| POST/DELETE | `/api/questions/{id}/upvote` | Upvote / remove upvote | Any user |
+| PUT | `/api/questions/{id}/status` | Mark answered / hide / reopen | Chair+ |
+| DELETE | `/api/questions/{id}` | Delete (author or chair+) | Author / Chair+ |
 
 ### Frontend Dashboard
 
@@ -224,6 +230,7 @@ docker run -p 8000:8000 \
 | `VAPID_PUBLIC_KEY` | No | Web Push VAPID public key (enables browser push) |
 | `VAPID_PRIVATE_KEY` | No | Web Push VAPID private key — **keep secret** |
 | `VAPID_SUBJECT` | No | Contact for push services (default: `mailto:admin@dubaicongress.example`) |
+| `REDIS_URL` | No | Redis URL for realtime fan-out (live Q&A). Empty = in-process only (single worker). Docker sets `redis://redis:6379/0` |
 
 ## Schedule Change Notifications
 
@@ -249,6 +256,23 @@ page has a per-session note button that deep-links to a pre-filled composer
 the admin dashboard (searchable by content, author name, or email) and delete
 any note for moderation. Deletions are written to the audit log
 (`note_delete`). Regular admins do not have access to notes.
+
+## Live Q&A
+
+Each session has a **Live Q&A** page (`/qa/{session_id}`, reachable from the
+Q&A button on every schedule card). Attendees submit questions and upvote
+others'; the list re-sorts live (most upvoted first, answered sink to the
+bottom). Session chairs, moderators, and admins can mark questions answered,
+hide them, or delete any question — moderation is audit-logged
+(`question_moderate`).
+
+Updates are pushed in real time over **Server-Sent Events**
+(`/api/sessions/{id}/qa/stream`). Fan-out goes through a small realtime layer
+(`app/core/realtime.py`) that uses **Redis pub/sub** when `REDIS_URL` is set
+(so it works across multiple workers/containers) and falls back to in-process
+delivery otherwise. Docker Compose wires `REDIS_URL` to the bundled Redis
+automatically. See [`docs/LIVE_QA.md`](docs/LIVE_QA.md) for details. This same
+layer is designed to carry future live polls and emoji reactions.
 
 ### Enabling Web Push
 

@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     VAPID_SUBJECT: str = "mailto:admin@dubaicongress.example"
     PUSH_TTL: int = 86400  # seconds a push service should retain an undelivered message
 
+    # Realtime (live Q&A / polls / reactions). Empty = in-process pub/sub only
+    # (fine for a single worker / tests). Set to a redis:// URL to fan out
+    # across workers and containers.
+    REDIS_URL: str = ""
+
     class Config:
         env_file = ".env"
 

@@ -14,12 +14,15 @@ from app.models.audit_log import AuditLog, AuditAction, AuditSeverity  # noqa �
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark  # noqa – registers model
 from app.models.notification import NotificationSettings, UserNotification, PushSubscription  # noqa – registers model
 from app.models.note import Note  # noqa – registers model
+from app.models.qa import Question, QuestionVote, QuestionStatus  # noqa – registers model
+from app.core.realtime import broadcaster
 from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages
 from app.api import schedule as schedule_api
 from app.api import notifications as notifications_api
 from app.api import notes as notes_api
+from app.api import qa as qa_api
 
 settings = get_settings()
 
@@ -111,7 +114,12 @@ async def lifespan(application: FastAPI):
     page_tpl.env.globals.update(congress)
     admin_tpl.env.globals.update(congress)
 
+    # Connect the realtime broadcaster (Redis if configured, else in-process).
+    await broadcaster.connect()
+
     yield
+
+    await broadcaster.disconnect()
 
 
 app = FastAPI(
@@ -132,3 +140,4 @@ app.include_router(admin_api.router, prefix="/api/admin", tags=["admin"])
 app.include_router(schedule_api.router, prefix="/api/schedule", tags=["schedule"])
 app.include_router(notifications_api.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
+app.include_router(qa_api.router, prefix="/api", tags=["qa"])

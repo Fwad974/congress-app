@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Live Q&A — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.qa-page{min-height:100vh;padding-bottom:80px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.qa-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.qa-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
+.qa-title-bar h2 span{color:var(--gold)}
+.qa-sub{font:.85rem var(--f);color:var(--w5);padding-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.qa-live{display:inline-flex;align-items:center;gap:6px;font:600 .68rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--w3)}
+.qa-live .dot{width:8px;height:8px;border-radius:50%;background:var(--w3)}
+.qa-live.on{color:#2ecc71}.qa-live.on .dot{background:#2ecc71;box-shadow:0 0 6px rgba(46,204,113,.5);animation:qpulse 2s ease infinite}
+@keyframes qpulse{0%,100%{opacity:1}50%{opacity:.4}}
+.qa-composer{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:16px 18px;margin-bottom:22px;display:flex;flex-direction:column;gap:12px}
+.qa-input{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.95rem/1.5 var(--f);padding:12px 14px;outline:none;resize:vertical;min-height:70px}
+.qa-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,169,98,.08)}
+.qa-input::placeholder{color:var(--w3)}
+.qa-composer-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.qa-count{font:.74rem var(--m);color:var(--w3)}
+.qa-btn{padding:10px 20px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .84rem var(--f);cursor:pointer;transition:.2s}
+.qa-btn:hover{border-color:var(--gold);color:var(--gold)}
+.qa-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600;box-shadow:0 4px 16px rgba(201,169,98,.2)}
+.qa-list{display:flex;flex-direction:column;gap:12px}
+.qa-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:16px 18px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;transition:.25s}
+.qa-card.answered{opacity:.65;border-color:rgba(46,204,113,.2)}
+.qa-card.mine{border-color:rgba(201,169,98,.28)}
+.qa-vote{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:48px;border:1px solid rgba(201,169,98,.15);border-radius:12px;padding:8px 4px;background:rgba(10,61,46,.2);cursor:pointer;transition:.2s;user-select:none}
+.qa-vote:hover{border-color:var(--gold)}
+.qa-vote.on{border-color:var(--gold);background:rgba(201,169,98,.12)}
+.qa-vote svg{width:18px;height:18px;stroke:var(--w5);fill:none}
+.qa-vote.on svg{stroke:var(--gold);fill:var(--gold)}
+.qa-vote-count{font:700 1rem var(--m);color:var(--w9)}
+.qa-vote.on .qa-vote-count{color:var(--gold)}
+.qa-body .qa-text{font:.95rem/1.5 var(--f);color:var(--w9);white-space:pre-wrap;word-break:break-word}
+.qa-body-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.qa-author{font:.75rem var(--f);color:var(--w5)}
+.qa-status-pill{font:600 .6rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:50px}
+.qa-status-pill.answered{background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25)}
+.qa-status-pill.hidden{background:rgba(231,76,60,.1);color:var(--red);border:1px solid rgba(231,76,60,.2)}
+.qa-acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.qa-act{font:500 .72rem var(--f);padding:5px 11px;border-radius:50px;border:1px solid rgba(201,169,98,.15);background:none;color:var(--w5);cursor:pointer;transition:.2s}
+.qa-act:hover{border-color:var(--gold);color:var(--gold)}
+.qa-act.del{color:var(--red);border-color:rgba(231,76,60,.15)}
+.qa-act.del:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
+.qa-empty{text-align:center;padding:54px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.qa-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
+.qa-modtoggle{margin-left:auto}
+@media(max-width:600px){.qa-card{padding:14px}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="qa-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="qa-title-bar animate-up">
+    <a href="/schedule" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
+    <h2>Live <span>Q&amp;A</span></h2>
+  </div>
+  <div class="qa-sub animate-up">
+    <span id="sessTitle">Loading session…</span>
+    <span class="qa-live" id="liveBadge"><span class="dot"></span> <span id="liveText">connecting</span></span>
+    {% if can_moderate %}
+    <label class="qa-modtoggle" style="display:inline-flex;align-items:center;gap:6px;font:.74rem var(--f);color:var(--w5);cursor:pointer;">
+      <input type="checkbox" id="showHidden" onchange="loadQuestions()" style="accent-color:var(--gold);"> show hidden
+    </label>
+    {% endif %}
+  </div>
+
+  <div class="qa-composer animate-up delay-1">
+    <textarea class="qa-input" id="qInput" maxlength="500" placeholder="Ask a question…"></textarea>
+    <div class="qa-composer-row">
+      <span class="qa-count"><span id="qLen">0</span>/500</span>
+      <button class="qa-btn primary" id="askBtn" onclick="ask()">Ask</button>
+    </div>
+  </div>
+
+  <div id="qaContainer" class="animate-up delay-2"><div class="qa-empty">Loading questions…</div></div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SESSION_ID = {{ session_id }};
+const CAN_MOD = {{ 'true' if can_moderate else 'false' }};
+const UP_ICON='<svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+const _q = {};            // id -> question
+const _voted = new Set(); // ids the user has upvoted (client-side)
+
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){
+  const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};
+  if(body)o.body=JSON.stringify(body);
+  const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}
+  if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}
+  return d;
+}
+
+async function loadSession(){
+  try{const s=await api('/api/schedule/'+SESSION_ID);document.getElementById('sessTitle').textContent=s.title;document.title='Q&A · '+s.title;}
+  catch(e){document.getElementById('sessTitle').textContent='Session #'+SESSION_ID;}
+}
+
+function showHidden(){const el=document.getElementById('showHidden');return el?el.checked:false;}
+
+async function loadQuestions(){
+  try{
+    const d=await api('/api/sessions/'+SESSION_ID+'/questions');
+    Object.keys(_q).forEach(k=>delete _q[k]);
+    _voted.clear();
+    d.questions.forEach(q=>{_q[q.id]=q;if(q.has_upvoted)_voted.add(q.id);});
+    render();
+  }catch(e){
+    document.getElementById('qaContainer').innerHTML='<div class="qa-empty"><strong>Could not load Q&amp;A</strong>'+esc(e.message)+'</div>';
+  }
+}
+
+function visible(q){
+  if(q.status==='hidden')return CAN_MOD && showHidden();
+  return true;
+}
+function sortFn(a,b){
+  const ao=a.status==='answered'?1:0, bo=b.status==='answered'?1:0;
+  if(ao!==bo)return ao-bo;
+  if(b.upvotes!==a.upvotes)return b.upvotes-a.upvotes;
+  return new Date(b.created_at)-new Date(a.created_at);
+}
+
+function render(){
+  const list=Object.values(_q).filter(visible).sort(sortFn);
+  const c=document.getElementById('qaContainer');
+  if(!list.length){c.innerHTML='<div class="qa-empty"><strong>No questions yet</strong>Be the first to ask.</div>';return;}
+  c.innerHTML='<div class="qa-list">'+list.map(card).join('')+'</div>';
+}
+
+function card(q){
+  const voted=_voted.has(q.id);
+  const statusPill=q.status==='answered'?'<span class="qa-status-pill answered">Answered</span>':
+    (q.status==='hidden'?'<span class="qa-status-pill hidden">Hidden</span>':'');
+  let acts='';
+  if(CAN_MOD){
+    if(q.status!=='answered')acts+='<button class="qa-act" onclick="setStatus('+q.id+',\'answered\')">Mark answered</button>';
+    else acts+='<button class="qa-act" onclick="setStatus('+q.id+',\'open\')">Reopen</button>';
+    if(q.status!=='hidden')acts+='<button class="qa-act" onclick="setStatus('+q.id+',\'hidden\')">Hide</button>';
+    else acts+='<button class="qa-act" onclick="setStatus('+q.id+',\'open\')">Unhide</button>';
+  }
+  if(q.is_mine||CAN_MOD)acts+='<button class="qa-act del" onclick="delQ('+q.id+')">Delete</button>';
+  return '<div class="qa-card '+(q.status==='answered'?'answered ':'')+(q.is_mine?'mine':'')+'">'+
+    '<div class="qa-vote'+(voted?' on':'')+'" onclick="toggleVote('+q.id+')" title="Upvote">'+UP_ICON+'<span class="qa-vote-count">'+q.upvotes+'</span></div>'+
+    '<div class="qa-body">'+
+      '<div class="qa-body-head"><span class="qa-author">'+esc(q.author_name)+(q.is_mine?' · you':'')+'</span>'+statusPill+'</div>'+
+      '<div class="qa-text">'+esc(q.text)+'</div>'+
+      (acts?'<div class="qa-acts">'+acts+'</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+async function ask(){
+  const ta=document.getElementById('qInput');const text=ta.value.trim();
+  if(!text){showToast('Type a question first','error');return;}
+  const btn=document.getElementById('askBtn');btn.disabled=true;btn.textContent='…';
+  try{
+    const q=await api('/api/sessions/'+SESSION_ID+'/questions','POST',{text});
+    ta.value='';document.getElementById('qLen').textContent='0';
+    _q[q.id]=q;render();
+  }catch(e){showToast(e.message,'error');}
+  btn.disabled=false;btn.textContent='Ask';
+}
+
+async function toggleVote(id){
+  const q=_q[id];if(!q)return;
+  const was=_voted.has(id);
+  // optimistic
+  if(was){_voted.delete(id);q.upvotes=Math.max(0,q.upvotes-1);}else{_voted.add(id);q.upvotes++;}
+  render();
+  try{
+    const r=await api('/api/questions/'+id+'/upvote',was?'DELETE':'POST');
+    q.upvotes=r.upvotes;render();
+  }catch(e){
+    // revert
+    if(was){_voted.add(id);q.upvotes++;}else{_voted.delete(id);q.upvotes=Math.max(0,q.upvotes-1);}
+    render();showToast(e.message,'error');
+  }
+}
+
+async function setStatus(id,status){
+  try{await api('/api/questions/'+id+'/status','PUT',{status});}
+  catch(e){showToast(e.message,'error');}
+}
+async function delQ(id){
+  if(!confirm('Delete this question?'))return;
+  try{await api('/api/questions/'+id,'DELETE');}
+  catch(e){showToast(e.message,'error');}
+}
+
+// ── Live stream (SSE) ───────────────────────────────────────────
+let _es=null;
+function connect(){
+  if(_es)_es.close();
+  _es=new EventSource('/api/sessions/'+SESSION_ID+'/qa/stream',{withCredentials:true});
+  _es.onopen=()=>setLive(true);
+  _es.onerror=()=>{setLive(false);/* EventSource auto-reconnects */};
+  _es.onmessage=ev=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.type==='deleted'){delete _q[m.id];render();return;}
+    const q=m.question;if(!q)return;
+    q.has_upvoted=_voted.has(q.id);
+    q.is_mine=_q[q.id]?_q[q.id].is_mine:q.is_mine;
+    _q[q.id]=q;
+    render();
+  };
+}
+function setLive(on){
+  const b=document.getElementById('liveBadge');b.classList.toggle('on',on);
+  document.getElementById('liveText').textContent=on?'live':'reconnecting';
+}
+
+document.getElementById('qInput').addEventListener('input',e=>{document.getElementById('qLen').textContent=e.target.value.length;});
+document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')ask();});
+document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();});
+window.addEventListener('beforeunload',()=>{if(_es)_es.close();});
+</script>
+{% endblock %}
