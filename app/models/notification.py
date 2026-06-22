@@ -66,3 +66,23 @@ class UserNotification(Base):
     __table_args__ = (
         Index("idx_user_notification_unread", "user_id", "read_at"),
     )
+
+
+class PushSubscription(Base):
+    """A browser Web Push subscription (one per device/browser per user).
+
+    Populated by the client after the user grants notification permission; used
+    by app.core.push_service to deliver pushes even when the app tab is closed.
+    The `endpoint` is unique — a browser hands out a stable endpoint per
+    subscription, so re-subscribing upserts rather than duplicating.
+    """
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
+                     nullable=False, index=True)
+    endpoint = Column(Text, nullable=False, unique=True)
+    p256dh = Column(String(255), nullable=False)
+    auth = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True),
+                        default=lambda: datetime.now(timezone.utc), nullable=False)

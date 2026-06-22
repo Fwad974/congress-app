@@ -228,19 +228,59 @@
     refreshFeed();
   }
 
+  // ── Web Push registration (delivery when the tab is closed) ─────
+  function urlB64ToUint8Array(base64){
+    const padding='='.repeat((4-base64.length%4)%4);
+    const b64=(base64+padding).replace(/-/g,'+').replace(/_/g,'/');
+    const raw=atob(b64);
+    const out=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
+
+  async function ensurePush(){
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    try{
+      const r=await fetch('/api/notifications/push/key',{credentials:'same-origin'});
+      if(!r.ok)return;
+      const cfg=await r.json();
+      if(!cfg.enabled||!cfg.public_key)return;   // push not configured server-side
+      const reg=await navigator.serviceWorker.register('/static/sw.js');
+      await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){
+        sub=await reg.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:urlB64ToUint8Array(cfg.public_key),
+        });
+      }
+      await fetch('/api/notifications/push/subscribe',{
+        method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(sub),
+      });
+    }catch(e){/* push unavailable — feed still works */}
+  }
+
   // Expose a hook so the schedule + settings pages can re-trigger after changes.
   window.__schedNotif = {
     refresh: refresh,
     requestPermission: function(){
       if(!('Notification' in window))return Promise.resolve('unsupported');
-      if(Notification.permission==='granted')return Promise.resolve('granted');
+      if(Notification.permission==='granted'){ensurePush();return Promise.resolve('granted');}
       if(Notification.permission==='denied')return Promise.resolve('denied');
-      return Notification.requestPermission();
+      return Notification.requestPermission().then(function(p){
+        if(p==='granted')ensurePush();
+        return p;
+      });
     },
+    enablePush: ensurePush,
     testSound: function(name, volume){playSound(name, volume);},
   };
 
   document.addEventListener('DOMContentLoaded', refresh);
+  document.addEventListener('DOMContentLoaded', ensurePush);
   setInterval(refresh, POLL_INTERVAL_MS);
   // Re-pull when the tab regains focus (clock may have drifted while asleep).
   window.addEventListener('focus', refresh);

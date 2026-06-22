@@ -215,6 +215,32 @@ docker run -p 8000:8000 \
 | `SUPER_ADMIN_PASSWORD` | No | Password for auto-created super admin |
 | `SUPER_ADMIN_NAME` | No | Full name for auto-created super admin (default: `Super Admin`) |
 | `SUPER_ADMIN_INSTITUTION` | No | Institution for auto-created super admin |
+| `VAPID_PUBLIC_KEY` | No | Web Push VAPID public key (enables browser push) |
+| `VAPID_PRIVATE_KEY` | No | Web Push VAPID private key — **keep secret** |
+| `VAPID_SUBJECT` | No | Contact for push services (default: `mailto:admin@dubaicongress.example`) |
+
+## Schedule Change Notifications
+
+When an admin edits or cancels a schedule item, every user who **bookmarked**
+that item is notified:
+
+- **In-app feed** (always on): a per-user notification feed (`UserNotification`)
+  surfaced as a toast on the next poll — no extra setup required.
+- **Web Push** (optional): real browser push delivered even when the app tab is
+  closed. Disabled until VAPID keys are configured; the feed is the fallback.
+
+### Enabling Web Push
+
+```bash
+# 1. Generate a VAPID key pair
+python gen_vapid_keys.py
+
+# 2. Copy the printed VAPID_* lines into your .env (keep the private key secret)
+# 3. Restart the app
+```
+
+With keys set, the browser registers `/static/sw.js` and subscribes once the
+user grants notification permission (via Settings → notifications).
 
 ## Creating First Super Admin
 

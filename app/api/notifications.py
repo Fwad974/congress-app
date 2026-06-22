@@ -12,17 +12,23 @@ from sqlalchemy import asc, desc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.config import get_settings
+from app.core.push_service import push_enabled
 from app.models.user import User
-from app.models.notification import NotificationSettings, UserNotification
+from app.models.notification import (
+    NotificationSettings, UserNotification, PushSubscription,
+)
 from app.models.schedule import ScheduleItem, ScheduleBookmark
 from app.schemas.notification import (
     NotificationPrefs, NotificationSettingsResponse,
     UpcomingItem, UpcomingResponse, DEFAULT_PREFS,
     FeedItem, FeedResponse,
+    PushKeyResponse, PushSubscriptionIn, PushUnsubscribeIn,
 )
 
 router = APIRouter()
 
+settings = get_settings()
 FEED_LIMIT = 50  # most-recent notifications returned to the client
 
 
@@ -166,3 +172,51 @@ def mark_read(
         row.read_at = datetime.now(timezone.utc)
         db.commit()
     return {"message": "Marked read", "read": True}
+
+
+# ─── Web Push subscriptions ──────────────────────────────────────
+@router.get("/push/key", response_model=PushKeyResponse)
+def push_key(user: User = Depends(get_current_user)):
+    """VAPID public key + whether push is configured, for the client to
+    decide whether to register a service worker and subscribe."""
+    return PushKeyResponse(
+        enabled=push_enabled(),
+        public_key=settings.VAPID_PUBLIC_KEY or "",
+    )
+
+
+@router.post("/push/subscribe")
+def push_subscribe(
+    sub: PushSubscriptionIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Save (or re-point to this user) a browser push subscription."""
+    existing = db.query(PushSubscription).filter(
+        PushSubscription.endpoint == sub.endpoint
+    ).first()
+    if existing:
+        existing.user_id = user.id
+        existing.p256dh = sub.keys.p256dh
+        existing.auth = sub.keys.auth
+    else:
+        db.add(PushSubscription(
+            user_id=user.id, endpoint=sub.endpoint,
+            p256dh=sub.keys.p256dh, auth=sub.keys.auth,
+        ))
+    db.commit()
+    return {"message": "subscribed"}
+
+
+@router.post("/push/unsubscribe")
+def push_unsubscribe(
+    body: PushUnsubscribeIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    deleted = db.query(PushSubscription).filter(
+        PushSubscription.user_id == user.id,
+        PushSubscription.endpoint == body.endpoint,
+    ).delete(synchronize_session=False)
+    db.commit()
+    return {"message": "unsubscribed" if deleted else "not subscribed"}

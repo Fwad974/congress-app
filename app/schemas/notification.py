@@ -83,3 +83,25 @@ class FeedResponse(BaseModel):
     items: List[FeedItem]
     unread_count: int
     server_time: datetime
+
+
+# ─── Web Push ────────────────────────────────────────────────────
+class PushKeyResponse(BaseModel):
+    """Tells the client whether push is configured + the VAPID public key."""
+    enabled: bool
+    public_key: str = ""
+
+
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionIn(BaseModel):
+    """Mirrors the browser PushSubscription.toJSON() shape."""
+    endpoint: str
+    keys: PushKeys
+
+
+class PushUnsubscribeIn(BaseModel):
+    endpoint: str

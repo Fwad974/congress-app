@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     CONGRESS_VENUE: str = "Dubai World Trade Centre"
     CONGRESS_DEADLINE: str = "December 1, 2026"
 
+    # Web Push (VAPID) — generate with `python gen_vapid_keys.py` and set in .env.
+    # When either key is blank, web push is disabled and the app falls back to
+    # the in-app notification feed (toasts) only.
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@dubaicongress.example"
+    PUSH_TTL: int = 86400  # seconds a push service should retain an undelivered message
+
     class Config:
         env_file = ".env"
 

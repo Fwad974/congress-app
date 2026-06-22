@@ -6,7 +6,7 @@ We only *add* rows (and flush so callers can read counts); committing is left to
 the caller so the notifications land in the same transaction as the schedule
 mutation and its audit-log entry.
 """
-from typing import Optional
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -20,12 +20,12 @@ def notify_bookmarkers(
     kind: str,
     body: str,
     exclude_user_id: Optional[int] = None,
-) -> int:
+) -> List[int]:
     """Create a UserNotification for every user who bookmarked `item`.
 
     `exclude_user_id` skips one user — typically the admin who made the change,
-    so they don't get notified about their own edit. Returns the number of
-    notifications created.
+    so they don't get notified about their own edit. Returns the list of
+    recipient user IDs (so the caller can also fan out a web push to them).
     """
     rows = db.query(ScheduleBookmark.user_id).filter(
         ScheduleBookmark.schedule_item_id == item.id
@@ -42,4 +42,4 @@ def notify_bookmarkers(
             body=body,
         ))
     db.flush()
-    return len(user_ids)
+    return sorted(user_ids)

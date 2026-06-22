@@ -8,7 +8,7 @@ Schedule API — Public listing + admin CRUD for the congress program.
 from datetime import datetime, timezone
 from typing import Optional, Set
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import asc
 
@@ -17,6 +17,7 @@ from app.core.security import get_current_user
 from app.core.admin_security import require_admin
 from app.core.audit_service import log_action
 from app.core.notification_service import notify_bookmarkers
+from app.core.push_service import deliver_push
 from app.models.user import User
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
 from app.models.audit_log import AuditAction
@@ -186,6 +187,7 @@ def update_schedule_item(
     item_id: int,
     req: ScheduleItemUpdate,
     request: Request,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin()),
 ):
@@ -233,11 +235,12 @@ def update_schedule_item(
         item.title, item.description, item.type, item.location,
         item.start_time, item.end_time, dict(item.extra or {}),
     )
+    recipients = []
+    summary = ""
     if after != before:
-        notify_bookmarkers(
-            db, item, kind="updated",
-            body=_change_summary(item, old_start, old_end, old_location),
-            exclude_user_id=admin.id,
+        summary = _change_summary(item, old_start, old_end, old_location)
+        recipients = notify_bookmarkers(
+            db, item, kind="updated", body=summary, exclude_user_id=admin.id,
         )
 
     log_action(
@@ -246,6 +249,12 @@ def update_schedule_item(
         request=request, target_type="schedule", target_id=item.id,
         new_value=item.title,
     )
+    # Best-effort web push after the change is committed.
+    if recipients:
+        background.add_task(deliver_push, recipients, {
+            "title": item.title, "body": summary,
+            "tag": f"sched-{item.id}", "url": "/schedule",
+        })
     db.refresh(item)
     bm = db.query(ScheduleBookmark).filter(
         ScheduleBookmark.user_id == admin.id,
@@ -258,6 +267,7 @@ def update_schedule_item(
 def delete_schedule_item(
     item_id: int,
     request: Request,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin()),
 ):
@@ -266,12 +276,11 @@ def delete_schedule_item(
         raise HTTPException(status_code=404, detail="Schedule item not found")
 
     title = item.title
+    cancel_msg = "This session has been cancelled."
 
     # Tell bookmarkers their session is cancelled before we drop the bookmarks.
-    notify_bookmarkers(
-        db, item, kind="cancelled",
-        body="This session has been cancelled.",
-        exclude_user_id=admin.id,
+    recipients = notify_bookmarkers(
+        db, item, kind="cancelled", body=cancel_msg, exclude_user_id=admin.id,
     )
 
     log_action(
@@ -287,4 +296,10 @@ def delete_schedule_item(
     ).delete(synchronize_session=False)
     db.delete(item)
     db.commit()
+
+    if recipients:
+        background.add_task(deliver_push, recipients, {
+            "title": title, "body": cancel_msg,
+            "tag": f"sched-{item_id}", "url": "/schedule",
+        })
     return {"message": f"Schedule item '{title}' deleted"}

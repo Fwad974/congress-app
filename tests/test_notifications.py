@@ -4,7 +4,9 @@ Tests for the notification preferences and upcoming-bookmarks API.
 from datetime import datetime, timedelta, timezone
 
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
-from app.models.notification import NotificationSettings, UserNotification
+from app.models.notification import (
+    NotificationSettings, UserNotification, PushSubscription,
+)
 from app.schemas.notification import DEFAULT_PREFS
 from tests.conftest import auth_cookie, make_user
 from app.models.user import UserRole
@@ -271,3 +273,88 @@ class TestFeed:
         feed = client.get("/api/notifications/feed",
                          cookies=auth_cookie(attendee)).json()
         assert feed["unread_count"] == 0
+
+
+class TestPushSubscriptions:
+    SUB = {"endpoint": "https://push.example/abc",
+           "keys": {"p256dh": "key123", "auth": "auth123"}}
+
+    def test_key_unauthenticated_blocked(self, client):
+        assert client.get("/api/notifications/push/key").status_code == 401
+
+    def test_key_disabled_by_default(self, client, attendee):
+        r = client.get("/api/notifications/push/key",
+                       cookies=auth_cookie(attendee))
+        assert r.status_code == 200
+        assert r.json()["enabled"] is False
+
+    def test_subscribe_then_upsert(self, client, attendee, db):
+        r = client.post("/api/notifications/push/subscribe", json=self.SUB,
+                        cookies=auth_cookie(attendee))
+        assert r.status_code == 200
+        assert db.query(PushSubscription).count() == 1
+        # Re-subscribing with the same endpoint upserts, no duplicate row.
+        r2 = client.post("/api/notifications/push/subscribe", json=self.SUB,
+                         cookies=auth_cookie(attendee))
+        assert r2.status_code == 200
+        assert db.query(PushSubscription).count() == 1
+
+    def test_subscribe_requires_auth(self, client):
+        assert client.post("/api/notifications/push/subscribe",
+                          json=self.SUB).status_code == 401
+
+    def test_unsubscribe(self, client, attendee, db):
+        client.post("/api/notifications/push/subscribe", json=self.SUB,
+                    cookies=auth_cookie(attendee))
+        r = client.post("/api/notifications/push/unsubscribe",
+                       json={"endpoint": self.SUB["endpoint"]},
+                       cookies=auth_cookie(attendee))
+        assert r.status_code == 200
+        assert db.query(PushSubscription).count() == 0
+
+
+class TestPushDelivery:
+    def _enable(self, monkeypatch):
+        from app.core import push_service
+        monkeypatch.setattr(push_service.settings, "VAPID_PUBLIC_KEY", "pub")
+        monkeypatch.setattr(push_service.settings, "VAPID_PRIVATE_KEY", "priv")
+        return push_service
+
+    def test_disabled_is_noop(self, monkeypatch, db, attendee):
+        from app.core import push_service
+        monkeypatch.setattr(push_service.settings, "VAPID_PUBLIC_KEY", "")
+        monkeypatch.setattr(push_service.settings, "VAPID_PRIVATE_KEY", "")
+        db.add(PushSubscription(user_id=attendee.id, endpoint="https://p/1",
+                                p256dh="p", auth="a"))
+        db.commit()
+        assert push_service.send_push_to_users(db, [attendee.id], {"title": "T"}) == 0
+
+    def test_sends_to_subscriptions(self, monkeypatch, db, attendee):
+        push_service = self._enable(monkeypatch)
+        calls = []
+        monkeypatch.setattr(push_service, "_webpush", lambda **kw: calls.append(kw))
+        db.add(PushSubscription(user_id=attendee.id, endpoint="https://p/2",
+                                p256dh="p", auth="a"))
+        db.commit()
+        sent = push_service.send_push_to_users(db, [attendee.id], {"title": "T", "body": "B"})
+        assert sent == 1
+        assert len(calls) == 1
+        assert calls[0]["subscription_info"]["endpoint"] == "https://p/2"
+
+    def test_stale_subscription_pruned(self, monkeypatch, db, attendee):
+        push_service = self._enable(monkeypatch)
+
+        class Resp:
+            status_code = 410
+
+        def boom(**kw):
+            raise push_service.WebPushException("gone", response=Resp())
+
+        monkeypatch.setattr(push_service, "_webpush", boom)
+        db.add(PushSubscription(user_id=attendee.id, endpoint="https://p/3",
+                                p256dh="p", auth="a"))
+        db.commit()
+        sent = push_service.send_push_to_users(db, [attendee.id], {"title": "T"})
+        assert sent == 0
+        assert db.query(PushSubscription).filter(
+            PushSubscription.endpoint == "https://p/3").count() == 0
