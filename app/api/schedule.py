@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.admin_security import require_admin
 from app.core.audit_service import log_action
+from app.core.notification_service import notify_bookmarkers
 from app.models.user import User
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
 from app.models.audit_log import AuditAction
@@ -33,6 +34,18 @@ def _bookmarked_ids(db: Session, user_id: int) -> Set[int]:
         ScheduleBookmark.user_id == user_id
     ).all()
     return {r[0] for r in rows}
+
+
+def _change_summary(item: ScheduleItem, old_start, old_end, old_location) -> str:
+    """Human-friendly note for a bookmarked session that an admin just edited."""
+    parts = []
+    if item.start_time != old_start or item.end_time != old_end:
+        parts.append(f"rescheduled to {item.start_time.strftime('%b %d, %H:%M')}")
+    if item.location != old_location and item.location:
+        parts.append(f"moved to {item.location}")
+    if parts:
+        return "This session has been " + " and ".join(parts) + "."
+    return "Details for this session have been updated."
 
 
 def _serialize(item: ScheduleItem, bookmarked: bool = False) -> ScheduleItemResponse:
@@ -180,6 +193,14 @@ def update_schedule_item(
     if not item:
         raise HTTPException(status_code=404, detail="Schedule item not found")
 
+    # Snapshot the fields we care about so we can detect changes and craft a
+    # meaningful "your session changed" message for bookmarkers.
+    before = (
+        item.title, item.description, item.type, item.location,
+        item.start_time, item.end_time, dict(item.extra or {}),
+    )
+    old_start, old_end, old_location = item.start_time, item.end_time, item.location
+
     if req.title is not None:
         title = req.title.strip()
         if not title:
@@ -207,6 +228,18 @@ def update_schedule_item(
     item.updated_at = datetime.now(timezone.utc)
     db.flush()
 
+    # Any real change to a bookmarked item notifies its bookmarkers.
+    after = (
+        item.title, item.description, item.type, item.location,
+        item.start_time, item.end_time, dict(item.extra or {}),
+    )
+    if after != before:
+        notify_bookmarkers(
+            db, item, kind="updated",
+            body=_change_summary(item, old_start, old_end, old_location),
+            exclude_user_id=admin.id,
+        )
+
     log_action(
         db, admin, AuditAction.schedule_update,
         f"Updated schedule item #{item.id} '{item.title}'",
@@ -233,6 +266,14 @@ def delete_schedule_item(
         raise HTTPException(status_code=404, detail="Schedule item not found")
 
     title = item.title
+
+    # Tell bookmarkers their session is cancelled before we drop the bookmarks.
+    notify_bookmarkers(
+        db, item, kind="cancelled",
+        body="This session has been cancelled.",
+        exclude_user_id=admin.id,
+    )
+
     log_action(
         db, admin, AuditAction.schedule_delete,
         f"Deleted schedule item #{item.id} '{title}'",

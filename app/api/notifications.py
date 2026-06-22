@@ -8,19 +8,22 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import asc
+from sqlalchemy import asc, desc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.notification import NotificationSettings
+from app.models.notification import NotificationSettings, UserNotification
 from app.models.schedule import ScheduleItem, ScheduleBookmark
 from app.schemas.notification import (
     NotificationPrefs, NotificationSettingsResponse,
     UpcomingItem, UpcomingResponse, DEFAULT_PREFS,
+    FeedItem, FeedResponse,
 )
 
 router = APIRouter()
+
+FEED_LIMIT = 50  # most-recent notifications returned to the client
 
 
 def _get_or_create(db: Session, user_id: int) -> NotificationSettings:
@@ -94,3 +97,72 @@ def upcoming(
         ) for i in items],
         server_time=now,
     )
+
+
+# ─── Delivered notification feed ─────────────────────────────────
+@router.get("/feed", response_model=FeedResponse)
+def feed(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """The user's most-recent notifications plus their unread count.
+
+    The client polls this and surfaces unread rows as toasts, then marks them
+    read via /feed/read-all.
+    """
+    rows = (
+        db.query(UserNotification)
+        .filter(UserNotification.user_id == user.id)
+        .order_by(desc(UserNotification.created_at))
+        .limit(FEED_LIMIT)
+        .all()
+    )
+    unread_count = (
+        db.query(UserNotification)
+        .filter(UserNotification.user_id == user.id,
+                UserNotification.read_at.is_(None))
+        .count()
+    )
+    return FeedResponse(
+        items=[FeedItem(
+            id=r.id, kind=r.kind, title=r.title, body=r.body,
+            schedule_item_id=r.schedule_item_id,
+            read=r.read_at is not None, created_at=r.created_at,
+        ) for r in rows],
+        unread_count=unread_count,
+        server_time=datetime.now(timezone.utc),
+    )
+
+
+@router.post("/feed/read-all")
+def mark_all_read(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    updated = (
+        db.query(UserNotification)
+        .filter(UserNotification.user_id == user.id,
+                UserNotification.read_at.is_(None))
+        .update({UserNotification.read_at: datetime.now(timezone.utc)},
+                synchronize_session=False)
+    )
+    db.commit()
+    return {"updated": updated}
+
+
+@router.post("/feed/{notif_id}/read")
+def mark_read(
+    notif_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    row = db.query(UserNotification).filter(
+        UserNotification.id == notif_id,
+        UserNotification.user_id == user.id,
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    if row.read_at is None:
+        row.read_at = datetime.now(timezone.utc)
+        db.commit()
+    return {"message": "Marked read", "read": True}

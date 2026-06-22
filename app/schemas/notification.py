@@ -66,3 +66,20 @@ class UpcomingResponse(BaseModel):
     prefs: NotificationPrefs
     items: List[UpcomingItem]
     server_time: datetime
+
+
+class FeedItem(BaseModel):
+    """A delivered notification in the user's feed."""
+    id: int
+    kind: str
+    title: str
+    body: str
+    schedule_item_id: Optional[int] = None
+    read: bool
+    created_at: datetime
+
+
+class FeedResponse(BaseModel):
+    items: List[FeedItem]
+    unread_count: int
+    server_time: datetime

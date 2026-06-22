@@ -11,7 +11,10 @@ Schema of `prefs` (see app.schemas.notification.DEFAULT_PREFS):
     }
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, DateTime, JSON, ForeignKey, UniqueConstraint
+from sqlalchemy import (
+    Column, Integer, String, Text, DateTime, JSON, ForeignKey,
+    UniqueConstraint, Index,
+)
 from app.core.database import Base
 
 
@@ -28,4 +31,38 @@ class NotificationSettings(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", name="uq_notification_settings_user"),
+    )
+
+
+class UserNotification(Base):
+    """A single delivered notification in a user's feed.
+
+    Created server-side when an admin changes a schedule item the user has
+    bookmarked (kind="updated") or cancels it (kind="cancelled"). The
+    client-side scheduler polls /api/notifications/feed and surfaces unread
+    rows as a toast + (optional) Web Notification + sound, then marks them read.
+
+    `title` and `body` are denormalized snapshots so the feed stays meaningful
+    even after the underlying schedule item is deleted (schedule_item_id is then
+    set NULL).
+    """
+    __tablename__ = "user_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
+                     nullable=False, index=True)
+    schedule_item_id = Column(
+        Integer, ForeignKey("schedule_items.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    kind = Column(String(32), nullable=False, default="updated")
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True),
+                        default=lambda: datetime.now(timezone.utc),
+                        nullable=False, index=True)
+    read_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("idx_user_notification_unread", "user_id", "read_at"),
     )
