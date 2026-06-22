@@ -45,6 +45,15 @@ services:
       CONGRESS_DATES: ${CONGRESS_DATES:-Feb 15 – 17, 2027}
       CONGRESS_VENUE: ${CONGRESS_VENUE:-Dubai World Trade Centre}
       CONGRESS_DEADLINE: ${CONGRESS_DEADLINE:-December 1, 2026}
+      # Web Push (VAPID). Leave blank to auto-generate + persist on first boot;
+      # set explicitly to reuse keys across environments.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@dubaicongress.example}
+    volumes:
+      # Persists auto-generated VAPID keys so the public key is stable across
+      # restarts (otherwise existing browser subscriptions would break).
+      - vapid_keys:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -65,3 +74,4 @@ services:
 
 volumes:
   postgres_data:
+  vapid_keys:

@@ -227,9 +227,20 @@ that item is notified:
 - **In-app feed** (always on): a per-user notification feed (`UserNotification`)
   surfaced as a toast on the next poll — no extra setup required.
 - **Web Push** (optional): real browser push delivered even when the app tab is
-  closed. Disabled until VAPID keys are configured; the feed is the fallback.
+  closed. The feed is always the source of truth and the fallback.
+
+See [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md) for the full architecture,
+data model, and API.
 
 ### Enabling Web Push
+
+**Docker (automatic):** nothing to do. On first boot the container generates a
+VAPID key pair and persists it to the `vapid_keys` volume, so push is enabled
+out of the box and the public key stays stable across restarts. To reuse a
+fixed pair across environments, set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+(and optionally `VAPID_SUBJECT`) in your `.env` and they take precedence.
+
+**Local (manual):**
 
 ```bash
 # 1. Generate a VAPID key pair

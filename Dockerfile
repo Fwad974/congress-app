@@ -15,9 +15,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN chmod +x entrypoint.sh
 
-# Create non-root user
-RUN useradd --create-home appuser
+# Create non-root user + a writable dir for persisted VAPID keys
+RUN useradd --create-home appuser \
+    && mkdir -p /app/data \
+    && chown -R appuser:appuser /app/data
 USER appuser
+
+# Persisted runtime state (auto-generated VAPID keys live here)
+VOLUME ["/app/data"]
 
 EXPOSE 8000
 
