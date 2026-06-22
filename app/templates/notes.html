@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}My Notes — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.notes-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.notes-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 18px;flex-wrap:wrap}
+.notes-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
+.notes-title-bar h2 span{color:var(--gold)}
+.notes-meta{font:.82rem var(--f);color:var(--w5)}
+.note-composer{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:18px 20px;margin-bottom:24px;display:flex;flex-direction:column;gap:12px}
+.note-input{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.92rem/1.5 var(--f);padding:12px 14px;outline:none;resize:vertical;min-height:90px}
+.note-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,169,98,.08)}
+.note-input::placeholder{color:var(--w3)}
+.note-composer-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note-select{flex:1;min-width:180px;padding:10px 14px;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w7);font:.86rem var(--f);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c9a962'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.notes-btn{padding:10px 20px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .84rem var(--f);cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.notes-btn:hover{border-color:var(--gold);color:var(--gold)}
+.notes-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600;box-shadow:0 4px 16px rgba(201,169,98,.2)}
+.notes-btn.primary:hover{box-shadow:0 6px 24px rgba(201,169,98,.3)}
+.notes-list{display:flex;flex-direction:column;gap:12px}
+.note-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:16px 20px;transition:.25s}
+.note-card:hover{border-color:rgba(201,169,98,.25)}
+.note-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.note-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.note-tag{font:600 .62rem var(--f);letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:50px;background:rgba(201,169,98,.12);color:var(--gold);border:1px solid rgba(201,169,98,.25)}
+.note-date{font:.72rem var(--m);color:var(--w3)}
+.note-content{font:.92rem/1.6 var(--f);color:var(--w9);white-space:pre-wrap;word-break:break-word}
+.note-actions{display:flex;gap:6px;flex-shrink:0}
+.note-act{width:30px;height:30px;border-radius:8px;border:1px solid rgba(201,169,98,.12);background:none;color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.note-act:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.06)}
+.note-act svg{width:14px;height:14px}
+.note-act.del{color:var(--red);border-color:rgba(231,76,60,.15)}
+.note-act.del:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
+.notes-empty{text-align:center;padding:60px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.notes-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
+.loading-bar{height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:loading-slide 1.5s ease infinite;display:none}
+.loading-bar.active{display:block}
+@keyframes loading-slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.edit-actions{display:flex;gap:8px;margin-top:10px}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="notes-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="notes-title-bar animate-up">
+    <a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
+    <h2>My <span>Notes</span></h2>
+    <span class="notes-meta">Private to you</span>
+  </div>
+
+  <div class="note-composer animate-up delay-1">
+    <textarea class="note-input" id="newNote" placeholder="Jot down a note... (takeaways, ideas, follow-ups)"></textarea>
+    <div class="note-composer-row">
+      <select class="note-select" id="newSession">
+        <option value="">— No session (general note) —</option>
+      </select>
+      <button class="notes-btn primary" id="addBtn" onclick="addNote()">Save Note</button>
+    </div>
+  </div>
+
+  <div class="loading-bar" id="loadingBar"></div>
+  <div id="notesContainer" class="animate-up delay-2">
+    <div class="notes-empty">Loading notes...</div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ICONS={
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+};
+let _notes={};
+
+function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function qparam(n){return new URLSearchParams(window.location.search).get(n);}
+
+async function api(url,method='GET',body=null){
+  const opts={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  let d={};try{d=await r.json();}catch(e){}
+  if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}
+  return d;
+}
+
+function fmtDate(iso){return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+
+async function loadSessions(){
+  try{
+    const d=await api('/api/schedule');
+    const sel=document.getElementById('newSession');
+    const pre=qparam('session');
+    (d.items||[]).forEach(i=>{
+      const o=document.createElement('option');
+      o.value=i.id;
+      const day=new Date(i.start_time).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      o.textContent=i.title+' ('+day+')';
+      if(pre&&String(i.id)===String(pre))o.selected=true;
+      sel.appendChild(o);
+    });
+    if(pre)document.getElementById('newNote').focus();
+  }catch(e){/* schedule optional */}
+}
+
+async function loadNotes(){
+  ld(true);
+  try{
+    const d=await api('/api/notes');
+    _notes={};(d.notes||[]).forEach(n=>_notes[n.id]=n);
+    render(d.notes||[]);
+  }catch(e){
+    showToast(e.message,'error');
+    document.getElementById('notesContainer').innerHTML='<div class="notes-empty"><strong>Could not load notes</strong>'+esc(e.message)+'</div>';
+  }
+  ld(false);
+}
+
+function render(notes){
+  const c=document.getElementById('notesContainer');
+  if(!notes.length){
+    c.innerHTML='<div class="notes-empty"><strong>No notes yet</strong>Write your first note above.</div>';
+    return;
+  }
+  c.innerHTML=notes.map(noteCard).join('');
+}
+
+function noteCard(n){
+  const sessTag=n.session_title?'<span class="note-tag">'+esc(n.session_title)+'</span>':'';
+  return '<div class="note-card" id="note-'+n.id+'">'+
+    '<div class="note-card-head">'+
+      '<div class="note-tags">'+sessTag+'<span class="note-date">'+fmtDate(n.updated_at)+'</span></div>'+
+      '<div class="note-actions">'+
+        '<button class="note-act" title="Edit" onclick="startEdit('+n.id+')">'+ICONS.edit+'</button>'+
+        '<button class="note-act del" title="Delete" onclick="delNote('+n.id+')">'+ICONS.trash+'</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="note-content" id="content-'+n.id+'">'+esc(n.content)+'</div>'+
+  '</div>';
+}
+
+async function addNote(){
+  const ta=document.getElementById('newNote');
+  const content=ta.value.trim();
+  if(!content){showToast('Write something first','error');return;}
+  const sid=document.getElementById('newSession').value;
+  const btn=document.getElementById('addBtn');btn.disabled=true;btn.textContent='...';
+  try{
+    await api('/api/notes','POST',{content,schedule_item_id:sid?parseInt(sid):null});
+    ta.value='';
+    showToast('Note saved','success');
+    loadNotes();
+  }catch(e){showToast(e.message,'error');}
+  btn.disabled=false;btn.textContent='Save Note';
+}
+
+function startEdit(id){
+  const n=_notes[id];if(!n)return;
+  const el=document.getElementById('content-'+id);
+  el.innerHTML='<textarea class="note-input" id="edit-'+id+'">'+esc(n.content)+'</textarea>'+
+    '<div class="edit-actions"><button class="notes-btn primary" onclick="saveEdit('+id+')">Save</button>'+
+    '<button class="notes-btn" onclick="cancelEdit('+id+')">Cancel</button></div>';
+  document.getElementById('edit-'+id).focus();
+}
+function cancelEdit(id){
+  const n=_notes[id];if(!n)return;
+  document.getElementById('content-'+id).innerHTML=esc(n.content);
+}
+async function saveEdit(id){
+  const content=document.getElementById('edit-'+id).value.trim();
+  if(!content){showToast('Note cannot be empty','error');return;}
+  try{
+    await api('/api/notes/'+id,'PUT',{content});
+    showToast('Note updated','success');
+    loadNotes();
+  }catch(e){showToast(e.message,'error');}
+}
+
+async function delNote(id){
+  if(!confirm('Delete this note? This cannot be undone.'))return;
+  try{
+    await api('/api/notes/'+id,'DELETE');
+    showToast('Note deleted','success');
+    loadNotes();
+  }catch(e){showToast(e.message,'error');}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{loadSessions();loadNotes();});
+document.getElementById('newNote').addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter')addNote();
+});
+</script>
+{% endblock %}

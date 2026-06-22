@@ -48,6 +48,12 @@ Full-stack User Management dashboard at `/admin` with:
 | POST | `/api/admin/users/bulk` | Bulk suspend/activate/role change | Admin |
 | GET | `/api/admin/users/export/csv` | Export users to CSV | Admin |
 | GET | `/api/admin/audit` | Audit log (filterable) | Admin |
+| GET | `/api/admin/notes` | List all user notes (paginated, searchable) | **Super Admin** |
+| DELETE | `/api/admin/notes/{id}` | Delete a user note (moderation, logged) | **Super Admin** |
+| GET | `/api/notes` | List my notes (optional `?schedule_item_id=`) | Any user |
+| POST | `/api/notes` | Create a note (optionally linked to a session) | Any user |
+| PUT | `/api/notes/{id}` | Update my note | Any user |
+| DELETE | `/api/notes/{id}` | Delete my note | Any user |
 
 ### Frontend Dashboard
 
@@ -231,6 +237,18 @@ that item is notified:
 
 See [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md) for the full architecture,
 data model, and API.
+
+## Notes
+
+Any signed-in user can keep notes from the **Notes** page (`/notes`). A note can
+stand alone (a personal jot) or be linked to a schedule session — the schedule
+page has a per-session note button that deep-links to a pre-filled composer
+(`/notes?session={id}`). Notes are private to their author.
+
+**Super admins** can review every user's notes from the **User Notes** tab in
+the admin dashboard (searchable by content, author name, or email) and delete
+any note for moderation. Deletions are written to the audit log
+(`note_delete`). Regular admins do not have access to notes.
 
 ### Enabling Web Push
 

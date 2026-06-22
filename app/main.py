@@ -13,11 +13,13 @@ from app.models.user import User  # noqa – registers model
 from app.models.audit_log import AuditLog, AuditAction, AuditSeverity  # noqa – registers model
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark  # noqa – registers model
 from app.models.notification import NotificationSettings, UserNotification, PushSubscription  # noqa – registers model
+from app.models.note import Note  # noqa – registers model
 from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages
 from app.api import schedule as schedule_api
 from app.api import notifications as notifications_api
+from app.api import notes as notes_api
 
 settings = get_settings()
 
@@ -129,3 +131,4 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_api.router, prefix="/api/admin", tags=["admin"])
 app.include_router(schedule_api.router, prefix="/api/schedule", tags=["schedule"])
 app.include_router(notifications_api.router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
