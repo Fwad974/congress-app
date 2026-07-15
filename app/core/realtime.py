@@ -110,3 +110,11 @@ broadcaster = Broadcaster()
 
 def qa_channel(session_id: int) -> str:
     return f"rt:qa:{session_id}"
+
+
+def poll_channel(session_id: int) -> str:
+    return f"rt:poll:{session_id}"
+
+
+def react_channel(session_id: int) -> str:
+    return f"rt:react:{session_id}"

@@ -60,6 +60,13 @@ Full-stack User Management dashboard at `/admin` with:
 | POST/DELETE | `/api/questions/{id}/upvote` | Upvote / remove upvote | Any user |
 | PUT | `/api/questions/{id}/status` | Mark answered / hide / reopen | Chair+ |
 | DELETE | `/api/questions/{id}` | Delete (author or chair+) | Author / Chair+ |
+| POST | `/api/sessions/{id}/polls` | Create a poll (draft) | Chair+ |
+| GET | `/api/sessions/{id}/polls` | List a session's polls | Any user |
+| GET | `/api/sessions/{id}/polls/stream` | Live poll event stream (SSE) | Any user |
+| POST | `/api/polls/{id}/vote` | Vote / submit a word | Any user |
+| GET | `/api/polls/{id}/results` | Aggregated results | Any user |
+| PUT | `/api/polls/{id}/status` | Open / close a poll | Chair+ |
+| DELETE | `/api/polls/{id}` | Delete a poll | Chair+ |
 
 ### Frontend Dashboard
 
@@ -271,8 +278,19 @@ Updates are pushed in real time over **Server-Sent Events**
 (`app/core/realtime.py`) that uses **Redis pub/sub** when `REDIS_URL` is set
 (so it works across multiple workers/containers) and falls back to in-process
 delivery otherwise. Docker Compose wires `REDIS_URL` to the bundled Redis
-automatically. See [`docs/LIVE_QA.md`](docs/LIVE_QA.md) for details. This same
-layer is designed to carry future live polls and emoji reactions.
+automatically. See [`docs/LIVE_QA.md`](docs/LIVE_QA.md) for details.
+
+## Live Polls & Word Clouds
+
+The session page has a **Polls** tab alongside Q&A. Chairs create polls
+(single-choice, multiple-choice, or word cloud), open/close them, and delete
+them; attendees vote or submit words while a poll is open. Results aggregate
+from the stored responses (counts can't drift) and stream live over SSE.
+
+A chrome-free **presenter view** (`/present/{session_id}`, opened via the
+"Present ↗" button) shows the open poll on the big screen — animated bar charts
+for choice polls, a frequency-sized word cloud for word-cloud polls — updating
+live as votes land. Built on the same realtime layer as Q&A.
 
 ### Enabling Web Push
 

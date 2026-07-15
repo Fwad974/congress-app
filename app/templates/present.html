@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Present — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.present{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(10,61,46,.45),transparent 60%),var(--bg);color:var(--w);display:flex;flex-direction:column;padding:4vh 5vw;overflow:hidden}
+.present-top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:2vh;flex-wrap:wrap}
+.present-sess{font:600 1.4rem var(--fh);color:var(--gold)}
+.present-live{display:inline-flex;align-items:center;gap:8px;font:600 .8rem var(--f);letter-spacing:.08em;text-transform:uppercase;color:var(--w3)}
+.present-live .dot{width:10px;height:10px;border-radius:50%;background:var(--w3)}
+.present-live.on{color:#2ecc71}.present-live.on .dot{background:#2ecc71;box-shadow:0 0 10px rgba(46,204,113,.6);animation:ppulse 2s ease infinite}
+@keyframes ppulse{0%,100%{opacity:1}50%{opacity:.35}}
+.present-q{font:700 clamp(1.8rem,4.2vw,3.6rem)/1.15 var(--fh);color:var(--w);margin-bottom:3vh;max-width:22ch}
+.present-body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.present-foot{margin-top:2vh;font:1.1rem var(--f);color:var(--w5);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.present-foot strong{color:var(--gold)}
+/* Bars */
+.pbars{display:flex;flex-direction:column;gap:2.2vh}
+.pbar-row{display:grid;grid-template-columns:1fr;gap:6px}
+.pbar-head{display:flex;justify-content:space-between;align-items:baseline;font:600 clamp(1.1rem,2.2vw,1.8rem) var(--f);color:var(--w9)}
+.pbar-pct{color:var(--gold);font-variant-numeric:tabular-nums}
+.pbar-track{height:clamp(28px,4.5vh,52px);background:rgba(255,255,255,.05);border-radius:12px;overflow:hidden;border:1px solid rgba(201,169,98,.12)}
+.pbar-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--gold-d),var(--gold));transition:width .5s cubic-bezier(.22,1,.36,1);min-width:2px}
+.pbar-row.lead .pbar-fill{background:linear-gradient(90deg,#0a3d2e,var(--emerald-l,#34d399))}
+/* Word cloud */
+.pcloud{display:flex;flex-wrap:wrap;gap:.4em 1em;align-items:center;justify-content:center;align-content:center;height:100%;line-height:1.05}
+.pword{font-family:var(--fh);font-weight:700;color:var(--w9);transition:font-size .5s ease}
+.present-wait{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;color:var(--w5)}
+.present-wait .big{font:700 clamp(1.6rem,3.5vw,2.6rem) var(--fh);color:var(--w7)}
+.present-wait .hint{font:1.15rem var(--f)}
+.present-closed{display:inline-block;margin-left:14px;font:600 .8rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--red);vertical-align:middle}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="present">
+  <div class="present-top">
+    <span class="present-sess" id="sess">Live Results</span>
+    <span class="present-live" id="live"><span class="dot"></span> <span id="liveTxt">connecting</span></span>
+  </div>
+  <div class="present-q" id="pq" style="display:none;"></div>
+  <div class="present-body" id="body">
+    <div class="present-wait"><div class="big">Waiting for the next poll…</div><div class="hint" id="joinHint"></div></div>
+  </div>
+  <div class="present-foot">
+    <span id="totalTxt"></span>
+    <span id="joinFoot"></span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SESSION_ID={{ session_id }};
+let _poll=null, _results=null, _closed=false;
+
+async function api(url){const r=await fetch(url,{credentials:'same-origin'});if(!r.ok)throw new Error('load failed');return r.json();}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function setLive(on){const b=document.getElementById('live');b.classList.toggle('on',on);document.getElementById('liveTxt').textContent=on?'live':'reconnecting';}
+
+async function init(){
+  try{const s=await api('/api/schedule/'+SESSION_ID);document.getElementById('sess').textContent=s.title;}catch(e){}
+  const join='Join at '+location.origin+'/qa/'+SESSION_ID;
+  document.getElementById('joinHint').textContent=join;
+  document.getElementById('joinFoot').textContent=join;
+  try{
+    const d=await api('/api/sessions/'+SESSION_ID+'/polls');
+    const open=(d.polls||[]).filter(p=>p.status==='open').slice(-1)[0]
+             ||(d.polls||[]).filter(p=>p.status==='closed').slice(-1)[0];
+    if(open){_poll=open;_closed=open.status==='closed';_results=await api('/api/polls/'+open.id+'/results');}
+  }catch(e){}
+  render();connect();
+}
+
+function render(){
+  const q=document.getElementById('pq'),body=document.getElementById('body'),total=document.getElementById('totalTxt');
+  if(!_poll||!_results){
+    q.style.display='none';
+    body.innerHTML='<div class="present-wait"><div class="big">Waiting for the next poll…</div><div class="hint">'+esc(document.getElementById('joinHint').textContent)+'</div></div>';
+    total.textContent='';
+    return;
+  }
+  q.style.display='block';
+  q.innerHTML=esc(_poll.question)+(_closed?'<span class="present-closed">Closed</span>':'');
+  if(_results.type==='wordcloud')body.innerHTML=cloud(_results);
+  else body.innerHTML=bars(_results);
+  total.innerHTML='<strong>'+_results.total+'</strong> '+(_results.type==='wordcloud'?'submissions':'votes');
+}
+
+function bars(r){
+  const opts=r.options||[];
+  const max=Math.max(1,...opts.map(o=>o.count));
+  const total=r.total||0;
+  return '<div class="pbars">'+opts.map(o=>{
+    const pct=total?Math.round(o.count/total*100):0;
+    const w=Math.round(o.count/max*100);
+    const lead=o.count===max&&o.count>0?' lead':'';
+    return '<div class="pbar-row'+lead+'"><div class="pbar-head"><span>'+esc(o.text)+'</span><span class="pbar-pct">'+pct+'% · '+o.count+'</span></div>'+
+      '<div class="pbar-track"><div class="pbar-fill" style="width:'+w+'%"></div></div></div>';
+  }).join('')+'</div>';
+}
+
+function cloud(r){
+  const words=r.words||[];
+  if(!words.length)return '<div class="present-wait"><div class="big">No responses yet</div></div>';
+  const max=Math.max(...words.map(w=>w.count)),min=Math.min(...words.map(w=>w.count));
+  const lo=1.4,hi=6.5; // rem
+  return '<div class="pcloud">'+words.map(w=>{
+    const t=max===min?1:(w.count-min)/(max-min);
+    const size=(lo+(hi-lo)*t).toFixed(2);
+    const op=(0.55+0.45*t).toFixed(2);
+    return '<span class="pword" style="font-size:'+size+'rem;opacity:'+op+'" title="'+w.count+'">'+esc(w.text)+'</span>';
+  }).join('')+'</div>';
+}
+
+let _es=null;
+function connect(){
+  if(_es)_es.close();
+  _es=new EventSource('/api/sessions/'+SESSION_ID+'/polls/stream',{withCredentials:true});
+  _es.onopen=()=>setLive(true);
+  _es.onerror=()=>setLive(false);
+  _es.onmessage=ev=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.type==='opened'){_poll=m.poll;_results=m.results;_closed=false;render();}
+    else if(m.type==='results'){if(_poll&&m.results&&m.results.poll_id===_poll.id){_results=m.results;render();}}
+    else if(m.type==='closed'){if(_poll&&m.poll_id===_poll.id){_closed=true;if(m.results)_results=m.results;render();}}
+    else if(m.type==='deleted'){if(_poll&&m.poll_id===_poll.id){_poll=null;_results=null;render();}}
+  };
+}
+
+document.addEventListener('DOMContentLoaded',init);
+window.addEventListener('beforeunload',()=>{if(_es)_es.close();});
+</script>
+{% endblock %}

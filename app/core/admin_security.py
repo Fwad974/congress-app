@@ -204,6 +204,11 @@ def can_manage_user(admin: User, target: User) -> bool:
     return admin_level > target_level
 
 
+def is_live_moderator(user: User) -> bool:
+    """Can this user run live-session features (Q&A/polls)? Session chair+."""
+    return ROLE_HIERARCHY.get(user.role, 0) >= ROLE_HIERARCHY[UserRole.session_chair]
+
+
 def hash_ip(ip: str) -> str:
     """One-way hash IP for audit logs."""
     return hashlib.sha256(ip.encode()).hexdigest()[:16]

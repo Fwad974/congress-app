@@ -46,6 +46,40 @@
 .qa-empty{text-align:center;padding:54px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
 .qa-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
 .qa-modtoggle{margin-left:auto}
+/* Live tabs */
+.ltabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin-bottom:18px;align-items:center}
+.ltab-btn{font:500 .8rem var(--f);letter-spacing:.03em;padding:10px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.ltab-btn:hover{color:var(--w7)}
+.ltab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.ltab-present{margin-left:auto;font:600 .74rem var(--f);color:var(--gold);text-decoration:none;padding:6px 14px;border:1px solid rgba(201,169,98,.25);border-radius:50px;transition:.2s}
+.ltab-present:hover{background:rgba(201,169,98,.1)}
+.ltab-panel{display:none}
+.ltab-panel.active{display:block}
+/* Polls */
+.poll-new{background:var(--glass);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:14px 16px;margin-bottom:18px}
+.poll-new .qa-input,.poll-new .note-select,.poll-new input,.poll-new select,.poll-new textarea{width:100%}
+.poll-form-body{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.poll-form-body input,.poll-form-body select,.poll-form-body textarea{background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+.poll-form-body textarea{min-height:80px;resize:vertical}
+.poll-card{background:var(--glass);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px}
+.poll-card.open{border-color:rgba(46,204,113,.28)}
+.poll-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.poll-q{font:600 1.02rem var(--fh);color:var(--w)}
+.poll-status{font:600 .58rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:50px;background:var(--w05);color:var(--w5);border:1px solid var(--w1);white-space:nowrap}
+.poll-status.open{background:rgba(46,204,113,.12);color:#2ecc71;border-color:rgba(46,204,113,.25)}
+.poll-status.draft{background:rgba(201,169,98,.1);color:var(--gold);border-color:rgba(201,169,98,.2)}
+.poll-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(201,169,98,.15);border-radius:var(--r);margin-bottom:8px;cursor:pointer;position:relative;overflow:hidden;transition:.15s}
+.poll-opt .pfill{position:absolute;inset:0;background:rgba(201,169,98,.1);width:0;transition:width .5s cubic-bezier(.22,1,.36,1);z-index:0}
+.poll-opt.on{border-color:var(--gold)}.poll-opt.on .pfill{background:rgba(201,169,98,.18)}
+.poll-opt.disabled{cursor:default}
+.poll-opt .ptext,.poll-opt .pnum{position:relative;z-index:1}
+.poll-opt .ptext{flex:1;color:var(--w9);font:.9rem var(--f)}
+.poll-opt .pnum{color:var(--gold);font:600 .82rem var(--m);font-variant-numeric:tabular-nums}
+.poll-wc-in{display:flex;gap:8px;margin-bottom:10px}
+.poll-wc-in input{flex:1;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:9px 12px;outline:none}
+.poll-words{display:flex;flex-wrap:wrap;gap:6px}
+.poll-word{font-family:var(--fh);color:var(--w7);background:rgba(201,169,98,.08);border:1px solid rgba(201,169,98,.15);border-radius:50px;padding:3px 10px}
+.poll-ctrls{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,98,.08)}
 @media(max-width:600px){.qa-card{padding:14px}}
 </style>
 {% endblock %}
@@ -68,15 +102,44 @@
     {% endif %}
   </div>
 
-  <div class="qa-composer animate-up delay-1">
-    <textarea class="qa-input" id="qInput" maxlength="500" placeholder="Ask a question…"></textarea>
-    <div class="qa-composer-row">
-      <span class="qa-count"><span id="qLen">0</span>/500</span>
-      <button class="qa-btn primary" id="askBtn" onclick="ask()">Ask</button>
-    </div>
+  <div class="ltabs animate-up">
+    <button class="ltab-btn active" data-lt="qa" onclick="switchLtab('qa')">Q&amp;A</button>
+    <button class="ltab-btn" data-lt="polls" onclick="switchLtab('polls')">Polls</button>
+    {% if can_moderate %}<a class="ltab-present" href="/present/{{ session_id }}" target="_blank" rel="noopener">Present ↗</a>{% endif %}
   </div>
 
-  <div id="qaContainer" class="animate-up delay-2"><div class="qa-empty">Loading questions…</div></div>
+  <div id="lt-qa" class="ltab-panel active">
+    <div class="qa-composer animate-up delay-1">
+      <textarea class="qa-input" id="qInput" maxlength="500" placeholder="Ask a question…"></textarea>
+      <div class="qa-composer-row">
+        <span class="qa-count"><span id="qLen">0</span>/500</span>
+        <button class="qa-btn primary" id="askBtn" onclick="ask()">Ask</button>
+      </div>
+    </div>
+    <div id="qaContainer" class="animate-up delay-2"><div class="qa-empty">Loading questions…</div></div>
+  </div>
+
+  <div id="lt-polls" class="ltab-panel">
+    {% if can_moderate %}
+    <div class="poll-new">
+      <button class="qa-btn primary" id="newPollBtn" onclick="togglePollForm()">+ New poll</button>
+      <div class="poll-form-body" id="pollForm" style="display:none;">
+        <input id="pf_q" maxlength="300" placeholder="Poll question">
+        <select id="pf_type" onchange="pfTypeChange()">
+          <option value="single">Single choice</option>
+          <option value="multiple">Multiple choice</option>
+          <option value="wordcloud">Word cloud</option>
+        </select>
+        <textarea id="pf_opts" placeholder="One option per line (min 2)"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="qa-btn" onclick="togglePollForm()">Cancel</button>
+          <button class="qa-btn primary" onclick="createPoll()">Create (draft)</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div id="pollsContainer"><div class="qa-empty">Loading polls…</div></div>
+  </div>
 </div>
 </div>
 {% endblock %}
@@ -217,9 +280,113 @@ function setLive(on){
   document.getElementById('liveText').textContent=on?'live':'reconnecting';
 }
 
+// ── Polls ───────────────────────────────────────────────────────
+const _polls={}, _pres={}, _sel={};   // poll, results, my-selection sets
+function switchLtab(t){
+  document.querySelectorAll('.ltab-btn').forEach(b=>b.classList.toggle('active',b.dataset.lt===t));
+  document.querySelectorAll('.ltab-panel').forEach(p=>p.classList.toggle('active',p.id==='lt-'+t));
+}
+function togglePollForm(){const f=document.getElementById('pollForm');f.style.display=f.style.display==='none'?'flex':'none';}
+function pfTypeChange(){const wc=document.getElementById('pf_type').value==='wordcloud';document.getElementById('pf_opts').style.display=wc?'none':'block';}
+
+async function loadPolls(){
+  try{
+    const d=await api('/api/sessions/'+SESSION_ID+'/polls');
+    Object.keys(_polls).forEach(k=>delete _polls[k]);
+    for(const p of (d.polls||[])){_polls[p.id]=p;_sel[p.id]=new Set(p.my_option_ids||[]);}
+    // Fetch results for each (counts + word clouds).
+    await Promise.all((d.polls||[]).map(async p=>{try{_pres[p.id]=await api('/api/polls/'+p.id+'/results');}catch(e){}}));
+    renderPolls();
+  }catch(e){document.getElementById('pollsContainer').innerHTML='<div class="qa-empty">'+esc(e.message)+'</div>';}
+}
+function pollRank(p){return p.status==='open'?0:(p.status==='draft'?1:2);}
+function renderPolls(){
+  const list=Object.values(_polls).sort((a,b)=>pollRank(a)-pollRank(b)||b.id-a.id);
+  const c=document.getElementById('pollsContainer');
+  if(!list.length){c.innerHTML='<div class="qa-empty"><strong>No polls yet</strong>'+(CAN_MOD?'Create one above.':'Check back when the chair starts a poll.')+'</div>';return;}
+  c.innerHTML=list.map(pollCard).join('');
+}
+function pollCard(p){
+  const res=_pres[p.id]||{};
+  const sp='<span class="poll-status '+p.status+'">'+p.status+'</span>';
+  let body='';
+  if(p.type==='wordcloud'){
+    const words=res.words||[];
+    const mine=(p.my_words||[]);
+    body=(p.status==='open'?'<div class="poll-wc-in"><input maxlength="60" id="wc_'+p.id+'" placeholder="Your word…" onkeydown="if(event.key===\'Enter\')submitWord('+p.id+')"><button class="qa-btn primary" onclick="submitWord('+p.id+')">Add</button></div>':'')+
+      (mine.length?'<div style="font:.72rem var(--f);color:var(--w3);margin-bottom:6px;">You: '+mine.map(esc).join(', ')+'</div>':'')+
+      '<div class="poll-words">'+words.slice(0,25).map(w=>'<span class="poll-word">'+esc(w.text)+' · '+w.count+'</span>').join('')+'</div>';
+  }else{
+    const counts={};(res.options||[]).forEach(o=>counts[o.id]=o.count);
+    const opts=p.options||[];
+    const total=res.total||0;
+    const max=Math.max(1,...opts.map(o=>counts[o.id]||o.count||0));
+    const sel=_sel[p.id]||new Set();
+    const clickable=p.status==='open';
+    body=opts.map(o=>{
+      const ct=counts[o.id]!=null?counts[o.id]:(o.count||0);
+      const pct=total?Math.round(ct/total*100):0;
+      const w=Math.round(ct/max*100);
+      return '<div class="poll-opt'+(sel.has(o.id)?' on':'')+(clickable?'':' disabled')+'"'+(clickable?' onclick="voteChoice('+p.id+','+o.id+')"':'')+'>'+
+        '<span class="pfill" style="width:'+w+'%"></span>'+
+        '<span class="ptext">'+esc(o.text)+'</span><span class="pnum">'+pct+'% · '+ct+'</span></div>';
+    }).join('');
+  }
+  let ctrls='';
+  if(CAN_MOD){
+    if(p.status==='draft')ctrls+='<button class="qa-act" onclick="pollStatus('+p.id+',\'open\')">Open</button>';
+    if(p.status==='open')ctrls+='<button class="qa-act" onclick="pollStatus('+p.id+',\'closed\')">Close</button>';
+    if(p.status==='closed')ctrls+='<button class="qa-act" onclick="pollStatus('+p.id+',\'open\')">Reopen</button>';
+    ctrls+='<button class="qa-act del" onclick="delPoll('+p.id+')">Delete</button>';
+  }
+  return '<div class="poll-card '+p.status+'"><div class="poll-head"><div class="poll-q">'+esc(p.question)+'</div>'+sp+'</div>'+
+    body+(ctrls?'<div class="poll-ctrls">'+ctrls+'</div>':'')+'</div>';
+}
+
+async function voteChoice(pollId,optId){
+  const p=_polls[pollId];if(!p||p.status!=='open')return;
+  const sel=_sel[pollId]||(_sel[pollId]=new Set());
+  let ids;
+  if(p.type==='single')ids=[optId];
+  else{if(sel.has(optId))sel.delete(optId);else sel.add(optId);ids=[...sel];}
+  try{const r=await api('/api/polls/'+pollId+'/vote','POST',{option_ids:ids});_polls[pollId]=r;_sel[pollId]=new Set(r.my_option_ids||[]);renderPolls();}
+  catch(e){showToast(e.message,'error');}
+}
+async function submitWord(pollId){
+  const el=document.getElementById('wc_'+pollId);const text=(el.value||'').trim();if(!text)return;
+  try{const r=await api('/api/polls/'+pollId+'/vote','POST',{text});_polls[pollId]=r;el.value='';renderPolls();}
+  catch(e){showToast(e.message,'error');}
+}
+async function createPoll(){
+  const q=document.getElementById('pf_q').value.trim();
+  const type=document.getElementById('pf_type').value;
+  const options=document.getElementById('pf_opts').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!q){showToast('Enter a question','error');return;}
+  if(type!=='wordcloud'&&options.length<2){showToast('Add at least 2 options','error');return;}
+  try{await api('/api/sessions/'+SESSION_ID+'/polls','POST',{question:q,type,options});
+    document.getElementById('pf_q').value='';document.getElementById('pf_opts').value='';togglePollForm();
+    showToast('Poll created (draft)','success');loadPolls();}
+  catch(e){showToast(e.message,'error');}
+}
+async function pollStatus(id,status){try{await api('/api/polls/'+id+'/status','PUT',{status});loadPolls();}catch(e){showToast(e.message,'error');}}
+async function delPoll(id){if(!confirm('Delete this poll?'))return;try{await api('/api/polls/'+id,'DELETE');loadPolls();}catch(e){showToast(e.message,'error');}}
+
+let _pes=null;
+function connectPolls(){
+  if(_pes)_pes.close();
+  _pes=new EventSource('/api/sessions/'+SESSION_ID+'/polls/stream',{withCredentials:true});
+  _pes.onmessage=ev=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.type==='opened'&&m.poll){_polls[m.poll.id]=m.poll;if(m.results)_pres[m.poll.id]=m.results;if(!_sel[m.poll.id])_sel[m.poll.id]=new Set(m.poll.my_option_ids||[]);renderPolls();}
+    else if(m.type==='results'&&m.results){_pres[m.results.poll_id]=m.results;renderPolls();}
+    else if(m.type==='closed'){if(_polls[m.poll_id]){_polls[m.poll_id].status='closed';if(m.results)_pres[m.poll_id]=m.results;renderPolls();}}
+    else if(m.type==='deleted'){delete _polls[m.poll_id];delete _pres[m.poll_id];renderPolls();}
+  };
+}
+
 document.getElementById('qInput').addEventListener('input',e=>{document.getElementById('qLen').textContent=e.target.value.length;});
 document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')ask();});
-document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();});
-window.addEventListener('beforeunload',()=>{if(_es)_es.close();});
+document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();loadPolls();connectPolls();});
+window.addEventListener('beforeunload',()=>{if(_es)_es.close();if(_pes)_pes.close();});
 </script>
 {% endblock %}
