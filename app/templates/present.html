@@ -29,6 +29,13 @@
 .present-wait .big{font:700 clamp(1.6rem,3.5vw,2.6rem) var(--fh);color:var(--w7)}
 .present-wait .hint{font:1.15rem var(--f)}
 .present-closed{display:inline-block;margin-left:14px;font:600 .8rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--red);vertical-align:middle}
+/* Reactions */
+#reactLayer{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.rfloat{position:absolute;bottom:6vh;font-size:2.4rem;will-change:transform,opacity;animation:rRise 2.6s ease-out forwards}
+@keyframes rRise{0%{opacity:0;transform:translateY(0) scale(.6)}12%{opacity:1}100%{opacity:0;transform:translateY(-72vh) scale(1.35)}}
+.react-tally{display:flex;gap:18px;align-items:center}
+.react-tally span{font:600 clamp(1rem,1.8vw,1.5rem) var(--f);color:var(--w7);font-variant-numeric:tabular-nums}
+.react-tally .rt-emoji{margin-right:6px}
 </style>
 {% endblock %}
 
@@ -36,8 +43,10 @@
 <div class="present">
   <div class="present-top">
     <span class="present-sess" id="sess">Live Results</span>
+    <div class="react-tally" id="reactTally"></div>
     <span class="present-live" id="live"><span class="dot"></span> <span id="liveTxt">connecting</span></span>
   </div>
+  <div id="reactLayer"></div>
   <div class="present-q" id="pq" style="display:none;"></div>
   <div class="present-body" id="body">
     <div class="present-wait"><div class="big">Waiting for the next poll…</div><div class="hint" id="joinHint"></div></div>
@@ -128,7 +137,42 @@ function connect(){
   };
 }
 
-document.addEventListener('DOMContentLoaded',init);
-window.addEventListener('beforeunload',()=>{if(_es)_es.close();});
+// ── Reactions pulse (speaker sees the aggregate) ────────────────
+const _reWin=[];   // {t, emoji} over a rolling 60s window
+let _res=null;
+function connectReactions(){
+  if(_res)_res.close();
+  _res=new EventSource('/api/sessions/'+SESSION_ID+'/reactions/stream',{withCredentials:true});
+  _res.onmessage=ev=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.type!=='burst'||!m.counts)return;
+    const now=performance.now();
+    for(const [emoji,n] of Object.entries(m.counts)){
+      const shown=Math.min(n,10);
+      for(let i=0;i<shown;i++)setTimeout(()=>spawnFloat(emoji),i*70);
+      for(let i=0;i<n;i++)_reWin.push({t:now,emoji});
+    }
+    updateTally();
+  };
+}
+function spawnFloat(emoji){
+  const s=document.createElement('span');s.className='rfloat';s.textContent=emoji;
+  s.style.left=(4+Math.random()*90)+'vw';
+  s.style.fontSize=(1.9+Math.random()*1.8)+'rem';
+  s.style.animationDuration=(2.2+Math.random()*1.0)+'s';
+  document.getElementById('reactLayer').appendChild(s);
+  setTimeout(()=>s.remove(),3400);
+}
+function updateTally(){
+  const cutoff=performance.now()-60000;
+  while(_reWin.length&&_reWin[0].t<cutoff)_reWin.shift();
+  const c={};_reWin.forEach(r=>c[r.emoji]=(c[r.emoji]||0)+1);
+  document.getElementById('reactTally').innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1])
+    .map(([e,n])=>'<span><span class="rt-emoji">'+e+'</span>'+n+'</span>').join('');
+}
+setInterval(updateTally,4000);  // let the rolling window decay
+
+document.addEventListener('DOMContentLoaded',()=>{init();connectReactions();});
+window.addEventListener('beforeunload',()=>{if(_es)_es.close();if(_res)_res.close();});
 </script>
 {% endblock %}

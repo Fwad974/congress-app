@@ -67,6 +67,9 @@ Full-stack User Management dashboard at `/admin` with:
 | GET | `/api/polls/{id}/results` | Aggregated results | Any user |
 | PUT | `/api/polls/{id}/status` | Open / close a poll | Chair+ |
 | DELETE | `/api/polls/{id}` | Delete a poll | Chair+ |
+| GET | `/api/reactions/emojis` | Allowed reaction emojis | Any user |
+| POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
+| GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
 ### Frontend Dashboard
 
@@ -291,6 +294,17 @@ A chrome-free **presenter view** (`/present/{session_id}`, opened via the
 "Present ↗" button) shows the open poll on the big screen — animated bar charts
 for choice polls, a frequency-sized word cloud for word-cloud polls — updating
 live as votes land. Built on the same realtime layer as Q&A.
+
+## Emoji Reactions
+
+A reaction bar on the session page lets attendees tap 🔥 💡 🤔 👏 ❤️ during a
+talk. Reactions are **ephemeral — nothing is written to the database**: the
+client batches taps (~700ms) and POSTs counts; the server validates/clamps and
+relays a "burst" over SSE. The **presenter view** aggregates a rolling 60-second
+window and shows the live pulse — floating emojis plus a per-emoji tally — so
+the speaker sees the room's energy without a single DB write. The attendee page
+sends reactions only (it doesn't hold a reaction stream), keeping open
+connections proportional to big screens, not the whole audience.
 
 ### Enabling Web Push
 

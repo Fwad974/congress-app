@@ -80,6 +80,14 @@
 .poll-words{display:flex;flex-wrap:wrap;gap:6px}
 .poll-word{font-family:var(--fh);color:var(--w7);background:rgba(201,169,98,.08);border:1px solid rgba(201,169,98,.15);border-radius:50px;padding:3px 10px}
 .poll-ctrls{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,98,.08)}
+/* Reactions */
+.react-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;display:flex;gap:4px;background:var(--bg2);border:1px solid rgba(201,169,98,.25);border-radius:50px;padding:6px 8px;z-index:1500;box-shadow:0 10px 34px rgba(0,0,0,.45)}
+.react-btn{font-size:1.4rem;line-height:1;background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:50%;transition:transform .1s}
+.react-btn:hover{transform:scale(1.18)}
+.react-btn:active{transform:scale(.85)}
+.react-float{position:fixed;z-index:1600;pointer-events:none;font-size:1.5rem;animation:reactRise 1s ease-out forwards}
+@keyframes reactRise{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-90px) scale(1.5)}}
+@media(max-width:768px){.react-bar{bottom:76px}}
 @media(max-width:600px){.qa-card{padding:14px}}
 </style>
 {% endblock %}
@@ -118,6 +126,8 @@
     </div>
     <div id="qaContainer" class="animate-up delay-2"><div class="qa-empty">Loading questions…</div></div>
   </div>
+
+  <div class="react-bar" id="reactBar" title="React"></div>
 
   <div id="lt-polls" class="ltab-panel">
     {% if can_moderate %}
@@ -386,7 +396,29 @@ function connectPolls(){
 
 document.getElementById('qInput').addEventListener('input',e=>{document.getElementById('qLen').textContent=e.target.value.length;});
 document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')ask();});
-document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();loadPolls();connectPolls();});
-window.addEventListener('beforeunload',()=>{if(_es)_es.close();if(_pes)_pes.close();});
+// ── Reactions (tap to send; batched) ────────────────────────────
+let _reBatch={}, _reTimer=null;
+async function initReactions(){
+  let emojis=['🔥','💡','🤔','👏','❤️'];
+  try{const d=await api('/api/reactions/emojis');if(d.emojis&&d.emojis.length)emojis=d.emojis;}catch(e){}
+  document.getElementById('reactBar').innerHTML=emojis.map(e=>'<button class="react-btn" onclick="tapReact(\''+e+'\',event)">'+e+'</button>').join('');
+}
+function tapReact(emoji,ev){
+  _reBatch[emoji]=(_reBatch[emoji]||0)+1;
+  const s=document.createElement('span');s.className='react-float';s.textContent=emoji;
+  const x=ev?ev.clientX:innerWidth/2,y=ev?ev.clientY:innerHeight-80;
+  s.style.left=(x-12)+'px';s.style.top=(y-20)+'px';document.body.appendChild(s);setTimeout(()=>s.remove(),1000);
+  if(!_reTimer)_reTimer=setTimeout(flushReact,700);
+}
+async function flushReact(){
+  _reTimer=null;const counts=_reBatch;_reBatch={};
+  if(!Object.keys(counts).length)return;
+  try{await api('/api/sessions/'+SESSION_ID+'/reactions','POST',{counts});}catch(e){}
+}
+
+document.getElementById('qInput').addEventListener('input',e=>{document.getElementById('qLen').textContent=e.target.value.length;});
+document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')ask();});
+document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();loadPolls();connectPolls();initReactions();});
+window.addEventListener('beforeunload',()=>{if(_es)_es.close();if(_pes)_pes.close();flushReact();});
 </script>
 {% endblock %}

@@ -25,6 +25,7 @@ from app.api import notifications as notifications_api
 from app.api import notes as notes_api
 from app.api import qa as qa_api
 from app.api import polls as polls_api
+from app.api import reactions as reactions_api
 
 settings = get_settings()
 
@@ -144,3 +145,4 @@ app.include_router(notifications_api.router, prefix="/api/notifications", tags=[
 app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
 app.include_router(qa_api.router, prefix="/api", tags=["qa"])
 app.include_router(polls_api.router, prefix="/api", tags=["polls"])
+app.include_router(reactions_api.router, prefix="/api", tags=["reactions"])
