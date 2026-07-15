@@ -31,8 +31,13 @@
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-reqs"><span class="pw-req" id="pw-len">✕ 8+ characters</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
       <div class="form-group"><label class="int-label">Research Interests</label><div class="int-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
       <button type="submit" class="btn btn-gold w-full" id="submitBtn">Create Account</button>
+      {% if oauth_providers %}
       <div class="divider">or register with</div>
-      <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">ORCID</button></div>
+      <div class="sso-row">
+        {% if 'google' in oauth_providers %}<a class="btn btn-google" href="/api/auth/oauth/google/login">Google</a>{% endif %}
+        {% if 'orcid' in oauth_providers %}<a class="btn btn-google" href="/api/auth/oauth/orcid/login">ORCID</a>{% endif %}
+      </div>
+      {% endif %}
     </form>
     <div class="auth-footer">Already have an account? <a href="/login">Sign in</a></div>
   </div></div></div>

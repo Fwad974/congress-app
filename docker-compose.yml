@@ -52,6 +52,13 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@dubaicongress.example}
       # Realtime fan-out for live Q&A (and future polls/reactions).
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Social login (optional — buttons appear only when a provider is set).
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ORCID_CLIENT_ID: ${ORCID_CLIENT_ID:-}
+      ORCID_CLIENT_SECRET: ${ORCID_CLIENT_SECRET:-}
+      ORCID_ENV: ${ORCID_ENV:-sandbox}
+      OAUTH_REDIRECT_BASE: ${OAUTH_REDIRECT_BASE:-}
     volumes:
       # Persists auto-generated VAPID keys so the public key is stable across
       # restarts (otherwise existing browser subscriptions would break).

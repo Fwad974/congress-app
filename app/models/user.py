@@ -20,7 +20,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    # Nullable: OAuth-only accounts (Google/ORCID) have no local password.
+    hashed_password = Column(String(255), nullable=True)
     full_name = Column(String(255), nullable=False)
     institution = Column(String(255), nullable=True)
     role = Column(SAEnum(UserRole), default=UserRole.attendee, nullable=False)

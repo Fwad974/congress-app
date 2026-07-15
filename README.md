@@ -253,6 +253,10 @@ docker run -p 8000:8000 \
 | `VAPID_PRIVATE_KEY` | No | Web Push VAPID private key — **keep secret** |
 | `VAPID_SUBJECT` | No | Contact for push services (default: `mailto:admin@dubaicongress.example`) |
 | `REDIS_URL` | No | Redis URL for realtime fan-out (live Q&A). Empty = in-process only (single worker). Docker sets `redis://redis:6379/0` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | No | Google OAuth credentials. Both set = Google sign-in enabled |
+| `ORCID_CLIENT_ID` / `ORCID_CLIENT_SECRET` | No | ORCID OAuth credentials. Both set = ORCID sign-in enabled |
+| `ORCID_ENV` | No | `sandbox` (default) or `production` — picks the ORCID host |
+| `OAUTH_REDIRECT_BASE` | No | Public origin for callback URLs behind a proxy (e.g. `https://app.example.com`); empty = derive from request |
 
 ## Schedule Change Notifications
 
@@ -266,6 +270,25 @@ that item is notified:
 
 See [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md) for the full architecture,
 data model, and API.
+
+## Social Login (Google & ORCID)
+
+Users can sign in / sign up with **Google** or **ORCID** in addition to
+email + password. Each provider's button appears only when its credentials are
+configured, so nothing shows until you set it up. Full setup — registering the
+apps, redirect URIs, sandbox vs production, and the account-linking policy — is
+in [`docs/OAUTH.md`](docs/OAUTH.md). In short:
+
+1. Register an app with each provider and set `GOOGLE_CLIENT_ID/SECRET` and/or
+   `ORCID_CLIENT_ID/SECRET` in your `.env`.
+2. Add the callback URL `<your-origin>/api/auth/oauth/{provider}/callback` to
+   the provider's allowed redirect URIs.
+3. Restart — the buttons light up.
+
+Accounts link by **verified email**: a Google sign-in whose verified email
+matches an existing account logs into that account (keeping password login);
+otherwise a new attendee account is created. Links are stored in
+`oauth_accounts`, so one user can attach both Google and ORCID.
 
 ## Notes
 

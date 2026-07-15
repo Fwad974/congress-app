@@ -27,11 +27,18 @@
       <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Enter your password" required></div>
       <div class="fe"><label><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
       <button type="submit" class="btn btn-gold w-full" id="submitBtn">Sign In</button>
+      {% if oauth_providers %}
       <div class="divider">or continue with</div>
-      <div class="sso-row"><button type="button" class="btn btn-google">Google</button><button type="button" class="btn btn-google">ORCID</button></div>
+      <div class="sso-row">
+        {% if 'google' in oauth_providers %}<a class="btn btn-google" href="/api/auth/oauth/google/login">Google</a>{% endif %}
+        {% if 'orcid' in oauth_providers %}<a class="btn btn-google" href="/api/auth/oauth/orcid/login">ORCID</a>{% endif %}
+      </div>
+      {% endif %}
     </form>
     <div class="auth-footer">Don't have an account? <a href="/signup">Register now</a></div>
   </div></div></div>
 </div>
 {% endblock %}
-{% block scripts %}<script>async function handleLogin(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Signing in...';btn.disabled=true;try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});showToast('Welcome back!','success');setTimeout(()=>window.location.href='/home',600)}catch(err){showToast(err.message,'error');btn.innerHTML='Sign In';btn.disabled=false}}</script>{% endblock %}
+{% block scripts %}<script>
+(function(){var p=new URLSearchParams(location.search).get('error');if(p==='oauth')showToast('Sign-in with that provider failed. Please try again.','error');else if(p==='suspended')showToast('This account is suspended.','error');})();
+async function handleLogin(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Signing in...';btn.disabled=true;try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});showToast('Welcome back!','success');setTimeout(()=>window.location.href='/home',600)}catch(err){showToast(err.message,'error');btn.innerHTML='Sign In';btn.disabled=false}}</script>{% endblock %}

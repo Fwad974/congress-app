@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_optional
+from app.core.oauth import enabled_providers
 from app.models.user import UserRole
 
 router = APIRouter()
@@ -32,14 +33,16 @@ async def landing_page(request: Request, user=Depends(get_current_user_optional)
 async def signup_page(request: Request, user=Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/home", status_code=302)
-    return templates.TemplateResponse("signup.html", {"request": request})
+    return templates.TemplateResponse(
+        "signup.html", {"request": request, "oauth_providers": enabled_providers()})
 
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, user=Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/home", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        "login.html", {"request": request, "oauth_providers": enabled_providers()})
 
 
 @router.get("/home", response_class=HTMLResponse)

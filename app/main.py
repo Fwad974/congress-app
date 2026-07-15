@@ -16,7 +16,9 @@ from app.models.notification import NotificationSettings, UserNotification, Push
 from app.models.note import Note  # noqa – registers model
 from app.models.qa import Question, QuestionVote, QuestionStatus  # noqa – registers model
 from app.models.poll import Poll, PollOption, PollResponse, PollType, PollStatus  # noqa – registers model
+from app.models.oauth import OAuthAccount  # noqa – registers model
 from app.core.realtime import broadcaster
+from app.core.oauth import init_oauth
 from app.api import auth, pages
 from app.api import admin as admin_api
 from app.api import admin_pages
@@ -89,6 +91,21 @@ def _migrate_schedule_table(connection):
         ))
 
 
+def _migrate_users_table(connection):
+    """Make users.hashed_password nullable for OAuth-only accounts.
+
+    Postgres-only; SQLite tests build the table fresh with the current model.
+    """
+    row = connection.execute(text(
+        "SELECT is_nullable FROM information_schema.columns "
+        "WHERE table_name = 'users' AND column_name = 'hashed_password'"
+    )).first()
+    if row and row[0] == "NO":
+        connection.execute(text(
+            "ALTER TABLE users ALTER COLUMN hashed_password DROP NOT NULL"
+        ))
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -101,6 +118,7 @@ async def lifespan(application: FastAPI):
             _sync_pg_enum(conn, "scheduletype", ScheduleType)
         with engine.begin() as conn:
             _migrate_schedule_table(conn)
+            _migrate_users_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl
@@ -117,6 +135,9 @@ async def lifespan(application: FastAPI):
     page_tpl.env.globals.update(congress)
     admin_tpl.env.globals.update(congress)
 
+    # Register configured OAuth providers (Google / ORCID).
+    init_oauth()
+
     # Connect the realtime broadcaster (Redis if configured, else in-process).
     await broadcaster.connect()
 
@@ -129,6 +150,16 @@ app = FastAPI(
     title=f"{settings.CONGRESS_NAME} {settings.CONGRESS_YEAR}",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# Signed session cookie — holds the OAuth state/nonce during the redirect dance.
+from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    same_site="lax",
+    https_only=False,  # set True behind HTTPS in production
+    max_age=600,       # the OAuth handshake is short-lived
 )
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

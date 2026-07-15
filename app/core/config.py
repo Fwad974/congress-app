@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     # across workers and containers.
     REDIS_URL: str = ""
 
+    # OAuth / social login. Each provider activates only when its client
+    # id + secret are set. ORCID_ENV picks the sandbox vs production host.
+    # OAUTH_REDIRECT_BASE overrides the callback origin behind a proxy
+    # (e.g. https://app.example.com); empty = derive from the request.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    ORCID_CLIENT_ID: str = ""
+    ORCID_CLIENT_SECRET: str = ""
+    ORCID_ENV: str = "sandbox"  # "sandbox" | "production"
+    OAUTH_REDIRECT_BASE: str = ""
+
     class Config:
         env_file = ".env"
 
