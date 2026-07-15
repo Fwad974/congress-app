@@ -31,7 +31,10 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      # Host port 80 → container's uvicorn on 8000. Keeps uvicorn on an
+      # unprivileged port (the container runs as non-root) while serving
+      # publicly on the standard HTTP port, so URLs need no ":8000".
+      - "80:8000"
     environment:
       DATABASE_URL: postgresql://congress_user:congress_pass@db:5432/dubai_congress
       SECRET_KEY: ${SECRET_KEY:-09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7}
