@@ -31,6 +31,18 @@ Full-stack User Management dashboard at `/admin` with:
 - **Bulk Action Safety** — Cannot bulk-modify users at or above your role level
 - **CSV Export Logging** — All data exports logged per DATA-03
 
+### Continuous Integration
+
+Every push and pull request runs the full test suite via GitHub Actions
+(`.github/workflows/ci.yml`) on Python 3.11. Tests use an isolated SQLite
+database (`tests/conftest.py`) so CI needs no Postgres or Redis. Run locally
+with:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q
+```
+
 ### API Endpoints
 
 | Method | Endpoint | Description | Min Role |
