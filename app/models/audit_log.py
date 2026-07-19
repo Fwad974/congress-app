@@ -36,6 +36,8 @@ class AuditAction(str, enum.Enum):
     note_delete = "note_delete"
     # Live Q&A
     question_moderate = "question_moderate"
+    # Notifications
+    broadcast_send = "broadcast_send"
     # System
     settings_change = "settings_change"
     export_data = "export_data"

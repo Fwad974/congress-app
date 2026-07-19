@@ -143,6 +143,48 @@ automatically when a send fails.
 
 ---
 
+## 4. Broadcasts, quiet hours & emergency alerts
+
+### Quiet hours
+Each user can set a do-not-disturb window (`prefs.quiet_hours` = `{enabled,
+start, end}`, plus `prefs.tz` which the client stores automatically). Inside it,
+**non-emergency** alerts are held:
+
+- **Reminders & feed toasts/sound** — suppressed client-side using the local
+  clock (`isQuietNow()` in `notifications.js`). Feed items stay unread so they
+  resurface once the window ends.
+- **Web push** — suppressed server-side: `push_service` drops recipients whose
+  `prefs` say they're in quiet hours (needs `tz`) or who turned notifications
+  off. See `in_quiet_hours()` in `notification_service.py`.
+
+Emergency alerts ignore all of this.
+
+### Broadcasts (organizer announcements)
+Admins (and above) send announcements from the **Broadcast** tab in the admin
+dashboard, or `POST /api/admin/notifications/broadcast`:
+
+```jsonc
+{ "title": "...", "body": "...", "target_roles": ["speaker"], "emergency": false }
+```
+
+- `target_roles` empty = **everyone** (active users); otherwise filtered to those
+  roles. The sending admin is excluded.
+- Fan-out creates a `UserNotification` per recipient (`kind` = `"announcement"`
+  or `"emergency"`) and a `Broadcast` history row, then web-pushes (respecting
+  quiet hours unless emergency).
+- **NOTIF-02:** max **3 non-emergency broadcasts/day** (emergencies exempt) —
+  enforced via the `broadcasts` table; over the limit returns HTTP 429.
+- Every broadcast is audit-logged (`broadcast_send`).
+
+### Emergency alerts (NOTIF-01)
+Setting `emergency: true` (Admin+ only):
+
+- **Bypasses** quiet hours *and* each user's `enabled` preference — delivered to
+  everyone targeted, always.
+- Surfaces client-side as a **full-width red banner** (`showEmergency()`) plus a
+  forced sound and Web Notification, regardless of settings.
+- Exempt from the daily broadcast limit.
+
 ## Files
 
 | File                                  | Role                                   |

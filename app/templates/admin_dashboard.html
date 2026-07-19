@@ -117,6 +117,7 @@
   <button class="admin-tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
   <button class="admin-tab" data-tab="users" onclick="switchTab('users')">Users</button>
   <button class="admin-tab" data-tab="audit" onclick="switchTab('audit')">Audit Log</button>
+  <button class="admin-tab" data-tab="broadcast" onclick="switchTab('broadcast')">Broadcast</button>
   {% if user.role.value == 'super_admin' %}<button class="admin-tab" data-tab="notes" onclick="switchTab('notes')">User Notes</button>{% endif %}
 </div>
 <div class="loading-bar" id="loadingBar"></div>
@@ -168,6 +169,29 @@
   <div class="pagination" id="auditPagination" style="display:none;padding:14px 0;"><span id="auditPaginationInfo">-</span><div class="pagination-btns" id="auditPaginationBtns"></div></div>
 </div>
 
+<div class="tab-panel" id="tab-broadcast">
+  <div style="display:grid;grid-template-columns:1fr;gap:18px;max-width:660px;">
+    <div class="table-wrap" style="padding:20px;">
+      <div style="font:600 .95rem var(--f);color:var(--w9);margin-bottom:14px;">Compose Announcement</div>
+      <input type="text" class="search-box" id="bc_title" placeholder="Title" maxlength="140" style="width:100%;margin-bottom:10px;">
+      <textarea class="search-box" id="bc_body" placeholder="Message to attendees…" maxlength="1000" style="width:100%;min-height:96px;resize:vertical;margin-bottom:14px;font:0.88rem var(--f);"></textarea>
+      <div style="font:600 .66rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Audience — none selected = everyone</div>
+      <div id="bc_roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;margin-bottom:16px;cursor:pointer;">
+        <input type="checkbox" id="bc_emergency" style="width:18px;height:18px;accent-color:#ef4444;flex-shrink:0;">
+        <div><div style="font:600 .86rem var(--f);color:#ef4444;">Emergency alert</div><div style="font:.74rem var(--f);color:var(--w3);">Bypasses quiet hours &amp; every user's preferences. Exempt from the daily limit.</div></div>
+      </label>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span id="bc_limit" style="font:.76rem var(--f);color:var(--w5);"></span>
+        <button class="toolbar-btn primary" id="bc_send" onclick="sendBroadcast()">Send</button>
+      </div>
+    </div>
+    <div class="table-wrap"><div style="padding:16px 18px;border-bottom:1px solid var(--b);font:.65rem var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--w3);">Recent Broadcasts</div>
+      <div style="padding:6px 14px 12px;max-height:420px;overflow-y:auto;" id="bc_list"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
 {% if user.role.value == 'super_admin' %}
 <div class="tab-panel" id="tab-notes">
   <div class="toolbar">
@@ -213,7 +237,7 @@ const IC={
 
 async function api(u,m='GET',b=null){const o={method:m,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(b)o.body=JSON.stringify(b);const r=await fetch(u,o);const d=await r.json();if(!r.ok)throw new Error(d.detail||'Failed');return d;}
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
-function switchTab(t){document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));if(t==='users')loadUsers();if(t==='audit')loadAudit();if(t==='overview')loadStats();if(t==='notes')loadNotes();}
+function switchTab(t){document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));if(t==='users')loadUsers();if(t==='audit')loadAudit();if(t==='overview')loadStats();if(t==='notes')loadNotes();if(t==='broadcast')loadBroadcasts();}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function loadStats(){ld(true);try{const d=await api('/api/admin/stats');document.getElementById('stat-total').textContent=d.total_users;document.getElementById('stat-active').textContent=d.active_users;document.getElementById('stat-suspended').textContent=d.suspended_users;document.getElementById('stat-today').textContent=d.new_today;document.getElementById('stat-week').textContent=d.new_this_week;const rb=document.getElementById('roleBreakdown');const ro=['super_admin','admin','moderator','review_chair','session_chair','speaker','reviewer','attendee'];rb.innerHTML=ro.filter(r=>d.roles_breakdown[r]).map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.025);"><span class="role-pill ${r}">${r.replace('_',' ')}</span><span style="font-family:var(--m);font-size:0.85rem;color:var(--w9);">${d.roles_breakdown[r]}</span></div>`).join('')||'<div class="empty-state">No users</div>';const ra=document.getElementById('recentActivity');ra.innerHTML=d.recent_activity.length?d.recent_activity.map((a,i)=>auditRow(a,i)).join(''):'<div class="empty-state">No activity</div>';}catch(e){showToast(e.message,'error');}ld(false);}
@@ -296,6 +320,15 @@ function debounceNoteSearch(){clearTimeout(nsto);nsto=setTimeout(()=>loadNotes(1
 async function loadNotes(p){if(p)npg=p;ld(true);try{const s=document.getElementById('noteSearch').value;const q=new URLSearchParams({page:npg,per_page:20});if(s)q.set('search',s);const d=await api('/api/admin/notes?'+q);renderNotes(d);}catch(e){showToast(e.message,'error');}ld(false);}
 function renderNotes(d){const tb=document.getElementById('notesTableBody');if(!d.notes.length){tb.innerHTML='<tr><td colspan="5"><div class="empty-state">No notes found</div></td></tr>';document.getElementById('notesPagination').style.display='none';return;}tb.innerHTML=d.notes.map(n=>{const ini=n.user_name.split(' ').map(x=>x[0]).join('').substring(0,2);const dt=new Date(n.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});const sess=n.session_title?'<span class="role-pill" style="background:rgba(201,169,98,.1);color:var(--gold);border:1px solid rgba(201,169,98,.2);">'+esc(n.session_title)+'</span>':'<span style="color:var(--w3);">—</span>';const body=esc(n.content).replace(/\n/g,'<br>');return '<tr><td><div class="user-cell"><div class="user-cell-avatar">'+ini+'</div><div><div class="user-cell-name">'+esc(n.user_name)+'</div><div class="user-cell-email">'+esc(n.user_email)+'</div></div></div></td><td style="max-width:420px;white-space:pre-wrap;color:var(--w9);">'+body+'</td><td class="hide-mobile-col">'+sess+'</td><td class="hide-mobile-col">'+dt+'</td><td><button class="action-btn del-btn" title="Delete note" onclick="delNote('+n.id+')">'+IC.trash+'</button></td></tr>';}).join('');const pages=Math.ceil(d.total/d.per_page),pgEl=document.getElementById('notesPagination');pgEl.style.display=pages>1?'flex':'none';document.getElementById('notesPaginationInfo').textContent=d.total+' note'+(d.total===1?'':'s');let h='<button class="page-btn" onclick="loadNotes('+(npg-1)+')" '+(npg<=1?'disabled':'')+'>&#8249;</button>';for(let i=Math.max(1,npg-2);i<=Math.min(pages,npg+2);i++)h+='<button class="page-btn '+(i===npg?'active':'')+'" onclick="loadNotes('+i+')">'+i+'</button>';h+='<button class="page-btn" onclick="loadNotes('+(npg+1)+')" '+(npg>=pages?'disabled':'')+'>&#8250;</button>';document.getElementById('notesPaginationBtns').innerHTML=h;}
 async function delNote(id){if(!confirm('Delete this note? This cannot be undone.'))return;try{await api('/api/admin/notes/'+id,'DELETE');showToast('Note deleted','success');loadNotes();}catch(e){showToast(e.message,'error');}}
+
+// ─── Broadcasts ────────────────────────────────────────────────
+const BC_ROLES=['attendee','speaker','reviewer','session_chair','review_chair','moderator','admin','super_admin'];
+let _bcRoles=new Set();
+function renderBcRoles(){document.getElementById('bc_roles').innerHTML=BC_ROLES.map(r=>`<span class="role-pill ${r}" style="cursor:pointer;transition:opacity .15s;opacity:${_bcRoles.has(r)?'1':'0.4'}" onclick="toggleBcRole('${r}')">${r.replace('_',' ')}</span>`).join('');}
+function toggleBcRole(r){if(_bcRoles.has(r))_bcRoles.delete(r);else _bcRoles.add(r);renderBcRoles();}
+async function loadBroadcasts(){renderBcRoles();try{const d=await api('/api/admin/notifications/broadcasts');document.getElementById('bc_limit').textContent=d.sent_today+' / '+d.daily_limit+' broadcasts today';const l=document.getElementById('bc_list');l.innerHTML=d.broadcasts.length?d.broadcasts.map(bcRow).join(''):'<div class="empty-state">No broadcasts yet</div>';}catch(e){showToast(e.message,'error');}}
+function bcRow(b){const t=new Date(b.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});const tag=b.emergency?' <span style="color:#ef4444;font-weight:700;font-size:0.7rem;">● EMERGENCY</span>':'';const aud=(b.target_roles&&b.target_roles.length)?b.target_roles.map(r=>r.replace('_',' ')).join(', '):'everyone';return `<div style="padding:11px 6px;border-bottom:1px solid rgba(201,169,98,.06);"><div style="font:600 .88rem var(--f);color:var(--w9);">${esc(b.title)}${tag}</div><div style="font:.8rem var(--f);color:var(--w5);margin:3px 0;line-height:1.4;">${esc(b.body)}</div><div style="font:.7rem var(--m);color:var(--w3);">${b.recipient_count} recipients · ${esc(aud)} · ${t}</div></div>`;}
+async function sendBroadcast(){const title=document.getElementById('bc_title').value.trim(),body=document.getElementById('bc_body').value.trim();if(!title||!body){showToast('Title and message are required','error');return;}const emergency=document.getElementById('bc_emergency').checked;if(emergency&&!confirm('Send an EMERGENCY alert? It bypasses quiet hours and every user\'s notification preferences.'))return;const btn=document.getElementById('bc_send');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const r=await api('/api/admin/notifications/broadcast','POST',{title,body,target_roles:[..._bcRoles],emergency});showToast('Sent to '+r.recipient_count+' user(s)','success');document.getElementById('bc_title').value='';document.getElementById('bc_body').value='';document.getElementById('bc_emergency').checked=false;_bcRoles.clear();loadBroadcasts();}catch(e){showToast(e.message,'error');}btn.innerHTML='Send';btn.disabled=false;}
 
 document.addEventListener('DOMContentLoaded',()=>loadStats());
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));

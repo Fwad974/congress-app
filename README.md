@@ -79,6 +79,8 @@ pytest -q
 | GET | `/api/polls/{id}/results` | Aggregated results | Any user |
 | PUT | `/api/polls/{id}/status` | Open / close a poll | Chair+ |
 | DELETE | `/api/polls/{id}` | Delete a poll | Chair+ |
+| POST | `/api/admin/notifications/broadcast` | Send an announcement / emergency alert | Admin |
+| GET | `/api/admin/notifications/broadcasts` | Broadcast history + daily count | Admin |
 | GET | `/api/reactions/emojis` | Allowed reaction emojis | Any user |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |

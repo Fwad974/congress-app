@@ -12,7 +12,7 @@ from app.core.database import engine, Base
 from app.models.user import User  # noqa – registers model
 from app.models.audit_log import AuditLog, AuditAction, AuditSeverity  # noqa – registers model
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark  # noqa – registers model
-from app.models.notification import NotificationSettings, UserNotification, PushSubscription  # noqa – registers model
+from app.models.notification import NotificationSettings, UserNotification, PushSubscription, Broadcast  # noqa – registers model
 from app.models.note import Note  # noqa – registers model
 from app.models.qa import Question, QuestionVote, QuestionStatus  # noqa – registers model
 from app.models.poll import Poll, PollOption, PollResponse, PollType, PollStatus  # noqa – registers model

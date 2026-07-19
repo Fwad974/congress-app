@@ -98,6 +98,20 @@
           <span class="pct" id="volPct">70%</span>
         </div>
       </div>
+      <div class="field-block">
+        <div class="toggle-row">
+          <div>
+            <div class="ftitle">Quiet hours</div>
+            <div class="fhint">Hold non-urgent alerts (sound &amp; pop-ups) during these hours. Emergency alerts always come through.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="n_qh_enabled"><span></span></label>
+        </div>
+        <div class="range-row" id="qhTimes" style="gap:10px;margin-top:10px">
+          <input type="time" class="form-input" id="n_qh_start" style="flex:1">
+          <span style="color:var(--w5);font:.85rem var(--f)">to</span>
+          <input type="time" class="form-input" id="n_qh_end" style="flex:1">
+        </div>
+      </div>
       <div class="form-actions"><button type="button" class="btn btn-gold btn-sm" id="notifBtn" onclick="saveNotifPrefs()">Save Preferences</button></div>
     </div>
   </div>
@@ -147,17 +161,29 @@ async function loadNotifPrefs(){
     const v=Math.round((p.volume||0.7)*100);
     document.getElementById('n_volume').value=v;
     document.getElementById('volPct').textContent=v+'%';
+    const qh=p.quiet_hours||{};
+    document.getElementById('n_qh_enabled').checked=!!qh.enabled;
+    document.getElementById('n_qh_start').value=qh.start||'22:00';
+    document.getElementById('n_qh_end').value=qh.end||'07:00';
+    window._prefTz=p.tz||'';
     showPermWarn();
   }catch(e){}
 }
 
 async function saveNotifPrefs(){
   const btn=document.getElementById('notifBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  let tz=window._prefTz||'';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||tz;}catch(e){}
   const payload={
     enabled:document.getElementById('n_enabled').checked,
     lead_times:[..._leadSet],
     sound:document.getElementById('n_sound').value,
     volume:parseInt(document.getElementById('n_volume').value,10)/100,
+    quiet_hours:{
+      enabled:document.getElementById('n_qh_enabled').checked,
+      start:document.getElementById('n_qh_start').value||'22:00',
+      end:document.getElementById('n_qh_end').value||'07:00',
+    },
+    tz:tz,
   };
   try{
     const r=await fetch('/api/notifications/settings',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});

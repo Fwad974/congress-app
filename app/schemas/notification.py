@@ -1,20 +1,38 @@
 """
 Notification preference schemas.
 """
+import re
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 VALID_SOUNDS = {"bell", "chime", "buzz", "off"}
 VALID_LEAD_TIMES = {0, 5, 10, 15, 30, 60}  # minutes; 0 = "At start"
+_TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")  # HH:MM 24h
 
 DEFAULT_PREFS = {
     "enabled": True,
     "lead_times": [10, 0],   # 10 min before + at start
     "sound": "bell",
     "volume": 0.7,
+    "quiet_hours": {"enabled": False, "start": "22:00", "end": "07:00"},
+    "tz": "",                # IANA timezone, set by the client for server-side quiet hours
 }
+
+
+class QuietHours(BaseModel):
+    """A do-not-disturb window; non-emergency alerts are held inside it."""
+    enabled: bool = False
+    start: str = "22:00"
+    end: str = "07:00"
+
+    @field_validator("start", "end")
+    @classmethod
+    def valid_time(cls, v):
+        if not _TIME_RE.match(v or ""):
+            raise ValueError("Time must be HH:MM (24-hour)")
+        return v
 
 
 class NotificationPrefs(BaseModel):
@@ -22,6 +40,8 @@ class NotificationPrefs(BaseModel):
     lead_times: List[int] = [10, 0]
     sound: str = "bell"
     volume: float = 0.7
+    quiet_hours: QuietHours = Field(default_factory=QuietHours)
+    tz: str = ""
 
     @field_validator("lead_times")
     @classmethod
@@ -44,6 +64,11 @@ class NotificationPrefs(BaseModel):
         if v > 1:
             return 1.0
         return float(v)
+
+    @field_validator("tz")
+    @classmethod
+    def clean_tz(cls, v):
+        return (v or "")[:64]
 
 
 class NotificationSettingsResponse(BaseModel):
@@ -105,3 +130,57 @@ class PushSubscriptionIn(BaseModel):
 
 class PushUnsubscribeIn(BaseModel):
     endpoint: str
+
+
+# ─── Broadcasts / announcements ──────────────────────────────────
+VALID_ROLES = {
+    "attendee", "speaker", "reviewer", "session_chair", "review_chair",
+    "moderator", "admin", "super_admin",
+}
+MAX_BROADCAST_TITLE = 140
+MAX_BROADCAST_BODY = 1000
+
+
+class BroadcastRequest(BaseModel):
+    title: str
+    body: str
+    target_roles: List[str] = []   # empty = everyone
+    emergency: bool = False
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, v):
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("Title is required")
+        return v[:MAX_BROADCAST_TITLE]
+
+    @field_validator("body")
+    @classmethod
+    def clean_body(cls, v):
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("Message is required")
+        return v[:MAX_BROADCAST_BODY]
+
+    @field_validator("target_roles")
+    @classmethod
+    def clean_roles(cls, v):
+        return [r for r in dict.fromkeys(v or []) if r in VALID_ROLES]
+
+
+class BroadcastItem(BaseModel):
+    id: int
+    title: str
+    body: str
+    target_roles: List[str]
+    emergency: bool
+    recipient_count: int
+    actor_email: Optional[str] = None
+    created_at: datetime
+
+
+class BroadcastListResponse(BaseModel):
+    broadcasts: List[BroadcastItem]
+    sent_today: int
+    daily_limit: int

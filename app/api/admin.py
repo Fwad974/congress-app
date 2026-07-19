@@ -16,7 +16,7 @@ import io
 import math
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, desc, asc
@@ -39,6 +39,12 @@ from app.schemas.admin import (
     AuditLogResponse, AuditLogListResponse, DashboardStatsResponse,
 )
 from app.schemas.note import AdminNoteResponse, AdminNoteListResponse
+from app.models.notification import Broadcast
+from app.schemas.notification import BroadcastRequest, BroadcastItem, BroadcastListResponse
+from app.core.notification_service import create_broadcast
+from app.core.push_service import deliver_push
+
+BROADCAST_DAILY_LIMIT = 3  # NOTIF-02: non-emergency broadcasts per day
 
 router = APIRouter()
 
@@ -588,6 +594,69 @@ def delete_note(
     db.delete(note)
     db.commit()
     return {"message": "Note deleted"}
+
+
+# ─── Broadcasts / Announcements (Admin+) ─────────────────────────
+def _broadcasts_today(db: Session) -> int:
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    return db.query(func.count(Broadcast.id)).filter(
+        Broadcast.emergency == False,  # noqa: E712
+        Broadcast.created_at >= today,
+    ).scalar() or 0
+
+
+@router.post("/notifications/broadcast")
+def send_broadcast(
+    req: BroadcastRequest,
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin()),
+):
+    # NOTIF-02: cap non-emergency broadcasts per day; emergencies are exempt.
+    if not req.emergency and _broadcasts_today(db) >= BROADCAST_DAILY_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily broadcast limit reached ({BROADCAST_DAILY_LIMIT}/day). "
+                   "Emergency alerts are exempt.",
+        )
+
+    bc, recipients = create_broadcast(
+        db, admin, req.title, req.body, req.target_roles, req.emergency,
+    )
+    audience = ", ".join(req.target_roles) if req.target_roles else "everyone"
+    log_action(
+        db, admin, AuditAction.broadcast_send,
+        f"{'EMERGENCY ' if req.emergency else ''}Broadcast '{bc.title}' → "
+        f"{bc.recipient_count} user(s) ({audience})",
+        request=request, target_type="system",
+        new_value="emergency" if req.emergency else "announcement",
+    )
+    if recipients:
+        background.add_task(deliver_push, recipients, {
+            "title": bc.title, "body": bc.body,
+            "tag": f"broadcast-{bc.id}", "url": "/home",
+        }, req.emergency)
+    return {"id": bc.id, "recipient_count": bc.recipient_count, "emergency": bc.emergency}
+
+
+@router.get("/notifications/broadcasts", response_model=BroadcastListResponse)
+def list_broadcasts(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin()),
+):
+    rows = db.query(Broadcast).order_by(desc(Broadcast.created_at)).limit(30).all()
+    return BroadcastListResponse(
+        broadcasts=[BroadcastItem(
+            id=b.id, title=b.title, body=b.body,
+            target_roles=b.target_roles or [], emergency=b.emergency,
+            recipient_count=b.recipient_count, actor_email=b.actor_email,
+            created_at=b.created_at,
+        ) for b in rows],
+        sent_today=_broadcasts_today(db),
+        daily_limit=BROADCAST_DAILY_LIMIT,
+    )
 
 
 # ─── Unlock Locked Account (AUTH-03) ─────────────────────────────

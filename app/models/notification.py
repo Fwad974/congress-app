@@ -12,7 +12,7 @@ Schema of `prefs` (see app.schemas.notification.DEFAULT_PREFS):
 """
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, JSON, ForeignKey,
+    Column, Integer, String, Text, DateTime, JSON, Boolean, ForeignKey,
     UniqueConstraint, Index,
 )
 from app.core.database import Base
@@ -86,3 +86,25 @@ class PushSubscription(Base):
     auth = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True),
                         default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class Broadcast(Base):
+    """An organizer announcement / emergency alert sent to a set of users.
+
+    One row per broadcast (the per-user copies live in UserNotification with
+    kind 'announcement' or 'emergency'). Kept for history + the NOTIF-02
+    daily-limit check and admin display.
+    """
+    __tablename__ = "broadcasts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(Integer, nullable=True)
+    actor_email = Column(String(255), nullable=True)
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+    target_roles = Column(JSON, nullable=False, default=list)  # [] = everyone
+    emergency = Column(Boolean, nullable=False, default=False)
+    recipient_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True),
+                        default=lambda: datetime.now(timezone.utc),
+                        nullable=False, index=True)

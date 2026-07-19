@@ -9,13 +9,16 @@ and the app still works via the in-app feed.
 """
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Iterable, List
 
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.database import SessionLocal
-from app.models.notification import PushSubscription
+from app.core.notification_service import in_quiet_hours
+from app.models.notification import PushSubscription, NotificationSettings
+from app.schemas.notification import DEFAULT_PREFS
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -71,17 +74,45 @@ def _send_one(sub: PushSubscription, payload_json: str) -> bool:
         return True
 
 
-def send_push_to_users(db: Session, user_ids: Iterable[int], payload: dict) -> int:
+def _deliverable_ids(db: Session, ids: List[int]) -> List[int]:
+    """Drop users who turned notifications off or are in quiet hours right now.
+
+    Only applied to non-emergency sends; emergency alerts skip this entirely.
+    """
+    now = datetime.now(timezone.utc)
+    rows = db.query(NotificationSettings.user_id, NotificationSettings.prefs).filter(
+        NotificationSettings.user_id.in_(ids)
+    ).all()
+    prefs_by = {r[0]: (r[1] or {}) for r in rows}
+    keep = []
+    for uid in ids:
+        prefs = {**DEFAULT_PREFS, **prefs_by.get(uid, {})}
+        if not prefs.get("enabled", True):
+            continue
+        if in_quiet_hours(prefs, now):
+            continue
+        keep.append(uid)
+    return keep
+
+
+def send_push_to_users(
+    db: Session, user_ids: Iterable[int], payload: dict, emergency: bool = False,
+) -> int:
     """Deliver `payload` to every push subscription owned by `user_ids`.
 
-    Prunes subscriptions the push service reports as gone. Returns the number
-    of successful sends.
+    Non-emergency sends skip users who disabled notifications or are in their
+    quiet-hours window; emergency alerts bypass both. Prunes subscriptions the
+    push service reports as gone. Returns the number of successful sends.
     """
     if not push_enabled():
         return 0
     ids = list(set(user_ids))
     if not ids:
         return 0
+    if not emergency:
+        ids = _deliverable_ids(db, ids)
+        if not ids:
+            return 0
 
     subs = db.query(PushSubscription).filter(
         PushSubscription.user_id.in_(ids)
@@ -106,13 +137,13 @@ def send_push_to_users(db: Session, user_ids: Iterable[int], payload: dict) -> i
     return sent
 
 
-def deliver_push(user_ids: List[int], payload: dict) -> None:
+def deliver_push(user_ids: List[int], payload: dict, emergency: bool = False) -> None:
     """BackgroundTask entrypoint — owns its own DB session so it can run after
     the originating request's session has closed."""
     if not push_enabled() or not user_ids:
         return
     db = SessionLocal()
     try:
-        send_push_to_users(db, user_ids, payload)
+        send_push_to_users(db, user_ids, payload, emergency=emergency)
     finally:
         db.close()
