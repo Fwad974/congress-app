@@ -85,6 +85,11 @@ def _migrate_schedule_table(connection):
             "ALTER TABLE schedule_items "
             "ADD COLUMN extra JSON NOT NULL DEFAULT '{}'::json"
         ))
+    if "speaker_id" not in cols:
+        connection.execute(text(
+            "ALTER TABLE schedule_items ADD COLUMN speaker_id INTEGER "
+            "REFERENCES users(id) ON DELETE SET NULL"
+        ))
     if "speaker" in cols:
         connection.execute(text(
             "ALTER TABLE schedule_items DROP COLUMN speaker"

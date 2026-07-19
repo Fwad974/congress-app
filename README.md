@@ -62,6 +62,7 @@ pytest -q
 | GET | `/api/admin/audit` | Audit log (filterable) | Admin |
 | GET | `/api/admin/notes` | List all user notes (paginated, searchable) | **Super Admin** |
 | DELETE | `/api/admin/notes/{id}` | Delete a user note (moderation, logged) | **Super Admin** |
+| PUT | `/api/schedule/{id}/presentation` | Presenter edits abstract/slides/description | Presenter / Admin |
 | GET | `/api/notes` | List my notes (optional `?schedule_item_id=`) | Any user |
 | POST | `/api/notes` | Create a note (optionally linked to a session) | Any user |
 | PUT | `/api/notes/{id}` | Update my note | Any user |
@@ -303,6 +304,22 @@ page has a per-session note button that deep-links to a pre-filled composer
 the admin dashboard (searchable by content, author name, or email) and delete
 any note for moderation. Deletions are written to the audit log
 (`note_delete`). Regular admins do not have access to notes.
+
+## Speakers (Program & Schedule)
+
+A session can be linked to the **app account presenting it**: admins set a
+"Presenter" by email when creating/editing a schedule item (`speaker_email`).
+That user then gets speaker features on their own sessions:
+
+- **My Talks** filter on the schedule (`/api/schedule?presenter=me`) — the
+  sessions they present.
+- **Self-service editing** (`PUT /api/schedule/{id}/presentation`): update the
+  **abstract**, **description**, and a **slides/materials link** — but *not* the
+  time, room, or title (those stay admin-controlled).
+- **Q&A moderation** for their own session (mark answered / hide / delete),
+  same powers a session chair has, scoped to sessions they present.
+
+Slides links surface as a **📎 Slides** chip on the session card.
 
 ## Live Q&A
 

@@ -6,7 +6,7 @@ Schedule API — Public listing + admin CRUD for the congress program.
 - All admin mutations are written to the audit log.
 """
 from datetime import datetime, timezone
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -14,20 +14,38 @@ from sqlalchemy import asc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.core.admin_security import require_admin
+from app.core.admin_security import require_admin, is_live_moderator
 from app.core.audit_service import log_action
 from app.core.notification_service import notify_bookmarkers
 from app.core.push_service import deliver_push
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
 from app.models.audit_log import AuditAction
 from app.schemas.schedule import (
-    ScheduleItemCreate, ScheduleItemUpdate,
+    ScheduleItemCreate, ScheduleItemUpdate, PresentationUpdate,
     ScheduleItemResponse, ScheduleListResponse,
     _coerce_extra,
 )
 
 router = APIRouter()
+
+
+def _resolve_speaker(db: Session, email: Optional[str]) -> Optional[User]:
+    """Resolve a presenter email to a user. "" / None means no presenter."""
+    email = (email or "").strip()
+    if not email:
+        return None
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail=f"No user with email {email}")
+    return user
+
+
+def _speaker_map(db: Session, items) -> Dict[int, User]:
+    ids = {i.speaker_id for i in items if i.speaker_id}
+    if not ids:
+        return {}
+    return {u.id: u for u in db.query(User).filter(User.id.in_(ids)).all()}
 
 
 def _bookmarked_ids(db: Session, user_id: int) -> Set[int]:
@@ -49,8 +67,11 @@ def _change_summary(item: ScheduleItem, old_start, old_end, old_location) -> str
     return "Details for this session have been updated."
 
 
-def _serialize(item: ScheduleItem, bookmarked: bool = False) -> ScheduleItemResponse:
+def _serialize(item: ScheduleItem, bookmarked: bool = False,
+               current_user: Optional[User] = None,
+               speaker_user: Optional[User] = None) -> ScheduleItemResponse:
     """Shape a row for the response, normalizing extra/None to {}."""
+    extra = item.extra or {}
     return ScheduleItemResponse(
         id=item.id,
         title=item.title,
@@ -59,8 +80,13 @@ def _serialize(item: ScheduleItem, bookmarked: bool = False) -> ScheduleItemResp
         location=item.location,
         start_time=item.start_time,
         end_time=item.end_time,
-        extra=item.extra or {},
+        extra=extra,
         is_bookmarked=bookmarked,
+        speaker_id=item.speaker_id,
+        speaker_email=speaker_user.email if speaker_user else None,
+        speaker_name=(speaker_user.full_name if speaker_user else None) or extra.get("speaker"),
+        is_presenter=bool(current_user and item.speaker_id
+                          and current_user.id == item.speaker_id),
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -72,6 +98,7 @@ def _serialize(item: ScheduleItem, bookmarked: bool = False) -> ScheduleItemResp
 def list_schedule(
     type: Optional[str] = Query(None),
     bookmarked: bool = Query(False),
+    presenter: Optional[str] = Query(None),  # "me" = only sessions I present
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -82,6 +109,9 @@ def list_schedule(
         except ValueError:
             pass
 
+    if presenter == "me":
+        q = q.filter(ScheduleItem.speaker_id == user.id)
+
     bookmarks = _bookmarked_ids(db, user.id)
     if bookmarked:
         if not bookmarks:
@@ -89,8 +119,10 @@ def list_schedule(
         q = q.filter(ScheduleItem.id.in_(bookmarks))
 
     items = q.order_by(asc(ScheduleItem.start_time)).all()
+    speakers = _speaker_map(db, items)
     return ScheduleListResponse(
-        items=[_serialize(i, bookmarked=i.id in bookmarks) for i in items],
+        items=[_serialize(i, bookmarked=i.id in bookmarks, current_user=user,
+                          speaker_user=speakers.get(i.speaker_id)) for i in items],
         total=len(items),
     )
 
@@ -108,7 +140,8 @@ def get_schedule_item(
         ScheduleBookmark.user_id == user.id,
         ScheduleBookmark.schedule_item_id == item_id,
     ).first() is not None
-    return _serialize(item, bookmarked=bm)
+    speaker = _speaker_map(db, [item]).get(item.speaker_id)
+    return _serialize(item, bookmarked=bm, current_user=user, speaker_user=speaker)
 
 
 # ─── Bookmarks (any authenticated user) ──────────────────────────
@@ -150,6 +183,52 @@ def remove_bookmark(
             "is_bookmarked": False}
 
 
+# ─── Presenter self-service ──────────────────────────────────────
+@router.put("/{item_id}/presentation", response_model=ScheduleItemResponse)
+def update_presentation(
+    item_id: int,
+    req: PresentationUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """A session's own presenter (or an admin) edits its abstract, description,
+    and slides/materials link — never the time, room, or title."""
+    item = db.query(ScheduleItem).filter(ScheduleItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Schedule item not found")
+
+    is_owner = item.speaker_id is not None and item.speaker_id == user.id
+    is_admin = user.role in (UserRole.admin, UserRole.super_admin)
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=403, detail="Only the session's presenter can edit this")
+
+    extra = dict(item.extra or {})
+    if req.abstract is not None:
+        a = req.abstract.strip()[:5000]
+        if a:
+            extra["abstract"] = a
+        else:
+            extra.pop("abstract", None)
+    if req.materials_url is not None:
+        if req.materials_url:
+            extra["materials_url"] = req.materials_url
+        else:
+            extra.pop("materials_url", None)
+    item.extra = _coerce_extra(item.type.value, extra)
+    if req.description is not None:
+        item.description = req.description
+    item.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(item)
+
+    bm = db.query(ScheduleBookmark).filter(
+        ScheduleBookmark.user_id == user.id,
+        ScheduleBookmark.schedule_item_id == item.id,
+    ).first() is not None
+    speaker = _speaker_map(db, [item]).get(item.speaker_id)
+    return _serialize(item, bookmarked=bm, current_user=user, speaker_user=speaker)
+
+
 # ─── Admin CRUD ───────────────────────────────────────────────────
 @router.post("", response_model=ScheduleItemResponse, status_code=201)
 @router.post("/", response_model=ScheduleItemResponse, status_code=201)
@@ -159,6 +238,7 @@ def create_schedule_item(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin()),
 ):
+    speaker = _resolve_speaker(db, req.speaker_email)
     item = ScheduleItem(
         title=req.title.strip(),
         description=req.description,
@@ -167,6 +247,7 @@ def create_schedule_item(
         start_time=req.start_time,
         end_time=req.end_time,
         extra=req.extra or {},
+        speaker_id=speaker.id if speaker else None,
         created_by=admin.id,
     )
     db.add(item)
@@ -179,7 +260,7 @@ def create_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return _serialize(item, bookmarked=False)
+    return _serialize(item, bookmarked=False, current_user=admin, speaker_user=speaker)
 
 
 @router.put("/{item_id}", response_model=ScheduleItemResponse)
@@ -227,6 +308,11 @@ def update_schedule_item(
         raw_extra = req.extra if req.extra is not None else (item.extra or {})
         item.extra = _coerce_extra(item.type.value, raw_extra)
 
+    # Reassign (or clear) the presenter only when the field is sent.
+    if "speaker_email" in req.model_fields_set:
+        sp = _resolve_speaker(db, req.speaker_email)
+        item.speaker_id = sp.id if sp else None
+
     item.updated_at = datetime.now(timezone.utc)
     db.flush()
 
@@ -260,7 +346,8 @@ def update_schedule_item(
         ScheduleBookmark.user_id == admin.id,
         ScheduleBookmark.schedule_item_id == item.id,
     ).first() is not None
-    return _serialize(item, bookmarked=bm)
+    speaker = _speaker_map(db, [item]).get(item.speaker_id)
+    return _serialize(item, bookmarked=bm, current_user=admin, speaker_user=speaker)
 
 
 @router.delete("/{item_id}")

@@ -80,7 +80,8 @@ async def schedule_page(request: Request, user=Depends(get_current_user_optional
     is_admin = user.role in (UserRole.admin, UserRole.super_admin)
     return templates.TemplateResponse(
         "schedule.html",
-        {"request": request, "user": user, "is_admin": is_admin},
+        {"request": request, "user": user, "is_admin": is_admin,
+         "is_speaker": user.role == UserRole.speaker},
     )
 
 

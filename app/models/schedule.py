@@ -37,6 +37,11 @@ class ScheduleItem(Base):
 
     location = Column(String(255), nullable=True)
 
+    # The app account presenting this session (if any). Lets that user
+    # self-manage their abstract/slides and moderate the session's Q&A.
+    speaker_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
+                        nullable=True, index=True)
+
     start_time = Column(DateTime(timezone=True), nullable=False, index=True)
     end_time = Column(DateTime(timezone=True), nullable=False)
 

@@ -101,6 +101,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
       My Bookmarks
     </button>
+    {% if is_speaker %}
+    <button class="sched-btn" id="myTalksBtn" onclick="toggleMyTalks()" title="Sessions you present">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+      My Talks
+    </button>
+    {% endif %}
     <button class="sched-btn" onclick="loadSchedule()">Refresh</button>
     {% if is_admin %}
       <button class="sched-btn primary" onclick="openCreate()">+ Add Item</button>
@@ -155,6 +161,10 @@
           <input type="datetime-local" class="form-input" id="m_end" required>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Presenter (app account email)</label>
+        <input type="email" class="form-input" id="m_speaker_email" placeholder="speaker@example.com — optional, lets them self-manage">
+      </div>
       <div id="m_extra_fields"></div>
       <div class="form-group">
         <label class="form-label">Description</label>
@@ -168,11 +178,29 @@
   </div>
 </div>
 {% endif %}
+
+<!-- Presenter self-service (available to a session's own presenter) -->
+<div class="modal-overlay" id="presModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Edit <span>Presentation</span></h3><button class="modal-close" onclick="closePres()">X</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="p_id">
+      <div class="form-group"><label class="form-label">Abstract</label><textarea class="form-input" id="p_abstract" rows="4" placeholder="Your talk abstract"></textarea></div>
+      <div class="form-group"><label class="form-label">Slides / materials link</label><input type="url" class="form-input" id="p_materials" placeholder="https://…"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="p_desc" rows="3" placeholder="Optional details"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="sched-btn" onclick="closePres()">Cancel</button>
+      <button class="sched-btn primary" id="p_submit" onclick="submitPresentation()">Save</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+const IS_SPEAKER = {{ 'true' if is_speaker else 'false' }};
 const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
@@ -182,6 +210,7 @@ const ICONS = {
 };
 let _items = {};
 let _bookmarkOnly = false;
+let _presenterOnly = false;
 
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
@@ -226,6 +255,7 @@ async function loadSchedule(){
     const params=new URLSearchParams();
     if(t)params.set('type',t);
     if(_bookmarkOnly)params.set('bookmarked','true');
+    if(_presenterOnly)params.set('presenter','me');
     const qs=params.toString();
     const url='/api/schedule'+(qs?'?'+qs:'');
     const d=await api(url);
@@ -241,6 +271,13 @@ async function loadSchedule(){
 function toggleBookmarkFilter(){
   _bookmarkOnly=!_bookmarkOnly;
   document.getElementById('bookmarkFilterBtn').classList.toggle('active',_bookmarkOnly);
+  loadSchedule();
+}
+
+function toggleMyTalks(){
+  _presenterOnly=!_presenterOnly;
+  const b=document.getElementById('myTalksBtn');
+  if(b)b.classList.toggle('active',_presenterOnly);
   loadSchedule();
 }
 
@@ -295,21 +332,22 @@ function render(items){
 }
 
 // Per-type field spec — must mirror app/schemas/schedule.py:EXTRA_SPEC
+const _MAT={k:'materials_url',label:'Slides / materials link',kind:'str',ph:'https://…'};
 const EXTRA_SPEC = {
   keynote:    [{k:'speaker',label:'Speaker',kind:'str',ph:'Speaker name'},
                {k:'affiliation',label:'Affiliation',kind:'str',ph:'Institution / company'},
-               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'}],
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'},_MAT],
   talk:       [{k:'speaker',label:'Speaker',kind:'str',ph:'Speaker name'},
                {k:'affiliation',label:'Affiliation',kind:'str',ph:'Institution / company'},
-               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'}],
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Talk abstract'},_MAT],
   panel:      [{k:'moderator',label:'Moderator',kind:'str',ph:'Moderator name'},
-               {k:'panelists',label:'Panelists',kind:'list',ph:'One panelist per line'}],
+               {k:'panelists',label:'Panelists',kind:'list',ph:'One panelist per line'},_MAT],
   workshop:   [{k:'instructor',label:'Instructor',kind:'str',ph:'Instructor name'},
                {k:'capacity',label:'Capacity',kind:'int',ph:'Max attendees'},
-               {k:'prerequisites',label:'Prerequisites',kind:'text',ph:'What attendees should bring or know'}],
+               {k:'prerequisites',label:'Prerequisites',kind:'text',ph:'What attendees should bring or know'},_MAT],
   poster:     [{k:'presenter',label:'Presenter',kind:'str',ph:'Presenter name'},
                {k:'poster_number',label:'Poster #',kind:'str',ph:'e.g. P-12'},
-               {k:'abstract',label:'Abstract',kind:'text',ph:'Poster abstract'}],
+               {k:'abstract',label:'Abstract',kind:'text',ph:'Poster abstract'},_MAT],
   break:      [],
   networking: [],
   other:      [],
@@ -395,15 +433,20 @@ function extraDetails(i){
 }
 
 function card(i){
+  const x=i.extra||{};
   const tags=[
     '<span class="sched-tag type '+esc(i.type)+'">'+esc(i.type)+'</span>',
+    i.is_presenter?'<span class="sched-tag speaker">You present</span>':'',
     extraTags(i),
     i.location?'<span class="sched-tag location">'+esc(i.location)+'</span>':'',
+    x.materials_url?'<a class="sched-tag location" href="'+esc(x.materials_url)+'" target="_blank" rel="noopener">📎 Slides</a>':'',
   ].filter(Boolean).join('');
   const bmTitle=i.is_bookmarked?'Remove bookmark':'Bookmark this item';
   const bmBtn='<button class="sched-act bm'+(i.is_bookmarked?' on':'')+'" title="'+bmTitle+'" onclick="toggleBookmark('+i.id+',this)">'+ICONS.bookmark+'</button>';
   const noteBtn='<button class="sched-act" title="Add a note for this session" onclick="location.href=\'/notes?session='+i.id+'\'">'+ICONS.note+'</button>';
   const qaBtn='<button class="sched-act" title="Live Q&amp;A for this session" onclick="location.href=\'/qa/'+i.id+'\'">'+ICONS.qa+'</button>';
+  const presenterActs=(i.is_presenter && !IS_ADMIN)?
+    '<button class="sched-act" title="Edit your abstract &amp; slides" onclick="openPresentation('+i.id+')">'+ICONS.edit+'</button>':'';
   const adminActs=IS_ADMIN?(
     '<button class="sched-act" title="Edit" onclick="openEdit('+i.id+')">'+ICONS.edit+'</button>'+
     '<button class="sched-act del" title="Delete" onclick="confirmDelete('+i.id+')">'+ICONS.trash+'</button>'
@@ -416,7 +459,7 @@ function card(i){
       (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
       extraDetails(i)+
     '</div>'+
-    '<div class="sched-actions">'+qaBtn+noteBtn+bmBtn+adminActs+'</div>'+
+    '<div class="sched-actions">'+qaBtn+noteBtn+bmBtn+presenterActs+adminActs+'</div>'+
   '</div>';
 }
 
@@ -438,6 +481,7 @@ function openCreate(){
   document.getElementById('m_type').value='talk';
   document.getElementById('m_location').value='';
   document.getElementById('m_desc').value='';
+  document.getElementById('m_speaker_email').value='';
   const now=new Date();
   now.setMinutes(0,0,0);
   const later=new Date(now.getTime()+60*60000);
@@ -456,6 +500,7 @@ function openEdit(id){
   document.getElementById('m_type').value=i.type;
   document.getElementById('m_location').value=i.location||'';
   document.getElementById('m_desc').value=i.description||'';
+  document.getElementById('m_speaker_email').value=i.speaker_email||'';
   document.getElementById('m_start').value=toLocalInput(i.start_time);
   document.getElementById('m_end').value=toLocalInput(i.end_time);
   renderExtraFields(i.extra||{});
@@ -465,6 +510,33 @@ function openEdit(id){
 }
 
 function closeSchedModal(){document.getElementById('schedModal').classList.remove('open');}
+
+// ── Presenter self-service (abstract / slides / description) ──────
+function openPresentation(id){
+  const i=_items[id];if(!i)return;
+  const x=i.extra||{};
+  document.getElementById('p_id').value=i.id;
+  document.getElementById('p_abstract').value=x.abstract||'';
+  document.getElementById('p_materials').value=x.materials_url||'';
+  document.getElementById('p_desc').value=i.description||'';
+  document.getElementById('presModal').classList.add('open');
+}
+function closePres(){document.getElementById('presModal').classList.remove('open');}
+async function submitPresentation(){
+  const id=document.getElementById('p_id').value;
+  const payload={
+    abstract:document.getElementById('p_abstract').value.trim(),
+    materials_url:document.getElementById('p_materials').value.trim(),
+    description:document.getElementById('p_desc').value.trim(),
+  };
+  const btn=document.getElementById('p_submit');const orig=btn.textContent;btn.disabled=true;btn.textContent='...';
+  try{
+    await api('/api/schedule/'+id+'/presentation','PUT',payload);
+    showToast('Presentation updated','success');
+    closePres();loadSchedule();
+  }catch(e){showToast(e.message,'error');}
+  btn.disabled=false;btn.textContent=orig;
+}
 
 async function submitSched(){
   const id=document.getElementById('m_id').value;
@@ -476,6 +548,7 @@ async function submitSched(){
     start_time:fromLocalInput(document.getElementById('m_start').value),
     end_time:fromLocalInput(document.getElementById('m_end').value),
     extra:collectExtra(),
+    speaker_email:document.getElementById('m_speaker_email').value.trim(),
   };
   if(!payload.title){showToast('Title is required','error');return;}
   if(!payload.start_time||!payload.end_time){showToast('Start and end time are required','error');return;}

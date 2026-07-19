@@ -45,6 +45,16 @@ def _can_moderate(user: User) -> bool:
     return ROLE_HIERARCHY.get(user.role, 0) >= _MODERATE_MIN
 
 
+def _can_moderate_session(db: Session, user: User, session_id: int) -> bool:
+    """Chairs/moderators/admins, plus the session's own presenter."""
+    if _can_moderate(user):
+        return True
+    speaker_id = db.query(ScheduleItem.speaker_id).filter(
+        ScheduleItem.id == session_id
+    ).scalar()
+    return speaker_id is not None and speaker_id == user.id
+
+
 def _recount_upvotes(db: Session, question_id: int) -> int:
     return db.query(QuestionVote).filter(
         QuestionVote.question_id == question_id
@@ -87,7 +97,7 @@ def list_questions(
     user: User = Depends(get_current_user),
 ):
     _require_session(db, session_id)
-    can_mod = _can_moderate(user)
+    can_mod = _can_moderate_session(db, user, session_id)
 
     q = db.query(Question, User.full_name).join(
         User, Question.user_id == User.id
@@ -208,11 +218,11 @@ async def set_status(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    if not _can_moderate(user):
-        raise HTTPException(status_code=403, detail="Not allowed to moderate Q&A")
     q = db.query(Question).filter(Question.id == question_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
+    if not _can_moderate_session(db, user, q.schedule_item_id):
+        raise HTTPException(status_code=403, detail="Not allowed to moderate Q&A")
 
     old = q.status.value
     q.status = QuestionStatus(req.status)
@@ -244,7 +254,7 @@ async def delete_question(
         raise HTTPException(status_code=404, detail="Question not found")
 
     is_owner = q.user_id == user.id
-    if not is_owner and not _can_moderate(user):
+    if not is_owner and not _can_moderate_session(db, user, q.schedule_item_id):
         raise HTTPException(status_code=403, detail="Not allowed to delete this question")
 
     session_id = q.schedule_item_id

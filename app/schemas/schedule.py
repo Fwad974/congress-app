@@ -20,11 +20,11 @@ VALID_TYPES = ["keynote", "talk", "panel", "workshop", "poster",
 #   "list_str" -> list of trimmed non-empty strings (accepts a list or a
 #                 newline-separated string)
 EXTRA_SPEC: Dict[str, Dict[str, str]] = {
-    "keynote":    {"speaker": "str", "affiliation": "str", "abstract": "str"},
-    "talk":       {"speaker": "str", "affiliation": "str", "abstract": "str"},
-    "panel":      {"moderator": "str", "panelists": "list_str"},
-    "workshop":   {"instructor": "str", "capacity": "int", "prerequisites": "str"},
-    "poster":     {"presenter": "str", "poster_number": "str", "abstract": "str"},
+    "keynote":    {"speaker": "str", "affiliation": "str", "abstract": "str", "materials_url": "str"},
+    "talk":       {"speaker": "str", "affiliation": "str", "abstract": "str", "materials_url": "str"},
+    "panel":      {"moderator": "str", "panelists": "list_str", "materials_url": "str"},
+    "workshop":   {"instructor": "str", "capacity": "int", "prerequisites": "str", "materials_url": "str"},
+    "poster":     {"presenter": "str", "poster_number": "str", "abstract": "str", "materials_url": "str"},
     "break":      {},
     "networking": {},
     "other":      {},
@@ -80,6 +80,7 @@ class ScheduleItemBase(BaseModel):
     start_time: datetime
     end_time: datetime
     extra: Dict[str, Any] = {}
+    speaker_email: Optional[str] = None   # app account presenting; "" clears
 
     @field_validator("title")
     @classmethod
@@ -119,6 +120,7 @@ class ScheduleItemUpdate(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     extra: Optional[Dict[str, Any]] = None
+    speaker_email: Optional[str] = None   # present + "" clears the presenter
 
     @field_validator("type")
     @classmethod
@@ -128,6 +130,23 @@ class ScheduleItemUpdate(BaseModel):
         if v not in VALID_TYPES:
             raise ValueError(f"Invalid type: {v}")
         return v
+
+
+class PresentationUpdate(BaseModel):
+    """Fields a session's own presenter may edit (not time/room/title)."""
+    description: Optional[str] = None
+    abstract: Optional[str] = None
+    materials_url: Optional[str] = None
+
+    @field_validator("materials_url")
+    @classmethod
+    def valid_url(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if v and not (v.startswith("http://") or v.startswith("https://")):
+            raise ValueError("Materials link must start with http:// or https://")
+        return v[:500]
 
 
 class ScheduleItemResponse(BaseModel):
@@ -140,6 +159,10 @@ class ScheduleItemResponse(BaseModel):
     end_time: datetime
     extra: Dict[str, Any] = {}
     is_bookmarked: bool = False
+    speaker_id: Optional[int] = None
+    speaker_email: Optional[str] = None
+    speaker_name: Optional[str] = None
+    is_presenter: bool = False
     created_at: datetime
     updated_at: datetime
 
