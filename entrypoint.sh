@@ -48,4 +48,36 @@ except Exception as e:
 " || echo "WARNING: Super admin creation failed, continuing anyway..."
 fi
 
+# ── Web Push (VAPID) keys ───────────────────────────────────────────
+# Enable browser push out of the box. If keys weren't provided via the
+# environment, load a previously persisted pair or generate a new one.
+# Persisting keeps the public key stable across restarts — a changed key
+# would invalidate every existing browser subscription.
+VAPID_FILE="${VAPID_KEY_FILE:-/app/data/vapid.env}"
+
+if [ -z "$VAPID_PUBLIC_KEY" ] || [ -z "$VAPID_PRIVATE_KEY" ]; then
+    if [ -f "$VAPID_FILE" ]; then
+        echo "Loading persisted VAPID keys from $VAPID_FILE"
+        . "$VAPID_FILE"
+    else
+        echo "No VAPID keys set — generating a new pair for web push..."
+        mkdir -p "$(dirname "$VAPID_FILE")" 2>/dev/null || true
+        if python gen_vapid_keys.py --bare > "${VAPID_FILE}.tmp" 2>/dev/null; then
+            mv "${VAPID_FILE}.tmp" "$VAPID_FILE"
+            . "$VAPID_FILE"
+            echo "Generated and persisted VAPID keys to $VAPID_FILE"
+        else
+            rm -f "${VAPID_FILE}.tmp"
+            echo "WARNING: could not generate VAPID keys; web push stays disabled (in-app feed still works)"
+        fi
+    fi
+    export VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY
+fi
+
+if [ -n "$VAPID_PUBLIC_KEY" ] && [ -n "$VAPID_PRIVATE_KEY" ]; then
+    echo "Web push enabled."
+else
+    echo "Web push disabled (no VAPID keys); notifications use the in-app feed."
+fi
+
 exec "$@"

@@ -31,6 +31,18 @@ Full-stack User Management dashboard at `/admin` with:
 - **Bulk Action Safety** — Cannot bulk-modify users at or above your role level
 - **CSV Export Logging** — All data exports logged per DATA-03
 
+### Continuous Integration
+
+Every push and pull request runs the full test suite via GitHub Actions
+(`.github/workflows/ci.yml`) on Python 3.11. Tests use an isolated SQLite
+database (`tests/conftest.py`) so CI needs no Postgres or Redis. Run locally
+with:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q
+```
+
 ### API Endpoints
 
 | Method | Endpoint | Description | Min Role |
@@ -48,6 +60,28 @@ Full-stack User Management dashboard at `/admin` with:
 | POST | `/api/admin/users/bulk` | Bulk suspend/activate/role change | Admin |
 | GET | `/api/admin/users/export/csv` | Export users to CSV | Admin |
 | GET | `/api/admin/audit` | Audit log (filterable) | Admin |
+| GET | `/api/admin/notes` | List all user notes (paginated, searchable) | **Super Admin** |
+| DELETE | `/api/admin/notes/{id}` | Delete a user note (moderation, logged) | **Super Admin** |
+| GET | `/api/notes` | List my notes (optional `?schedule_item_id=`) | Any user |
+| POST | `/api/notes` | Create a note (optionally linked to a session) | Any user |
+| PUT | `/api/notes/{id}` | Update my note | Any user |
+| DELETE | `/api/notes/{id}` | Delete my note | Any user |
+| GET | `/api/sessions/{id}/questions` | List a session's Q&A | Any user |
+| POST | `/api/sessions/{id}/questions` | Ask a question | Any user |
+| GET | `/api/sessions/{id}/qa/stream` | Live Q&A event stream (SSE) | Any user |
+| POST/DELETE | `/api/questions/{id}/upvote` | Upvote / remove upvote | Any user |
+| PUT | `/api/questions/{id}/status` | Mark answered / hide / reopen | Chair+ |
+| DELETE | `/api/questions/{id}` | Delete (author or chair+) | Author / Chair+ |
+| POST | `/api/sessions/{id}/polls` | Create a poll (draft) | Chair+ |
+| GET | `/api/sessions/{id}/polls` | List a session's polls | Any user |
+| GET | `/api/sessions/{id}/polls/stream` | Live poll event stream (SSE) | Any user |
+| POST | `/api/polls/{id}/vote` | Vote / submit a word | Any user |
+| GET | `/api/polls/{id}/results` | Aggregated results | Any user |
+| PUT | `/api/polls/{id}/status` | Open / close a poll | Chair+ |
+| DELETE | `/api/polls/{id}` | Delete a poll | Chair+ |
+| GET | `/api/reactions/emojis` | Allowed reaction emojis | Any user |
+| POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
+| GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
 ### Frontend Dashboard
 
@@ -215,6 +249,118 @@ docker run -p 8000:8000 \
 | `SUPER_ADMIN_PASSWORD` | No | Password for auto-created super admin |
 | `SUPER_ADMIN_NAME` | No | Full name for auto-created super admin (default: `Super Admin`) |
 | `SUPER_ADMIN_INSTITUTION` | No | Institution for auto-created super admin |
+| `VAPID_PUBLIC_KEY` | No | Web Push VAPID public key (enables browser push) |
+| `VAPID_PRIVATE_KEY` | No | Web Push VAPID private key — **keep secret** |
+| `VAPID_SUBJECT` | No | Contact for push services (default: `mailto:admin@dubaicongress.example`) |
+| `REDIS_URL` | No | Redis URL for realtime fan-out (live Q&A). Empty = in-process only (single worker). Docker sets `redis://redis:6379/0` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | No | Google OAuth credentials. Both set = Google sign-in enabled |
+| `ORCID_CLIENT_ID` / `ORCID_CLIENT_SECRET` | No | ORCID OAuth credentials. Both set = ORCID sign-in enabled |
+| `ORCID_ENV` | No | `sandbox` (default) or `production` — picks the ORCID host |
+| `OAUTH_REDIRECT_BASE` | No | Public origin for callback URLs behind a proxy (e.g. `https://app.example.com`); empty = derive from request |
+
+## Schedule Change Notifications
+
+When an admin edits or cancels a schedule item, every user who **bookmarked**
+that item is notified:
+
+- **In-app feed** (always on): a per-user notification feed (`UserNotification`)
+  surfaced as a toast on the next poll — no extra setup required.
+- **Web Push** (optional): real browser push delivered even when the app tab is
+  closed. The feed is always the source of truth and the fallback.
+
+See [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md) for the full architecture,
+data model, and API.
+
+## Social Login (Google & ORCID)
+
+Users can sign in / sign up with **Google** or **ORCID** in addition to
+email + password. Each provider's button appears only when its credentials are
+configured, so nothing shows until you set it up. Full setup — registering the
+apps, redirect URIs, sandbox vs production, and the account-linking policy — is
+in [`docs/OAUTH.md`](docs/OAUTH.md). In short:
+
+1. Register an app with each provider and set `GOOGLE_CLIENT_ID/SECRET` and/or
+   `ORCID_CLIENT_ID/SECRET` in your `.env`.
+2. Add the callback URL `<your-origin>/api/auth/oauth/{provider}/callback` to
+   the provider's allowed redirect URIs.
+3. Restart — the buttons light up.
+
+Accounts link by **verified email**: a Google sign-in whose verified email
+matches an existing account logs into that account (keeping password login);
+otherwise a new attendee account is created. Links are stored in
+`oauth_accounts`, so one user can attach both Google and ORCID.
+
+## Notes
+
+Any signed-in user can keep notes from the **Notes** page (`/notes`). A note can
+stand alone (a personal jot) or be linked to a schedule session — the schedule
+page has a per-session note button that deep-links to a pre-filled composer
+(`/notes?session={id}`). Notes are private to their author.
+
+**Super admins** can review every user's notes from the **User Notes** tab in
+the admin dashboard (searchable by content, author name, or email) and delete
+any note for moderation. Deletions are written to the audit log
+(`note_delete`). Regular admins do not have access to notes.
+
+## Live Q&A
+
+Each session has a **Live Q&A** page (`/qa/{session_id}`, reachable from the
+Q&A button on every schedule card). Attendees submit questions and upvote
+others'; the list re-sorts live (most upvoted first, answered sink to the
+bottom). Session chairs, moderators, and admins can mark questions answered,
+hide them, or delete any question — moderation is audit-logged
+(`question_moderate`).
+
+Updates are pushed in real time over **Server-Sent Events**
+(`/api/sessions/{id}/qa/stream`). Fan-out goes through a small realtime layer
+(`app/core/realtime.py`) that uses **Redis pub/sub** when `REDIS_URL` is set
+(so it works across multiple workers/containers) and falls back to in-process
+delivery otherwise. Docker Compose wires `REDIS_URL` to the bundled Redis
+automatically. See [`docs/LIVE_QA.md`](docs/LIVE_QA.md) for details.
+
+## Live Polls & Word Clouds
+
+The session page has a **Polls** tab alongside Q&A. Chairs create polls
+(single-choice, multiple-choice, or word cloud), open/close them, and delete
+them; attendees vote or submit words while a poll is open. Results aggregate
+from the stored responses (counts can't drift) and stream live over SSE.
+
+A chrome-free **presenter view** (`/present/{session_id}`, opened via the
+"Present ↗" button) shows the open poll on the big screen — animated bar charts
+for choice polls, a frequency-sized word cloud for word-cloud polls — updating
+live as votes land. Built on the same realtime layer as Q&A.
+
+## Emoji Reactions
+
+A reaction bar on the session page lets attendees tap 🔥 💡 🤔 👏 ❤️ during a
+talk. Reactions are **ephemeral — nothing is written to the database**: the
+client batches taps (~700ms) and POSTs counts; the server validates/clamps and
+relays a "burst" over SSE. The **presenter view** aggregates a rolling 60-second
+window and shows the live pulse — floating emojis plus a per-emoji tally — so
+the speaker sees the room's energy without a single DB write. The attendee page
+sends reactions only (it doesn't hold a reaction stream), keeping open
+connections proportional to big screens, not the whole audience.
+
+### Enabling Web Push
+
+**Docker (automatic):** nothing to do. On first boot the container generates a
+VAPID key pair and persists it to the `vapid_keys` volume, so push is enabled
+out of the box and the public key stays stable across restarts. To reuse a
+fixed pair across environments, set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+(and optionally `VAPID_SUBJECT`) in your `.env` and they take precedence.
+
+**Local (manual):**
+
+```bash
+# 1. Generate a VAPID key pair
+python gen_vapid_keys.py
+
+# 2. Copy the printed VAPID_* lines into your .env (keep the private key secret)
+# 3. Restart the app
+```
+
+With keys set, the browser registers `/static/sw.js` and subscribes once the
+user grants notification permission (via Settings → notifications).
 
 ## Creating First Super Admin
 

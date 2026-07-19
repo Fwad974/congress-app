@@ -14,11 +14,13 @@
   'use strict';
 
   const STORAGE_KEY = 'sched_notif_fired';
+  const FEED_KEY = 'sched_feed_shown';      // de-dup delivered feed notifications
   const POLL_INTERVAL_MS = 5 * 60 * 1000;   // refetch every 5 min in case admin edited
   const MAX_TIMEOUT_MS = 24 * 3600 * 1000;  // don't schedule more than a day out
 
   let _timers = [];
   let _audioCtx = null;
+  let _prefs = null;
 
   function clearTimers(){
     _timers.forEach(t=>clearTimeout(t));
@@ -148,14 +150,117 @@
     });
   }
 
+  // ── Delivered feed (admin changes to bookmarked items) ──────────
+  function feedAlreadyShown(id){
+    try{
+      const map=JSON.parse(localStorage.getItem(FEED_KEY)||'{}');
+      return !!map[id];
+    }catch(e){return false;}
+  }
+  function feedMarkShown(id){
+    try{
+      const map=JSON.parse(localStorage.getItem(FEED_KEY)||'{}');
+      map[id]=Date.now();
+      const cutoff=Date.now()-30*24*3600*1000;  // keep 30 days
+      Object.keys(map).forEach(k=>{if(map[k]<cutoff)delete map[k];});
+      localStorage.setItem(FEED_KEY,JSON.stringify(map));
+    }catch(e){}
+  }
+
+  function showFeedWebNotification(n){
+    if(!('Notification' in window))return;
+    if(Notification.permission!=='granted')return;
+    try{
+      const x=new Notification(n.title, {
+        body: n.body,
+        tag: 'feed-'+n.id,
+        icon: '/static/favicon.png',
+      });
+      x.onclick=function(){
+        window.focus();
+        try{window.location.assign('/schedule');}catch(e){}
+        x.close();
+      };
+    }catch(e){/* iOS Safari etc. */}
+  }
+
+  function handleFeed(data){
+    if(!data || !Array.isArray(data.items))return;
+    // Surface unread notifications we haven't already shown in this browser.
+    const fresh=data.items.filter(n=>!n.read && !feedAlreadyShown(n.id));
+    if(!fresh.length)return;
+    // Oldest first so toasts read in chronological order.
+    fresh.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    fresh.forEach(n=>{
+      feedMarkShown(n.id);
+      if(typeof showToast==='function'){
+        showToast(n.title+' — '+n.body, n.kind==='cancelled'?'error':'success');
+      }
+      if(_prefs && _prefs.enabled!==false){
+        showFeedWebNotification(n);
+      }
+    });
+    if(_prefs && _prefs.enabled!==false){
+      playSound(_prefs.sound, _prefs.volume);
+    }
+    // Clear the server-side unread state now that we've surfaced them.
+    fetch('/api/notifications/feed/read-all',{method:'POST',credentials:'same-origin'})
+      .catch(()=>{});
+  }
+
+  async function refreshFeed(){
+    try{
+      const r=await fetch('/api/notifications/feed',{credentials:'same-origin'});
+      if(!r.ok)return;
+      handleFeed(await r.json());
+    }catch(e){/* network blip */}
+  }
+
   async function refresh(){
     try{
       const r=await fetch('/api/notifications/upcoming',{credentials:'same-origin'});
       if(r.status===401||r.status===403)return; // not logged in — silently bail
       if(!r.ok)return;
       const data=await r.json();
+      _prefs=data.prefs||null;
       scheduleAll(data);
     }catch(e){/* network blip — try again next interval */}
+    refreshFeed();
+  }
+
+  // ── Web Push registration (delivery when the tab is closed) ─────
+  function urlB64ToUint8Array(base64){
+    const padding='='.repeat((4-base64.length%4)%4);
+    const b64=(base64+padding).replace(/-/g,'+').replace(/_/g,'/');
+    const raw=atob(b64);
+    const out=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
+
+  async function ensurePush(){
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    try{
+      const r=await fetch('/api/notifications/push/key',{credentials:'same-origin'});
+      if(!r.ok)return;
+      const cfg=await r.json();
+      if(!cfg.enabled||!cfg.public_key)return;   // push not configured server-side
+      const reg=await navigator.serviceWorker.register('/static/sw.js');
+      await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){
+        sub=await reg.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:urlB64ToUint8Array(cfg.public_key),
+        });
+      }
+      await fetch('/api/notifications/push/subscribe',{
+        method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(sub),
+      });
+    }catch(e){/* push unavailable — feed still works */}
   }
 
   // Expose a hook so the schedule + settings pages can re-trigger after changes.
@@ -163,14 +268,19 @@
     refresh: refresh,
     requestPermission: function(){
       if(!('Notification' in window))return Promise.resolve('unsupported');
-      if(Notification.permission==='granted')return Promise.resolve('granted');
+      if(Notification.permission==='granted'){ensurePush();return Promise.resolve('granted');}
       if(Notification.permission==='denied')return Promise.resolve('denied');
-      return Notification.requestPermission();
+      return Notification.requestPermission().then(function(p){
+        if(p==='granted')ensurePush();
+        return p;
+      });
     },
+    enablePush: ensurePush,
     testSound: function(name, volume){playSound(name, volume);},
   };
 
   document.addEventListener('DOMContentLoaded', refresh);
+  document.addEventListener('DOMContentLoaded', ensurePush);
   setInterval(refresh, POLL_INTERVAL_MS);
   // Re-pull when the tab regains focus (clock may have drifted while asleep).
   window.addEventListener('focus', refresh);

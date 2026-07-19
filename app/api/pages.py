@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_optional
+from app.core.oauth import enabled_providers
 from app.models.user import UserRole
 
 router = APIRouter()
@@ -14,7 +15,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/logout")
 async def logout_page():
     resp = RedirectResponse(url="/", status_code=302)
-    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin"]:
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present"]:
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=True, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=False, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0)
@@ -32,14 +33,16 @@ async def landing_page(request: Request, user=Depends(get_current_user_optional)
 async def signup_page(request: Request, user=Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/home", status_code=302)
-    return templates.TemplateResponse("signup.html", {"request": request})
+    return templates.TemplateResponse(
+        "signup.html", {"request": request, "oauth_providers": enabled_providers()})
 
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, user=Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/home", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        "login.html", {"request": request, "oauth_providers": enabled_providers()})
 
 
 @router.get("/home", response_class=HTMLResponse)
@@ -79,3 +82,33 @@ async def schedule_page(request: Request, user=Depends(get_current_user_optional
         "schedule.html",
         {"request": request, "user": user, "is_admin": is_admin},
     )
+
+
+@router.get("/notes", response_class=HTMLResponse)
+async def notes_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("notes.html", {"request": request, "user": user})
+
+
+@router.get("/qa/{session_id}", response_class=HTMLResponse)
+async def qa_page(request: Request, session_id: int, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    can_moderate = user.role in (
+        UserRole.session_chair, UserRole.review_chair, UserRole.moderator,
+        UserRole.admin, UserRole.super_admin,
+    )
+    return templates.TemplateResponse("qa.html", {
+        "request": request, "user": user,
+        "session_id": session_id, "can_moderate": can_moderate,
+    })
+
+
+@router.get("/present/{session_id}", response_class=HTMLResponse)
+async def present_page(request: Request, session_id: int, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("present.html", {
+        "request": request, "user": user, "session_id": session_id,
+    })

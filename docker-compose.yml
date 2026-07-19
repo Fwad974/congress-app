@@ -31,7 +31,10 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      # Host port 80 → container's uvicorn on 8000. Keeps uvicorn on an
+      # unprivileged port (the container runs as non-root) while serving
+      # publicly on the standard HTTP port, so URLs need no ":8000".
+      - "80:8000"
     environment:
       DATABASE_URL: postgresql://congress_user:congress_pass@db:5432/dubai_congress
       SECRET_KEY: ${SECRET_KEY:-09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7}
@@ -45,6 +48,24 @@ services:
       CONGRESS_DATES: ${CONGRESS_DATES:-Feb 15 – 17, 2027}
       CONGRESS_VENUE: ${CONGRESS_VENUE:-Dubai World Trade Centre}
       CONGRESS_DEADLINE: ${CONGRESS_DEADLINE:-December 1, 2026}
+      # Web Push (VAPID). Leave blank to auto-generate + persist on first boot;
+      # set explicitly to reuse keys across environments.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@dubaicongress.example}
+      # Realtime fan-out for live Q&A (and future polls/reactions).
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Social login (optional — buttons appear only when a provider is set).
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ORCID_CLIENT_ID: ${ORCID_CLIENT_ID:-}
+      ORCID_CLIENT_SECRET: ${ORCID_CLIENT_SECRET:-}
+      ORCID_ENV: ${ORCID_ENV:-sandbox}
+      OAUTH_REDIRECT_BASE: ${OAUTH_REDIRECT_BASE:-}
+    volumes:
+      # Persists auto-generated VAPID keys so the public key is stable across
+      # restarts (otherwise existing browser subscriptions would break).
+      - vapid_keys:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -65,3 +86,4 @@ services:
 
 volumes:
   postgres_data:
+  vapid_keys:

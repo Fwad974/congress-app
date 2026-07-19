@@ -32,6 +32,10 @@ class AuditAction(str, enum.Enum):
     schedule_create = "schedule_create"
     schedule_update = "schedule_update"
     schedule_delete = "schedule_delete"
+    # Notes
+    note_delete = "note_delete"
+    # Live Q&A
+    question_moderate = "question_moderate"
     # System
     settings_change = "settings_change"
     export_data = "export_data"

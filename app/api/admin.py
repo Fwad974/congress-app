@@ -31,11 +31,14 @@ from app.core.admin_security import (
 from app.core.audit_service import log_action
 from app.models.user import User, UserRole
 from app.models.audit_log import AuditLog, AuditAction, AuditSeverity
+from app.models.note import Note
+from app.models.schedule import ScheduleItem
 from app.schemas.admin import (
     AdminUserCreate, AdminUserUpdate, AdminRoleChange, AdminUserSuspend,
     AdminBulkAction, AdminUserResponse, AdminUserListResponse,
     AuditLogResponse, AuditLogListResponse, DashboardStatsResponse,
 )
+from app.schemas.note import AdminNoteResponse, AdminNoteListResponse
 
 router = APIRouter()
 
@@ -507,6 +510,84 @@ def get_audit_logs(
         page=page,
         per_page=per_page,
     )
+
+
+# ─── User Notes (super admin: view + delete) ─────────────────────
+@router.get("/notes", response_model=AdminNoteListResponse)
+def list_notes(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    search: str = Query(None),
+    user_id: int = Query(None),
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_super_admin()),
+):
+    q = db.query(Note, User).join(User, Note.user_id == User.id)
+
+    if user_id:
+        q = q.filter(Note.user_id == user_id)
+    if search:
+        like = f"%{search}%"
+        q = q.filter(or_(
+            Note.content.ilike(like),
+            User.full_name.ilike(like),
+            User.email.ilike(like),
+        ))
+
+    total = q.count()
+    rows = q.order_by(desc(Note.created_at)).offset(
+        (page - 1) * per_page
+    ).limit(per_page).all()
+
+    # Resolve linked session titles in one query.
+    item_ids = {n.schedule_item_id for n, _ in rows if n.schedule_item_id}
+    titles = {}
+    if item_ids:
+        titles = {
+            r[0]: r[1] for r in db.query(
+                ScheduleItem.id, ScheduleItem.title
+            ).filter(ScheduleItem.id.in_(item_ids)).all()
+        }
+
+    notes = [AdminNoteResponse(
+        id=n.id, content=n.content, schedule_item_id=n.schedule_item_id,
+        session_title=titles.get(n.schedule_item_id),
+        created_at=n.created_at, updated_at=n.updated_at,
+        user_id=u.id, user_name=u.full_name, user_email=u.email,
+    ) for n, u in rows]
+
+    return AdminNoteListResponse(
+        notes=notes, total=total, page=page, per_page=per_page,
+        pages=max(1, math.ceil(total / per_page)),
+    )
+
+
+@router.delete("/notes/{note_id}")
+def delete_note(
+    note_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_super_admin()),
+):
+    row = db.query(Note, User).join(User, Note.user_id == User.id).filter(
+        Note.id == note_id
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Note not found")
+    note, owner = row
+
+    preview = (note.content or "")[:80]
+    log_action(
+        db, admin, AuditAction.note_delete,
+        f"Deleted note #{note.id} by {owner.email}: \"{preview}\"",
+        request=request, target=owner, target_type="note",
+        old_value=preview,
+    )
+
+    db.delete(note)
+    db.commit()
+    return {"message": "Note deleted"}
 
 
 # ─── Unlock Locked Account (AUTH-03) ─────────────────────────────

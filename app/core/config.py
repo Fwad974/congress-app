@@ -15,6 +15,30 @@ class Settings(BaseSettings):
     CONGRESS_VENUE: str = "Dubai World Trade Centre"
     CONGRESS_DEADLINE: str = "December 1, 2026"
 
+    # Web Push (VAPID) — generate with `python gen_vapid_keys.py` and set in .env.
+    # When either key is blank, web push is disabled and the app falls back to
+    # the in-app notification feed (toasts) only.
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@dubaicongress.example"
+    PUSH_TTL: int = 86400  # seconds a push service should retain an undelivered message
+
+    # Realtime (live Q&A / polls / reactions). Empty = in-process pub/sub only
+    # (fine for a single worker / tests). Set to a redis:// URL to fan out
+    # across workers and containers.
+    REDIS_URL: str = ""
+
+    # OAuth / social login. Each provider activates only when its client
+    # id + secret are set. ORCID_ENV picks the sandbox vs production host.
+    # OAUTH_REDIRECT_BASE overrides the callback origin behind a proxy
+    # (e.g. https://app.example.com); empty = derive from the request.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    ORCID_CLIENT_ID: str = ""
+    ORCID_CLIENT_SECRET: str = ""
+    ORCID_ENV: str = "sandbox"  # "sandbox" | "production"
+    OAUTH_REDIRECT_BASE: str = ""
+
     class Config:
         env_file = ".env"
 
