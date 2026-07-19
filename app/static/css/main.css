@@ -86,8 +86,11 @@ a:hover{color:var(--gold-l)}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 .btn-ghost{background:transparent;color:var(--w7);border:1px solid var(--w1)}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold);background:var(--ga2)}
-.btn-google{background:var(--w05);border:1px solid var(--w1);color:var(--w9)}
-.btn-google:hover{background:var(--w1);border-color:var(--w3)}
+.btn-google{background:#fff;border:1px solid #dadce0;color:#3c4043;font-weight:600}
+.btn-google:hover{background:#f7f8f8;border-color:#d2d5d9;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.btn-orcid{background:var(--w05);border:1px solid var(--w1);color:var(--w9);font-weight:600}
+.btn-orcid:hover{background:var(--w1);border-color:#a6ce39;color:#fff}
+.sso-ico{width:18px;height:18px;flex-shrink:0;display:block}
 .btn-sm{padding:9px 20px;font-size:.82rem}
 .btn-lg{padding:15px 36px;font-size:.95rem}
 .btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);font-weight:600;box-shadow:0 4px 20px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.15)}
