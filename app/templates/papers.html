@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Papers — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.pp-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.pp-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.pp-title h2{font:600 1.4rem var(--fh);color:var(--w)}.pp-title h2 span{color:var(--gold)}
+.pp-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.pp-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.pp-tab:hover{color:var(--w7)}.pp-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.pp-panel{display:none}.pp-panel.active{display:block}
+.pp-form,.pp-card{background:var(--glass);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px}
+.pp-form{display:flex;flex-direction:column;gap:12px;max-width:680px}
+.pp-form label{font:600 .72rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold)}
+.pp-in{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+.pp-in:focus{border-color:var(--gold)}
+textarea.pp-in{resize:vertical;min-height:90px}
+.pp-btn{padding:10px 18px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .84rem var(--f);cursor:pointer;transition:.2s}
+.pp-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pp-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.pp-btn.sm{padding:6px 12px;font-size:.78rem}
+.pp-card h3{font:600 1.02rem var(--fh);color:var(--w);margin-bottom:4px}
+.pp-meta{font:.76rem var(--f);color:var(--w5);margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pp-status{font:600 .6rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:50px}
+.st-submitted{background:var(--w05);color:var(--w5);border:1px solid var(--w1)}
+.st-under_review{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
+.st-revision_requested{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.25)}
+.st-accepted{background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25)}
+.st-rejected{background:rgba(231,76,60,.1);color:var(--red);border:1px solid rgba(231,76,60,.2)}
+.st-withdrawn{background:var(--w05);color:var(--w3);border:1px solid var(--w1)}
+.pp-abs{font:.86rem/1.5 var(--f);color:var(--w7);white-space:pre-wrap;margin:6px 0}
+.pp-review{background:var(--surface-raised,rgba(255,255,255,.03));border:1px solid rgba(201,169,98,.1);border-radius:var(--r);padding:10px 12px;margin-top:8px}
+.pp-review .rh{font:600 .72rem var(--f);color:var(--gold);margin-bottom:4px}
+.pp-sub{margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,98,.08);display:flex;flex-direction:column;gap:8px}
+.pp-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pp-empty{text-align:center;padding:48px 24px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.pp-rev-pick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.pp-chip{font:.76rem var(--f);padding:5px 10px;border-radius:50px;border:1px solid rgba(201,169,98,.2);color:var(--w7);cursor:pointer;background:rgba(0,0,0,.15)}
+.pp-chip.on{background:rgba(201,169,98,.18);border-color:var(--gold);color:var(--gold)}
+.pp-chip.coi{border-color:rgba(231,76,60,.35);color:var(--red)}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="pp-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="pp-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Abstracts &amp; <span>Papers</span></h2></div>
+  <div class="pp-tabs animate-up">
+    <button class="pp-tab active" data-t="submit" onclick="ppTab('submit')">Submit</button>
+    <button class="pp-tab" data-t="mine" onclick="ppTab('mine')">My Submissions</button>
+    {% if is_reviewer %}<button class="pp-tab" data-t="review" onclick="ppTab('review')">To Review</button>{% endif %}
+    {% if is_chair %}<button class="pp-tab" data-t="manage" onclick="ppTab('manage')">Manage</button>{% endif %}
+  </div>
+
+  <div class="pp-panel active" id="pt-submit">
+    <div class="pp-form">
+      <div><label>Title</label><input class="pp-in" id="f_title" maxlength="300"></div>
+      <div><label>Authors</label><input class="pp-in" id="f_authors" placeholder="Jane Doe, John Roe"></div>
+      <div class="pp-row"><div style="flex:1"><label>Category / track</label><input class="pp-in" id="f_category" placeholder="iPSC, Gene Therapy…"></div>
+        <div style="flex:1"><label>Full paper link (optional)</label><input class="pp-in" id="f_url" placeholder="https://…"></div></div>
+      <div><label>Abstract</label><textarea class="pp-in" id="f_abstract" rows="6"></textarea></div>
+      <div style="text-align:right"><button class="pp-btn primary" onclick="submitPaper()" id="submitBtn">Submit</button></div>
+    </div>
+  </div>
+
+  <div class="pp-panel" id="pt-mine"><div id="mineList"><div class="pp-empty">Loading…</div></div></div>
+  {% if is_reviewer %}<div class="pp-panel" id="pt-review"><div id="reviewList"><div class="pp-empty">Loading…</div></div></div>{% endif %}
+  {% if is_chair %}<div class="pp-panel" id="pt-manage">
+    <div class="pp-row" style="margin-bottom:14px">
+      <select class="pp-in" id="mgStatus" style="width:auto" onchange="loadManage()">
+        <option value="">All statuses</option><option value="submitted">Submitted</option><option value="under_review">Under review</option>
+        <option value="revision_requested">Revision requested</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option>
+      </select>
+      <button class="pp-btn" onclick="loadManage()">Refresh</button>
+    </div>
+    <div id="manageList"><div class="pp-empty">Loading…</div></div>
+  </div>{% endif %}
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IS_CHAIR = {{ 'true' if is_chair else 'false' }};
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+function stPill(s){return '<span class="pp-status st-'+s+'">'+s.replace('_',' ')+'</span>';}
+function fmt(iso){return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}
+
+function ppTab(t){document.querySelectorAll('.pp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.pp-panel').forEach(p=>p.classList.toggle('active',p.id==='pt-'+t));if(t==='mine')loadMine();if(t==='review')loadReview();if(t==='manage')loadManage();}
+
+async function submitPaper(){
+  const body={title:val('f_title'),authors:val('f_authors'),category:val('f_category')||null,file_url:val('f_url')||null,abstract:val('f_abstract')};
+  if(!body.title||!body.authors||!body.abstract){showToast('Title, authors and abstract are required','error');return;}
+  const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='…';
+  try{await api('/api/papers','POST',body);showToast('Submitted','success');['f_title','f_authors','f_category','f_url','f_abstract'].forEach(i=>document.getElementById(i).value='');ppTab('mine');}
+  catch(e){showToast(e.message,'error');}
+  btn.disabled=false;btn.textContent='Submit';
+}
+function val(id){return document.getElementById(id).value.trim();}
+
+function reviewsBlock(p){
+  if(!p.reviews||!p.reviews.length)return'';
+  return p.reviews.map(r=>'<div class="pp-review"><div class="rh">'+esc(r.reviewer_label)+(r.score?' · score '+r.score+'/5':'')+'</div>'+(r.comments?'<div class="pp-abs" style="margin:0">'+esc(r.comments)+'</div>':'<span style="color:var(--w3);font-size:.8rem">No comments</span>')+'</div>').join('');
+}
+
+async function loadMine(){
+  try{const d=await api('/api/papers/mine');const c=document.getElementById('mineList');
+    if(!d.papers.length){c.innerHTML='<div class="pp-empty">No submissions yet. Use the Submit tab.</div>';return;}
+    c.innerHTML=d.papers.map(mineCard).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function mineCard(p){
+  let extra='';
+  if(p.decision_comment)extra+='<div class="pp-meta"><strong style="color:var(--w7)">Chair:</strong> '+esc(p.decision_comment)+'</div>';
+  extra+=reviewsBlock(p);
+  if(p.status==='revision_requested'){
+    extra+='<div class="pp-sub"><label style="font:600 .72rem var(--f);color:var(--gold)">Revise &amp; resubmit</label>'+
+      '<textarea class="pp-in" id="ra_'+p.id+'" rows="4">'+esc(p.abstract)+'</textarea>'+
+      '<input class="pp-in" id="rr_'+p.id+'" placeholder="Response to reviewers">'+
+      '<div style="text-align:right"><button class="pp-btn primary sm" onclick="resubmit('+p.id+')">Resubmit</button></div></div>';
+  }
+  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>Round '+p.round+'</span><span>'+fmt(p.created_at)+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-meta">'+esc(p.authors)+'</div><div class="pp-abs">'+esc(p.abstract)+'</div>'+extra+'</div>';
+}
+async function resubmit(id){
+  try{await api('/api/papers/'+id,'PUT',{abstract:document.getElementById('ra_'+id).value.trim(),author_response:document.getElementById('rr_'+id).value.trim()});showToast('Resubmitted','success');loadMine();}
+  catch(e){showToast(e.message,'error');}
+}
+
+async function loadReview(){
+  try{const d=await api('/api/papers/assigned');const c=document.getElementById('reviewList');
+    if(!d.papers.length){c.innerHTML='<div class="pp-empty">No papers assigned to you.</div>';return;}
+    c.innerHTML=d.papers.map(revCard).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function revCard(p){
+  const mr=p.my_review||{};
+  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+
+    (p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open paper ↗</a>':'')+
+    '<div class="pp-sub"><div class="pp-row"><label style="color:var(--gold)">Score</label>'+
+      '<select class="pp-in" id="rs_'+p.id+'" style="width:auto">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
+      '<span style="color:var(--w5);font-size:.78rem">'+(mr.submitted?'✓ submitted':'draft')+'</span></div>'+
+      '<textarea class="pp-in" id="rc_'+p.id+'" rows="3" placeholder="Comments to the author">'+esc(mr.comments||'')+'</textarea>'+
+      '<div style="text-align:right"><button class="pp-btn sm" onclick="saveReview('+p.id+',false)">Save draft</button> <button class="pp-btn primary sm" onclick="saveReview('+p.id+',true)">Submit review</button></div></div></div>';
+}
+async function saveReview(id,submit){
+  try{await api('/api/papers/'+id+'/review','PUT',{score:parseInt(document.getElementById('rs_'+id).value,10),comments:document.getElementById('rc_'+id).value.trim(),submitted:submit});showToast(submit?'Review submitted':'Draft saved','success');loadReview();}
+  catch(e){showToast(e.message,'error');}
+}
+
+async function loadManage(){
+  try{const s=document.getElementById('mgStatus').value;const d=await api('/api/papers'+(s?'?status='+s:''));const c=document.getElementById('manageList');
+    if(!d.papers.length){c.innerHTML='<div class="pp-empty">No submissions.</div>';return;}
+    c.innerHTML=d.papers.map(mgCard).join('');
+    d.papers.forEach(p=>loadReviewers(p.id));
+  }catch(e){showToast(e.message,'error');}
+}
+const _pick={};
+function mgCard(p){
+  const avg=p.avg_score!=null?p.avg_score+'/5':'—';
+  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+reviewsBlock(p)+
+    '<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+
+      '<div class="pp-row"><button class="pp-btn sm" onclick="doAssign('+p.id+')">Assign selected</button>'+
+      '<label style="font:.76rem var(--f);color:var(--w5);display:flex;align-items:center;gap:5px"><input type="checkbox" id="ov_'+p.id+'"> override COI</label></div>'+
+      '<div class="pp-row" style="margin-top:6px"><input class="pp-in" id="dc_'+p.id+'" placeholder="Decision note to author (optional)" style="flex:1">'+
+      '<button class="pp-btn sm" style="color:#2ecc71;border-color:rgba(46,204,113,.3)" onclick="decide('+p.id+',\'accept\')">Accept</button>'+
+      '<button class="pp-btn sm" style="color:var(--gold)" onclick="decide('+p.id+',\'revision\')">Revise</button>'+
+      '<button class="pp-btn sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="decide('+p.id+',\'reject\')">Reject</button></div></div></div>';
+}
+async function loadReviewers(pid){
+  try{const revs=await api('/api/papers/reviewers?paper_id='+pid);_pick[pid]=new Set(revs.filter(r=>r.assigned).map(r=>r.id));
+    const el=document.getElementById('rev_'+pid);if(!el)return;
+    el.innerHTML=revs.length?revs.map(r=>'<span class="pp-chip'+(_pick[pid].has(r.id)?' on':'')+(r.coi?' coi':'')+'" onclick="togPick('+pid+','+r.id+',this)">'+esc(r.full_name)+(r.coi?' ⚠':'')+(r.assigned?' ✓':'')+'</span>').join(''):'<span style="color:var(--w3);font-size:.8rem">No reviewers available</span>';
+  }catch(e){}
+}
+function togPick(pid,rid,el){const s=_pick[pid]||(_pick[pid]=new Set());if(s.has(rid))s.delete(rid);else s.add(rid);el.classList.toggle('on');}
+async function doAssign(pid){const ids=[...(_pick[pid]||[])];if(!ids.length){showToast('Pick at least one reviewer','error');return;}
+  try{await api('/api/papers/'+pid+'/assign','POST',{reviewer_ids:ids,override_coi:document.getElementById('ov_'+pid).checked});showToast('Reviewers assigned','success');loadManage();}
+  catch(e){showToast(e.message,'error');}}
+async function decide(pid,decision){if(decision==='reject'&&!confirm('Reject this submission?'))return;
+  try{await api('/api/papers/'+pid+'/decision','POST',{decision,comment:document.getElementById('dc_'+pid).value.trim()||null});showToast('Decision recorded','success');loadManage();}
+  catch(e){showToast(e.message,'error');}}
+
+document.addEventListener('DOMContentLoaded',()=>{ppTab('submit');});
+</script>
+{% endblock %}

@@ -209,6 +209,19 @@ def is_live_moderator(user: User) -> bool:
     return ROLE_HIERARCHY.get(user.role, 0) >= ROLE_HIERARCHY[UserRole.session_chair]
 
 
+REVIEW_MANAGER_ROLES = {UserRole.review_chair, UserRole.admin, UserRole.super_admin}
+ASSIGNABLE_REVIEWER_ROLES = {UserRole.reviewer, UserRole.review_chair}
+
+
+def is_review_chair(user: User) -> bool:
+    """Can this user manage the review process (assign reviewers, decide)?"""
+    return user.role in REVIEW_MANAGER_ROLES
+
+
+def is_assignable_reviewer(user: User) -> bool:
+    return user.role in ASSIGNABLE_REVIEWER_ROLES
+
+
 def hash_ip(ip: str) -> str:
     """One-way hash IP for audit logs."""
     return hashlib.sha256(ip.encode()).hexdigest()[:16]

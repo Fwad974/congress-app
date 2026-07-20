@@ -17,6 +17,7 @@ from app.models.note import Note  # noqa – registers model
 from app.models.qa import Question, QuestionVote, QuestionStatus  # noqa – registers model
 from app.models.poll import Poll, PollOption, PollResponse, PollType, PollStatus  # noqa – registers model
 from app.models.oauth import OAuthAccount  # noqa – registers model
+from app.models.paper import Paper, Review, PaperStatus  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth
 from app.api import auth, pages
@@ -28,6 +29,7 @@ from app.api import notes as notes_api
 from app.api import qa as qa_api
 from app.api import polls as polls_api
 from app.api import reactions as reactions_api
+from app.api import papers as papers_api
 
 settings = get_settings()
 
@@ -182,3 +184,4 @@ app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
 app.include_router(qa_api.router, prefix="/api", tags=["qa"])
 app.include_router(polls_api.router, prefix="/api", tags=["polls"])
 app.include_router(reactions_api.router, prefix="/api", tags=["reactions"])
+app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"])

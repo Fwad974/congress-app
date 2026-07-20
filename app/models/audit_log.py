@@ -38,6 +38,8 @@ class AuditAction(str, enum.Enum):
     question_moderate = "question_moderate"
     # Notifications
     broadcast_send = "broadcast_send"
+    # Papers
+    paper_decision = "paper_decision"
     # System
     settings_change = "settings_change"
     export_data = "export_data"

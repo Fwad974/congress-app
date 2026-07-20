@@ -63,6 +63,10 @@ pytest -q
 | GET | `/api/admin/notes` | List all user notes (paginated, searchable) | **Super Admin** |
 | DELETE | `/api/admin/notes/{id}` | Delete a user note (moderation, logged) | **Super Admin** |
 | PUT | `/api/schedule/{id}/presentation` | Presenter edits abstract/slides/description | Presenter / Admin |
+| POST | `/api/papers` · GET `/api/papers/mine` | Submit a paper · my submissions | Any user |
+| GET | `/api/papers/assigned` · PUT `/api/papers/{id}/review` | Papers to review · submit a review | Reviewer |
+| GET | `/api/papers` · `/api/papers/reviewers` | List all · assignable reviewers (COI) | Review chair |
+| POST | `/api/papers/{id}/assign` · `/decision` | Assign reviewers · accept/reject/revise | Review chair |
 | GET | `/api/notes` | List my notes (optional `?schedule_item_id=`) | Any user |
 | POST | `/api/notes` | Create a note (optionally linked to a session) | Any user |
 | PUT | `/api/notes/{id}` | Update my note | Any user |
@@ -304,6 +308,23 @@ page has a per-session note button that deep-links to a pre-filled composer
 the admin dashboard (searchable by content, author name, or email) and delete
 any note for moderation. Deletions are written to the audit log
 (`note_delete`). Regular admins do not have access to notes.
+
+## Abstracts & Paper Submission
+
+A peer-review workflow at `/papers` (role-based tabs). See
+[`docs/PAPERS.md`](docs/PAPERS.md) for details.
+
+- **Authors** (any signed-in user) submit a paper (title, authors, category,
+  abstract, optional full-paper link), track status, and — on a revision
+  decision — respond to reviewers and resubmit (bounded to 2 rounds).
+- **Reviewers** score (1–5) and comment on papers assigned to them.
+- **Review chairs** (`review_chair`/`admin`/`super_admin`) list all
+  submissions, assign reviewers (with a same-institution **COI guard** that
+  requires an explicit override), and record decisions (accept / reject /
+  request revision) — audit-logged and pushed to the author's notification feed.
+
+Reviews are hidden from the author until a decision; the submitter's identity is
+hidden from reviewers (light double-blind).
 
 ## Speakers (Program & Schedule)
 
