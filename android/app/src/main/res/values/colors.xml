@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors the web theme tokens in app/static/css/main.css -->
+    <color name="bg">#050709</color>
+    <color name="surface">#0F131B</color>
+    <color name="teal">#0FB5AE</color>
+    <color name="gold">#D4A843</color>
+    <color name="text">#E8ECF2</color>
+    <color name="text_secondary">#8B95A8</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

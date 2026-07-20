@@ -288,3 +288,14 @@ pytest tests/ -v
 | `test_admin.py` | 48 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
 | `test_security.py` | 38 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
 | `test_schemas.py` | 11 | Pydantic validation for all request schemas |
+
+## Android App
+
+A native **Android WebView wrapper** for the attendee-facing site lives in
+[`android/`](android/). It loads this FastAPI app inside a lightweight native
+shell — persisting the login session, adding pull-to-refresh, an offline/retry
+screen, external-link handoff, and file uploads — with **no backend changes**.
+
+Open the `android/` folder in Android Studio, point `BASE_URL` at your server
+(`http://10.0.2.2:8000` for the emulator against a local backend), and run.
+See [`android/README.md`](android/README.md) for full setup and build instructions.

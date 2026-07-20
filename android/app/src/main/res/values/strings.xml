@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DSCC 2027</string>
+    <string name="offline_title">Can\'t reach the server</string>
+    <string name="offline_message">Check your connection and make sure the congress server is running, then try again.</string>
+    <string name="retry">Retry</string>
+</resources>
