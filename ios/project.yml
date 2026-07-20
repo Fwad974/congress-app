@@ -1,0 +1,28 @@
+# XcodeGen spec — an alternative to the committed .xcodeproj.
+# If the checked-in project ever gets out of sync, regenerate it with:
+#   brew install xcodegen && cd ios && xcodegen generate
+name: DSCC2027
+options:
+  bundleIdPrefix: com.dscc
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+targets:
+  DSCC2027:
+    type: application
+    platform: iOS
+    sources:
+      - path: DSCC2027
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dscc.conference
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: DSCC2027/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
