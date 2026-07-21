@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     ORCID_ENV: str = "sandbox"  # "sandbox" | "production"
     OAUTH_REDIRECT_BASE: str = ""
 
+    # Paper file uploads. Relative path resolves under the app dir; in Docker
+    # that's the persisted /app/data volume. Served only via an authenticated
+    # download endpoint (never from /static).
+    UPLOAD_DIR: str = "data/uploads"
+    MAX_UPLOAD_MB: int = 15
+
     class Config:
         env_file = ".env"
 

@@ -11,16 +11,20 @@ Roles:
 Reviews stay hidden from the author until a decision; the submitter's identity
 is hidden from reviewers (light double-blind).
 """
+import os
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.admin_security import is_review_chair, is_assignable_reviewer
+from app.core import paper_files
 from app.core.audit_service import log_action
 from app.models.user import User
 from app.models.audit_log import AuditAction
@@ -90,6 +94,7 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
     return PaperResponse(
         id=paper.id, title=paper.title, authors=paper.authors,
         category=paper.category, abstract=paper.abstract, file_url=paper.file_url,
+        file_name=paper.file_name, has_file=bool(paper.stored_file),
         status=paper.status.value, round=paper.round,
         author_response=paper.author_response, decision_comment=paper.decision_comment,
         author_name=author_name, is_mine=is_mine, can_manage=can_manage,
@@ -249,6 +254,84 @@ def withdraw_paper(paper_id: int, db: Session = Depends(get_db),
     paper.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(paper)
+    return _serialize(db, paper, user)
+
+
+# ─── Manuscript file (PDF / Word) ────────────────────────────────
+def _can_view(db: Session, paper: Paper, user: User) -> bool:
+    return (paper.author_id == user.id or is_review_chair(user)
+            or _assigned_review(db, paper.id, user.id) is not None)
+
+
+@router.post("/{paper_id}/file", response_model=PaperResponse)
+async def upload_paper_file(paper_id: int, file: UploadFile = File(...),
+                            db: Session = Depends(get_db),
+                            user: User = Depends(get_current_user)):
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    if paper.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the author can upload a file")
+    if paper.status not in (PaperStatus.submitted, PaperStatus.revision_requested):
+        raise HTTPException(status_code=400, detail="This paper can't be edited now")
+    if not paper_files.is_allowed(file.filename or ""):
+        raise HTTPException(status_code=422,
+                            detail=f"Only {paper_files.EXT_LABEL} files are allowed")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=422, detail="The file is empty")
+    if len(data) > paper_files.max_bytes():
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is too large (max {get_settings().MAX_UPLOAD_MB} MB)")
+
+    old = paper.stored_file
+    paper.stored_file = paper_files.save_bytes(data, file.filename)
+    paper.file_name = (file.filename or "manuscript")[:255]
+    paper.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(paper)
+    if old:
+        paper_files.delete_file(old)   # replace: drop the previous upload
+    return _serialize(db, paper, user)
+
+
+@router.get("/{paper_id}/file")
+def download_paper_file(paper_id: int, db: Session = Depends(get_db),
+                        user: User = Depends(get_current_user)):
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    if not _can_view(db, paper, user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    if not paper.stored_file:
+        raise HTTPException(status_code=404, detail="No file uploaded")
+    path = paper_files.path_for(paper.stored_file)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="File is missing")
+    return FileResponse(path, filename=paper.file_name or "manuscript",
+                        media_type="application/octet-stream")
+
+
+@router.delete("/{paper_id}/file", response_model=PaperResponse)
+def delete_paper_file(paper_id: int, db: Session = Depends(get_db),
+                      user: User = Depends(get_current_user)):
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    if paper.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the author can remove the file")
+    if paper.status not in (PaperStatus.submitted, PaperStatus.revision_requested):
+        raise HTTPException(status_code=400, detail="This paper can't be edited now")
+    old = paper.stored_file
+    paper.stored_file = None
+    paper.file_name = None
+    paper.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(paper)
+    if old:
+        paper_files.delete_file(old)
     return _serialize(db, paper, user)
 
 

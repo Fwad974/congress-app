@@ -28,7 +28,8 @@ submitted ──assign──▶ under_review ──decide──┬─▶ accepte
 ## Data model (`app/models/paper.py`)
 
 - **`Paper`** — author, title, authors (free text), category, abstract,
-  `file_url`, `status`, `round`, `author_response`, `decision_comment`.
+  `file_url` (optional external link), `file_name`/`stored_file` (uploaded
+  manuscript), `status`, `round`, `author_response`, `decision_comment`.
 - **`Review`** — one per (paper, reviewer): `score` (1–5), `comments`,
   `submitted`. Unique on (paper, reviewer).
 
@@ -53,6 +54,9 @@ submitted ──assign──▶ under_review ──decide──┬─▶ accepte
 | `GET /api/papers/mine` | author | My submissions |
 | `PUT /api/papers/{id}` | author | Edit draft / resubmit revision |
 | `POST /api/papers/{id}/withdraw` | author | Withdraw |
+| `POST /api/papers/{id}/file` | author | Upload/replace manuscript (PDF/Word) |
+| `GET /api/papers/{id}/file` | author / assigned reviewer / chair | Download manuscript |
+| `DELETE /api/papers/{id}/file` | author | Remove manuscript |
 | `GET /api/papers/assigned` | reviewer | Papers to review |
 | `PUT /api/papers/{id}/review` | reviewer | Save/submit a review |
 | `GET /api/papers` | chair | All submissions (filter `status`, `category`) |
@@ -65,9 +69,26 @@ Assignments notify the reviewer, and decisions notify the author, via the
 in-app notification feed (`kind: "paper"`). Assign/decide are audit-logged
 (`paper_decision`).
 
+## Manuscript upload (PDF / Word)
+
+Authors can attach a manuscript file alongside (or instead of) the `file_url`
+link. Files are stored on disk under `UPLOAD_DIR` (default `data/uploads`,
+which resolves under the persisted `/app/data` volume in Docker) with an opaque
+uuid-based name — the original (attacker-controlled) filename never touches the
+filesystem, avoiding path traversal and collisions.
+
+- **Formats:** `.pdf`, `.doc`, `.docx`. **Size:** ≤ `MAX_UPLOAD_MB` (default 15).
+- **Editing window:** upload/replace/remove only while the paper is
+  `submitted` or `revision_requested` (locked once under review / decided).
+- **Access:** the download endpoint is authenticated — only the author, an
+  assigned reviewer, or a chair can fetch it. Files are **never** served from
+  `/static`.
+- Helper: `app/core/paper_files.py` (`is_allowed`, `save_bytes`, `path_for`,
+  `delete_file`). Config: `UPLOAD_DIR`, `MAX_UPLOAD_MB` (`app/core/config.py`).
+
 ## Not yet (follow-ups)
 
-- File **upload** (currently a `file_url` link) — needs object storage.
+- Object storage (S3/GCS) instead of local disk for multi-node deployments.
 - Deadline reminders (REV-03) — needs a scheduler.
 - Configurable single/double-blind (currently light double-blind).
 
@@ -78,4 +99,5 @@ in-app notification feed (`kind: "paper"`). Assign/decide are audit-logged
 | `app/models/paper.py` | `Paper`, `Review`, `PaperStatus` |
 | `app/schemas/paper.py` | request/response schemas |
 | `app/api/papers.py` | all endpoints + serialization + COI/blind logic |
+| `app/core/paper_files.py` | manuscript storage helper (validate/save/serve) |
 | `app/templates/papers.html` | role-based `/papers` page |

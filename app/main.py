@@ -113,6 +113,29 @@ def _migrate_users_table(connection):
         ))
 
 
+def _migrate_papers_table(connection):
+    """Add the manuscript-upload columns to an existing papers table.
+
+    Postgres-only; SQLite tests build the table fresh with the current model.
+    """
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'papers'"
+        ))
+    }
+    if not cols:
+        return  # table doesn't exist yet — create_all will build it fresh
+    if "file_name" not in cols:
+        connection.execute(text(
+            "ALTER TABLE papers ADD COLUMN file_name VARCHAR(255)"
+        ))
+    if "stored_file" not in cols:
+        connection.execute(text(
+            "ALTER TABLE papers ADD COLUMN stored_file VARCHAR(255)"
+        ))
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -126,6 +149,7 @@ async def lifespan(application: FastAPI):
         with engine.begin() as conn:
             _migrate_schedule_table(conn)
             _migrate_users_table(conn)
+            _migrate_papers_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl

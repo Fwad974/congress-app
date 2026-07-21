@@ -10,6 +10,10 @@ from unittest.mock import MagicMock
 # Override DATABASE_URL before any app imports
 os.environ["DATABASE_URL"] = "sqlite:///test.db"
 
+# Keep uploaded test files out of the repo — a throwaway temp dir per run.
+import tempfile
+os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="congress-uploads-")
+
 from sqlalchemy import create_engine, Text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeDecorator

@@ -36,7 +36,11 @@ class Paper(Base):
     authors = Column(Text, nullable=False)        # free-text author list
     category = Column(String(120), nullable=True)
     abstract = Column(Text, nullable=False)
-    file_url = Column(String(500), nullable=True)  # link to the full paper/PDF
+    file_url = Column(String(500), nullable=True)  # optional external link to the full paper
+    # Uploaded manuscript (PDF/Word). stored_file is a uuid-based name on disk;
+    # file_name is the original name shown to users. Both null = no upload.
+    file_name = Column(String(255), nullable=True)
+    stored_file = Column(String(255), nullable=True)
     status = Column(SAEnum(PaperStatus), default=PaperStatus.submitted,
                     nullable=False, index=True)
     round = Column(Integer, default=1, nullable=False)          # current revision round

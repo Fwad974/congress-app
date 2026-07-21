@@ -203,6 +203,79 @@ class TestDecisionsAndRevision:
                          cookies=auth_cookie(stranger)).status_code == 403
 
 
+class TestFileUpload:
+    def _paper(self, client, db):
+        chair = make_user(db, email="cf@test.com", role=UserRole.review_chair)
+        author = make_user(db, email="af@test.com", role=UserRole.attendee)
+        pid = _submit(client, author).json()["id"]
+        return chair, author, pid
+
+    def _upload(self, client, pid, author, name="m.pdf", data=b"%PDF-1.4 hi", ct="application/pdf"):
+        return client.post(f"/api/papers/{pid}/file",
+                           files={"file": (name, data, ct)}, cookies=auth_cookie(author))
+
+    def test_upload_pdf_and_flags(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        r = self._upload(client, pid, author)
+        assert r.status_code == 200
+        b = r.json()
+        assert b["has_file"] is True and b["file_name"] == "m.pdf"
+
+    def test_author_reviewer_chair_can_download(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        rev = make_user(db, email="rf@test.com", role=UserRole.reviewer)
+        self._upload(client, pid, author, data=b"%PDF-1.4 body")
+        client.post(f"/api/papers/{pid}/assign", json={"reviewer_ids": [rev.id]},
+                    cookies=auth_cookie(chair))
+        for u in (author, rev, chair):
+            d = client.get(f"/api/papers/{pid}/file", cookies=auth_cookie(u))
+            assert d.status_code == 200 and d.content == b"%PDF-1.4 body"
+
+    def test_stranger_cannot_download(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        self._upload(client, pid, author)
+        stranger = make_user(db, email="sf@test.com", role=UserRole.attendee)
+        assert client.get(f"/api/papers/{pid}/file",
+                         cookies=auth_cookie(stranger)).status_code == 403
+
+    def test_non_author_cannot_upload(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        other = make_user(db, email="of@test.com", role=UserRole.attendee)
+        assert self._upload(client, pid, other).status_code == 403
+
+    def test_bad_extension_rejected(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        r = self._upload(client, pid, author, name="virus.exe",
+                         data=b"MZ", ct="application/octet-stream")
+        assert r.status_code == 422
+
+    def test_docx_allowed(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        r = self._upload(client, pid, author, name="paper.docx", data=b"PK\x03\x04doc",
+                         ct="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        assert r.status_code == 200 and r.json()["file_name"] == "paper.docx"
+
+    def test_oversize_rejected(self, client, db):
+        from app.core.config import get_settings
+        chair, author, pid = self._paper(client, db)
+        big = b"x" * (get_settings().MAX_UPLOAD_MB * 1024 * 1024 + 1)
+        assert self._upload(client, pid, author, data=big).status_code == 413
+
+    def test_delete_file(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        self._upload(client, pid, author)
+        r = client.delete(f"/api/papers/{pid}/file", cookies=auth_cookie(author))
+        assert r.status_code == 200 and r.json()["has_file"] is False
+        assert client.get(f"/api/papers/{pid}/file",
+                         cookies=auth_cookie(author)).status_code == 404
+
+    def test_cannot_upload_after_decision(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        assert self._upload(client, pid, author).status_code == 400
+
+
 class TestPapersPage:
     def test_requires_login(self, client):
         assert client.get("/papers", follow_redirects=False).status_code == 302

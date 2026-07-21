@@ -62,9 +62,13 @@ services:
       ORCID_CLIENT_SECRET: ${ORCID_CLIENT_SECRET:-}
       ORCID_ENV: ${ORCID_ENV:-sandbox}
       OAUTH_REDIRECT_BASE: ${OAUTH_REDIRECT_BASE:-}
+      # Uploaded manuscripts (PDF/Word). Default resolves under /app/data, the
+      # persisted volume below, so files survive restarts.
+      UPLOAD_DIR: ${UPLOAD_DIR:-data/uploads}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-15}
     volumes:
-      # Persists auto-generated VAPID keys so the public key is stable across
-      # restarts (otherwise existing browser subscriptions would break).
+      # Persists auto-generated VAPID keys and uploaded manuscripts so they're
+      # stable across restarts (otherwise browser subscriptions / files break).
       - vapid_keys:/app/data
     depends_on:
       db:

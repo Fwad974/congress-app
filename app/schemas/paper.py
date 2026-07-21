@@ -117,6 +117,8 @@ class PaperResponse(BaseModel):
     category: Optional[str] = None
     abstract: str
     file_url: Optional[str] = None
+    file_name: Optional[str] = None   # original name of the uploaded manuscript
+    has_file: bool = False            # a manuscript is attached (download available)
     status: str
     round: int
     author_response: Optional[str] = None

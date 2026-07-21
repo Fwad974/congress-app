@@ -94,11 +94,31 @@ async function submitPaper(){
   const body={title:val('f_title'),authors:val('f_authors'),category:val('f_category')||null,file_url:val('f_url')||null,abstract:val('f_abstract')};
   if(!body.title||!body.authors||!body.abstract){showToast('Title, authors and abstract are required','error');return;}
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='…';
-  try{await api('/api/papers','POST',body);showToast('Submitted','success');['f_title','f_authors','f_category','f_url','f_abstract'].forEach(i=>document.getElementById(i).value='');ppTab('mine');}
+  try{
+    const p=await api('/api/papers','POST',body);
+    const fi=document.getElementById('f_file');
+    if(fi.files.length)await uploadFile(p.id,fi.files[0]);
+    showToast('Submitted','success');
+    ['f_title','f_authors','f_category','f_url','f_abstract','f_file'].forEach(i=>document.getElementById(i).value='');
+    ppTab('mine');
+  }
   catch(e){showToast(e.message,'error');}
   btn.disabled=false;btn.textContent='Submit';
 }
 function val(id){return document.getElementById(id).value.trim();}
+
+async function uploadFile(id,file){
+  const fd=new FormData();fd.append('file',file);
+  const r=await fetch('/api/papers/'+id+'/file',{method:'POST',body:fd,credentials:'same-origin'});
+  let d={};try{d=await r.json();}catch(e){}
+  if(!r.ok){let m=d.detail||'Upload failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}
+  return d;
+}
+function fileBlock(p){
+  return p.has_file
+    ? '<a class="pp-btn sm" href="/api/papers/'+p.id+'/file" target="_blank" rel="noopener">📎 '+esc(p.file_name||'manuscript')+'</a>'
+    : '';
+}
 
 function reviewsBlock(p){
   if(!p.reviews||!p.reviews.length)return'';
@@ -111,9 +131,19 @@ async function loadMine(){
     c.innerHTML=d.papers.map(mineCard).join('');
   }catch(e){showToast(e.message,'error');}
 }
+const EDITABLE=['submitted','revision_requested'];
 function mineCard(p){
   let extra='';
   if(p.decision_comment)extra+='<div class="pp-meta"><strong style="color:var(--w7)">Chair:</strong> '+esc(p.decision_comment)+'</div>';
+  // Manuscript: download link + attach/replace/remove while the paper is editable.
+  const editable=EDITABLE.includes(p.status);
+  let fileRow='<div class="pp-row" style="margin-top:8px">'+(p.has_file?fileBlock(p):'<span style="color:var(--w5);font:.8rem var(--f)">No manuscript file</span>');
+  if(editable){
+    fileRow+='<label class="pp-btn sm" style="cursor:pointer">'+(p.has_file?'Replace':'Attach')+' file<input type="file" accept=".pdf,.doc,.docx" style="display:none" onchange="onPickFile('+p.id+',this)"></label>';
+    if(p.has_file)fileRow+='<button class="pp-btn sm" onclick="removeFile('+p.id+')">Remove</button>';
+  }
+  fileRow+='</div>';
+  extra+=fileRow;
   extra+=reviewsBlock(p);
   if(p.status==='revision_requested'){
     extra+='<div class="pp-sub"><label style="font:600 .72rem var(--f);color:var(--gold)">Revise &amp; resubmit</label>'+
@@ -128,6 +158,16 @@ async function resubmit(id){
   try{await api('/api/papers/'+id,'PUT',{abstract:document.getElementById('ra_'+id).value.trim(),author_response:document.getElementById('rr_'+id).value.trim()});showToast('Resubmitted','success');loadMine();}
   catch(e){showToast(e.message,'error');}
 }
+async function onPickFile(id,el){
+  if(!el.files.length)return;
+  try{await uploadFile(id,el.files[0]);showToast('File uploaded','success');loadMine();}
+  catch(e){showToast(e.message,'error');}
+}
+async function removeFile(id){
+  if(!confirm('Remove the attached manuscript?'))return;
+  try{await api('/api/papers/'+id+'/file','DELETE');showToast('File removed','success');loadMine();}
+  catch(e){showToast(e.message,'error');}
+}
 
 async function loadReview(){
   try{const d=await api('/api/papers/assigned');const c=document.getElementById('reviewList');
@@ -139,7 +179,7 @@ function revCard(p){
   const mr=p.my_review||{};
   return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
     '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+
-    (p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open paper ↗</a>':'')+
+    '<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>'+
     '<div class="pp-sub"><div class="pp-row"><label style="color:var(--gold)">Score</label>'+
       '<select class="pp-in" id="rs_'+p.id+'" style="width:auto"><option value=""'+(mr.score?'':' selected')+'>— score —</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
       '<span style="color:var(--w5);font-size:.78rem">'+(mr.submitted?'✓ submitted':'draft')+'</span></div>'+
@@ -165,6 +205,7 @@ const _pick={};
 const TERMINAL=['accepted','rejected','withdrawn'];
 function mgCard(p){
   const avg=p.avg_score!=null?p.avg_score+'/5':'—';
+  const links='<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>';
   let controls;
   if(TERMINAL.includes(p.status)){
     controls='<div class="pp-meta" style="margin-top:10px">Final decision: '+stPill(p.status)+
@@ -180,7 +221,7 @@ function mgCard(p){
       '<button class="pp-btn sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="decide('+p.id+',\'reject\')">Reject</button></div></div>';
   }
   return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span></div>'+
-    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+reviewsBlock(p)+controls+'</div>';
+    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+links+reviewsBlock(p)+controls+'</div>';
 }
 async function loadReviewers(pid){
   try{const revs=await api('/api/papers/reviewers?paper_id='+pid);_pick[pid]=new Set(revs.filter(r=>r.assigned).map(r=>r.id));

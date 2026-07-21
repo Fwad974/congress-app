@@ -121,7 +121,9 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
         return RedirectResponse(url="/login", status_code=302)
     is_chair = user.role in (UserRole.review_chair, UserRole.admin, UserRole.super_admin)
     is_reviewer = user.role in (UserRole.reviewer, UserRole.review_chair)
+    from app.core.config import get_settings
     return templates.TemplateResponse("papers.html", {
         "request": request, "user": user,
         "is_chair": is_chair, "is_reviewer": is_reviewer,
+        "max_upload_mb": get_settings().MAX_UPLOAD_MB,
     })
