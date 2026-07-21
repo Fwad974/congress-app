@@ -243,6 +243,8 @@ def withdraw_paper(paper_id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="Paper not found")
     if paper.author_id != user.id:
         raise HTTPException(status_code=403, detail="Only the author can withdraw this")
+    if paper.status in (PaperStatus.accepted, PaperStatus.rejected, PaperStatus.withdrawn):
+        raise HTTPException(status_code=400, detail="This paper can't be withdrawn now")
     paper.status = PaperStatus.withdrawn
     paper.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -280,6 +282,8 @@ def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
+    if paper.status == PaperStatus.withdrawn:
+        raise HTTPException(status_code=400, detail="This paper was withdrawn")
 
     author = db.query(User).filter(User.id == paper.author_id).first()
     author_inst = (author.institution or "").strip().lower() if author else ""
@@ -328,6 +332,8 @@ def decide_paper(paper_id: int, req: DecisionRequest, request: Request,
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
+    if paper.status == PaperStatus.withdrawn:
+        raise HTTPException(status_code=400, detail="This paper was withdrawn")
 
     if req.decision == "revision" and paper.round >= MAX_REVISION_ROUNDS:
         raise HTTPException(

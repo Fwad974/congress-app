@@ -170,10 +170,31 @@ class TestDecisionsAndRevision:
                         cookies=auth_cookie(chair))
         assert r.status_code == 400
 
+    def test_author_edits_submitted_draft(self, client, db):
+        chair, author, pid = self._paper(client, db)   # status submitted
+        r = client.put(f"/api/papers/{pid}",
+                       json={"title": "Edited title", "abstract": "Edited"},
+                       cookies=auth_cookie(author))
+        assert r.status_code == 200
+        b = r.json()
+        assert b["title"] == "Edited title" and b["round"] == 1  # no round bump on a draft edit
+
     def test_withdraw(self, client, db):
         chair, author, pid = self._paper(client, db)
         r = client.post(f"/api/papers/{pid}/withdraw", cookies=auth_cookie(author))
         assert r.status_code == 200 and r.json()["status"] == "withdrawn"
+
+    def test_terminal_guards(self, client, db):
+        chair, author, pid = self._paper(client, db)
+        client.post(f"/api/papers/{pid}/withdraw", cookies=auth_cookie(author))
+        # A withdrawn paper can't be re-withdrawn, assigned, or decided.
+        assert client.post(f"/api/papers/{pid}/withdraw",
+                          cookies=auth_cookie(author)).status_code == 400
+        rev = make_user(db, email="rw@test.com", role=UserRole.reviewer)
+        assert client.post(f"/api/papers/{pid}/assign", json={"reviewer_ids": [rev.id]},
+                          cookies=auth_cookie(chair)).status_code == 400
+        assert client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                          cookies=auth_cookie(chair)).status_code == 400
 
     def test_stranger_cannot_view(self, client, db):
         chair, author, pid = self._paper(client, db)

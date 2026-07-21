@@ -141,13 +141,16 @@ function revCard(p){
     '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+
     (p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open paper ↗</a>':'')+
     '<div class="pp-sub"><div class="pp-row"><label style="color:var(--gold)">Score</label>'+
-      '<select class="pp-in" id="rs_'+p.id+'" style="width:auto">'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
+      '<select class="pp-in" id="rs_'+p.id+'" style="width:auto"><option value=""'+(mr.score?'':' selected')+'>— score —</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
       '<span style="color:var(--w5);font-size:.78rem">'+(mr.submitted?'✓ submitted':'draft')+'</span></div>'+
       '<textarea class="pp-in" id="rc_'+p.id+'" rows="3" placeholder="Comments to the author">'+esc(mr.comments||'')+'</textarea>'+
       '<div style="text-align:right"><button class="pp-btn sm" onclick="saveReview('+p.id+',false)">Save draft</button> <button class="pp-btn primary sm" onclick="saveReview('+p.id+',true)">Submit review</button></div></div></div>';
 }
 async function saveReview(id,submit){
-  try{await api('/api/papers/'+id+'/review','PUT',{score:parseInt(document.getElementById('rs_'+id).value,10),comments:document.getElementById('rc_'+id).value.trim(),submitted:submit});showToast(submit?'Review submitted':'Draft saved','success');loadReview();}
+  const sv=document.getElementById('rs_'+id).value;
+  const comments=document.getElementById('rc_'+id).value.trim();
+  if(submit && !sv){showToast('Please give a score before submitting','error');return;}
+  try{await api('/api/papers/'+id+'/review','PUT',{score:sv?parseInt(sv,10):null,comments,submitted:submit});showToast(submit?'Review submitted':'Draft saved','success');loadReview();}
   catch(e){showToast(e.message,'error');}
 }
 
@@ -155,21 +158,29 @@ async function loadManage(){
   try{const s=document.getElementById('mgStatus').value;const d=await api('/api/papers'+(s?'?status='+s:''));const c=document.getElementById('manageList');
     if(!d.papers.length){c.innerHTML='<div class="pp-empty">No submissions.</div>';return;}
     c.innerHTML=d.papers.map(mgCard).join('');
-    d.papers.forEach(p=>loadReviewers(p.id));
+    d.papers.forEach(p=>{if(!TERMINAL.includes(p.status))loadReviewers(p.id);});
   }catch(e){showToast(e.message,'error');}
 }
 const _pick={};
+const TERMINAL=['accepted','rejected','withdrawn'];
 function mgCard(p){
   const avg=p.avg_score!=null?p.avg_score+'/5':'—';
-  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span></div>'+
-    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+reviewsBlock(p)+
-    '<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+
+  let controls;
+  if(TERMINAL.includes(p.status)){
+    controls='<div class="pp-meta" style="margin-top:10px">Final decision: '+stPill(p.status)+
+      (p.decision_comment?' <span style="color:var(--w7)">'+esc(p.decision_comment)+'</span>':'')+'</div>';
+  }else{
+    const hint=p.review_count<2?'<div style="font:.74rem var(--f);color:var(--gold);margin-top:6px">⚠ Assign at least 2 reviewers (REV-01).</div>':'';
+    const reviseBtn=p.round>=2?'':'<button class="pp-btn sm" style="color:var(--gold)" onclick="decide('+p.id+',\'revision\')">Revise</button>';
+    controls='<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+hint+
       '<div class="pp-row"><button class="pp-btn sm" onclick="doAssign('+p.id+')">Assign selected</button>'+
       '<label style="font:.76rem var(--f);color:var(--w5);display:flex;align-items:center;gap:5px"><input type="checkbox" id="ov_'+p.id+'"> override COI</label></div>'+
       '<div class="pp-row" style="margin-top:6px"><input class="pp-in" id="dc_'+p.id+'" placeholder="Decision note to author (optional)" style="flex:1">'+
-      '<button class="pp-btn sm" style="color:#2ecc71;border-color:rgba(46,204,113,.3)" onclick="decide('+p.id+',\'accept\')">Accept</button>'+
-      '<button class="pp-btn sm" style="color:var(--gold)" onclick="decide('+p.id+',\'revision\')">Revise</button>'+
-      '<button class="pp-btn sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="decide('+p.id+',\'reject\')">Reject</button></div></div></div>';
+      '<button class="pp-btn sm" style="color:#2ecc71;border-color:rgba(46,204,113,.3)" onclick="decide('+p.id+',\'accept\')">Accept</button>'+reviseBtn+
+      '<button class="pp-btn sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="decide('+p.id+',\'reject\')">Reject</button></div></div>';
+  }
+  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+reviewsBlock(p)+controls+'</div>';
 }
 async function loadReviewers(pid){
   try{const revs=await api('/api/papers/reviewers?paper_id='+pid);_pick[pid]=new Set(revs.filter(r=>r.assigned).map(r=>r.id));
