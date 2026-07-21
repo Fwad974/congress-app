@@ -136,6 +136,30 @@ def _migrate_papers_table(connection):
         ))
 
 
+def _migrate_reviews_table(connection):
+    """Add the reviewer-response columns to an existing reviews table.
+
+    Postgres-only; SQLite tests build the table fresh with the current model.
+    """
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'reviews'"
+        ))
+    }
+    if not cols:
+        return  # table doesn't exist yet — create_all will build it fresh
+    if "state" not in cols:
+        connection.execute(text(
+            "ALTER TABLE reviews ADD COLUMN state VARCHAR(20) "
+            "NOT NULL DEFAULT 'invited'"
+        ))
+    if "response_reason" not in cols:
+        connection.execute(text(
+            "ALTER TABLE reviews ADD COLUMN response_reason TEXT"
+        ))
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -150,6 +174,7 @@ async def lifespan(application: FastAPI):
             _migrate_schedule_table(conn)
             _migrate_users_table(conn)
             _migrate_papers_table(conn)
+            _migrate_reviews_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl

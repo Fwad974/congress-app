@@ -8,7 +8,7 @@ UI at `/papers` with role-based tabs (Submit, My Submissions, To Review, Manage)
 | Who | Can |
 |-----|-----|
 | **Author** — any authenticated user | Submit, track status, respond to reviewers, resubmit revisions, withdraw |
-| **Reviewer** — `reviewer` / `review_chair` | Review papers assigned to them (score 1–5 + comments) |
+| **Reviewer** — `reviewer` / `review_chair` | Accept/decline/recuse assignments, then review (score 1–5 + comments) |
 | **Review chair** — `review_chair` / `admin` / `super_admin` | List all, assign reviewers, decide |
 
 ## Lifecycle
@@ -25,13 +25,28 @@ submitted ──assign──▶ under_review ──decide──┬─▶ accepte
 - **REV-05:** at most **2 revision rounds** — once `round == 2`, a further
   revision request is refused (the chair must accept or reject).
 
+### Reviewer assignment lifecycle
+
+When a chair assigns a reviewer, the review starts as **`invited`**. The
+reviewer's **To Review** tab shows a workload summary and per-paper actions:
+
+- **Accept** → `accepted`. Saving or submitting a review also auto-accepts.
+- **Decline** → `declined`. **Recuse (COI)** → `recused`. Both take an optional
+  reason, clear any in-progress review, block further scoring, and notify the
+  review chairs. The reviewer can reverse either with "Take it back".
+
+Chairs see each reviewer's response state on the assignment chips
+(`✓ accepted`, `✗ declined`, `⊘ recused`, `… invited`).
+
 ## Data model (`app/models/paper.py`)
 
 - **`Paper`** — author, title, authors (free text), category, abstract,
   `file_url` (optional external link), `file_name`/`stored_file` (uploaded
   manuscript), `status`, `round`, `author_response`, `decision_comment`.
 - **`Review`** — one per (paper, reviewer): `score` (1–5), `comments`,
-  `submitted`. Unique on (paper, reviewer).
+  `submitted`, plus an assignment lifecycle `state`
+  (`invited` → `accepted` / `declined` / `recused`) and `response_reason`.
+  Unique on (paper, reviewer).
 
 ## Rules enforced
 
@@ -58,6 +73,7 @@ submitted ──assign──▶ under_review ──decide──┬─▶ accepte
 | `GET /api/papers/{id}/file` | author / assigned reviewer / chair | Download manuscript |
 | `DELETE /api/papers/{id}/file` | author | Remove manuscript |
 | `GET /api/papers/assigned` | reviewer | Papers to review |
+| `POST /api/papers/{id}/respond` | reviewer | Accept / decline / recuse an assignment |
 | `PUT /api/papers/{id}/review` | reviewer | Save/submit a review |
 | `GET /api/papers` | chair | All submissions (filter `status`, `category`) |
 | `GET /api/papers/reviewers?paper_id=` | chair | Assignable reviewers + COI flags |

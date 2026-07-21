@@ -31,8 +31,8 @@ from app.models.audit_log import AuditAction
 from app.models.notification import UserNotification
 from app.models.paper import Paper, Review, PaperStatus, MAX_REVISION_ROUNDS
 from app.schemas.paper import (
-    PaperCreate, PaperUpdate, ReviewUpsert, AssignRequest, DecisionRequest,
-    PaperResponse, PaperListResponse, ReviewResponse, ReviewerInfo,
+    PaperCreate, PaperUpdate, ReviewUpsert, ReviewRespond, AssignRequest,
+    DecisionRequest, PaperResponse, PaperListResponse, ReviewResponse, ReviewerInfo,
 )
 
 router = APIRouter()
@@ -43,6 +43,16 @@ _DECIDED = {PaperStatus.revision_requested, PaperStatus.accepted, PaperStatus.re
 def _notify(db: Session, user_id: int, title: str, body: str) -> None:
     db.add(UserNotification(user_id=user_id, schedule_item_id=None,
                             kind="paper", title=title, body=body))
+
+
+def _notify_review_chairs(db: Session, title: str, body: str) -> None:
+    """Fan a note out to everyone who can manage reviews (review chairs)."""
+    from app.models.user import UserRole
+    chairs = db.query(User.id).filter(
+        User.role == UserRole.review_chair, User.is_active == True  # noqa: E712
+    ).all()
+    for (cid,) in chairs:
+        _notify(db, cid, title, body)
 
 
 def _assigned_review(db: Session, paper_id: int, user_id: int) -> Optional[Review]:
@@ -74,7 +84,8 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
         review_out = [ReviewResponse(
             id=r.id, reviewer_label=names.get(r.reviewer_id, "Reviewer"),
             reviewer_id=r.reviewer_id, score=r.score, comments=r.comments,
-            submitted=r.submitted, updated_at=r.updated_at,
+            submitted=r.submitted, state=r.state, response_reason=r.response_reason,
+            updated_at=r.updated_at,
         ) for r in reviews]
     elif is_mine and paper.status in _DECIDED:
         # Author sees anonymized, submitted reviews only, after a decision.
@@ -88,6 +99,7 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
             my_review = ReviewResponse(
                 id=mine.id, reviewer_label="You", score=mine.score,
                 comments=mine.comments, submitted=mine.submitted,
+                state=mine.state, response_reason=mine.response_reason,
                 updated_at=mine.updated_at,
             )
 
@@ -175,8 +187,8 @@ def assignable_reviewers(
         raise HTTPException(status_code=404, detail="Paper not found")
     author = db.query(User).filter(User.id == paper.author_id).first()
     author_inst = (author.institution or "").strip().lower() if author else ""
-    assigned = {r.reviewer_id for r in db.query(Review.reviewer_id).filter(
-        Review.paper_id == paper_id).all()}
+    state_by_reviewer = {r.reviewer_id: r.state for r in db.query(
+        Review.reviewer_id, Review.state).filter(Review.paper_id == paper_id).all()}
 
     from app.core.admin_security import ASSIGNABLE_REVIEWER_ROLES
     reviewers = db.query(User).filter(
@@ -190,7 +202,8 @@ def assignable_reviewers(
         out.append(ReviewerInfo(
             id=r.id, full_name=r.full_name, email=r.email, institution=r.institution,
             coi=bool(author_inst and inst == author_inst),
-            assigned=r.id in assigned,
+            assigned=r.id in state_by_reviewer,
+            state=state_by_reviewer.get(r.id),
         ))
     return out
 
@@ -345,11 +358,47 @@ def upsert_review(paper_id: int, req: ReviewUpsert, db: Session = Depends(get_db
     review = _assigned_review(db, paper_id, user.id)
     if not review:
         raise HTTPException(status_code=403, detail="You're not assigned to review this")
+    if review.state in ("declined", "recused"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"You {review.state} this assignment — you can't review it.")
     if req.score is not None:
         review.score = req.score
     if req.comments is not None:
         review.comments = req.comments
     review.submitted = req.submitted
+    if review.state == "invited":
+        review.state = "accepted"   # engaging with the review implies acceptance
+    review.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(paper)
+    return _serialize(db, paper, user)
+
+
+@router.post("/{paper_id}/respond", response_model=PaperResponse)
+def respond_to_assignment(paper_id: int, req: ReviewRespond,
+                          db: Session = Depends(get_db),
+                          user: User = Depends(get_current_user)):
+    """A reviewer accepts, declines, or recuses from an assignment."""
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    review = _assigned_review(db, paper_id, user.id)
+    if not review:
+        raise HTTPException(status_code=403, detail="You're not assigned to review this")
+
+    if req.action == "accept":
+        review.state = "accepted"
+        review.response_reason = None
+    else:  # decline | recuse
+        review.state = "declined" if req.action == "decline" else "recused"
+        review.response_reason = (req.reason or "").strip() or None
+        review.submitted = False       # withdraw any in-progress review
+        verb = "declined" if req.action == "decline" else "recused themselves from"
+        _notify_review_chairs(
+            db, "Reviewer response",
+            f"A reviewer {verb} a submission ({paper.category or 'paper'})."
+            + (f" Reason: {review.response_reason}" if review.response_reason else ""))
     review.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(paper)

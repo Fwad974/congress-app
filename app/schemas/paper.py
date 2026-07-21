@@ -83,6 +83,22 @@ class ReviewUpsert(BaseModel):
         return int(v)
 
 
+VALID_RESPONSES = {"accept", "decline", "recuse"}
+
+
+class ReviewRespond(BaseModel):
+    """A reviewer responds to an assignment invitation."""
+    action: str
+    reason: Optional[str] = None
+
+    @field_validator("action")
+    @classmethod
+    def v_action(cls, v):
+        if v not in VALID_RESPONSES:
+            raise ValueError("Action must be accept, decline, or recuse")
+        return v
+
+
 class AssignRequest(BaseModel):
     reviewer_ids: List[int]
     override_coi: bool = False
@@ -107,6 +123,8 @@ class ReviewResponse(BaseModel):
     score: Optional[int] = None
     comments: Optional[str] = None
     submitted: bool
+    state: str = "invited"         # invited / accepted / declined / recused
+    response_reason: Optional[str] = None
     updated_at: datetime
 
 
@@ -148,3 +166,4 @@ class ReviewerInfo(BaseModel):
     institution: Optional[str] = None
     coi: bool = False        # same institution as the paper's author
     assigned: bool = False
+    state: Optional[str] = None   # invited/accepted/declined/recused (if assigned)

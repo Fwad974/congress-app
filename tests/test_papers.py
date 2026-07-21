@@ -203,6 +203,80 @@ class TestDecisionsAndRevision:
                          cookies=auth_cookie(stranger)).status_code == 403
 
 
+class TestReviewerResponse:
+    def _assigned(self, client, db):
+        chair = make_user(db, email="crc@test.com", role=UserRole.review_chair)
+        author = make_user(db, email="arc@test.com", role=UserRole.attendee)
+        rev = make_user(db, email="rrc@test.com", role=UserRole.reviewer)
+        pid = _submit(client, author).json()["id"]
+        client.post(f"/api/papers/{pid}/assign", json={"reviewer_ids": [rev.id]},
+                    cookies=auth_cookie(chair))
+        return chair, author, rev, pid
+
+    def test_new_assignment_is_invited(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        seen = client.get(f"/api/papers/{pid}", cookies=auth_cookie(rev)).json()
+        assert seen["my_review"]["state"] == "invited"
+
+    def test_accept(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        r = client.post(f"/api/papers/{pid}/respond", json={"action": "accept"},
+                        cookies=auth_cookie(rev))
+        assert r.status_code == 200 and r.json()["my_review"]["state"] == "accepted"
+
+    def test_reviewing_auto_accepts(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        r = client.put(f"/api/papers/{pid}/review", json={"score": 4, "submitted": True},
+                       cookies=auth_cookie(rev))
+        assert r.json()["my_review"]["state"] == "accepted"
+
+    def test_decline_blocks_review_and_notifies_chair(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        r = client.post(f"/api/papers/{pid}/respond",
+                        json={"action": "decline", "reason": "Too busy"},
+                        cookies=auth_cookie(rev))
+        assert r.status_code == 200 and r.json()["my_review"]["state"] == "declined"
+        # A declined reviewer can no longer score.
+        assert client.put(f"/api/papers/{pid}/review", json={"score": 3},
+                         cookies=auth_cookie(rev)).status_code == 400
+        # The chair is notified.
+        assert db.query(UserNotification).filter(
+            UserNotification.user_id == chair.id,
+            UserNotification.kind == "paper").count() >= 1
+
+    def test_recuse_then_take_back(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        client.post(f"/api/papers/{pid}/respond",
+                    json={"action": "recuse", "reason": "Co-author"},
+                    cookies=auth_cookie(rev))
+        seen = client.get(f"/api/papers/{pid}", cookies=auth_cookie(rev)).json()
+        assert seen["my_review"]["state"] == "recused"
+        # Reverse it.
+        r = client.post(f"/api/papers/{pid}/respond", json={"action": "accept"},
+                        cookies=auth_cookie(rev))
+        assert r.json()["my_review"]["state"] == "accepted"
+
+    def test_unassigned_cannot_respond(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        other = make_user(db, email="orc@test.com", role=UserRole.reviewer)
+        assert client.post(f"/api/papers/{pid}/respond", json={"action": "accept"},
+                          cookies=auth_cookie(other)).status_code == 403
+
+    def test_bad_action_rejected(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        assert client.post(f"/api/papers/{pid}/respond", json={"action": "maybe"},
+                          cookies=auth_cookie(rev)).status_code == 422
+
+    def test_chair_reviewers_list_shows_state(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        client.post(f"/api/papers/{pid}/respond", json={"action": "decline"},
+                    cookies=auth_cookie(rev))
+        revs = client.get(f"/api/papers/reviewers?paper_id={pid}",
+                          cookies=auth_cookie(chair)).json()
+        me = next(r for r in revs if r["email"] == "rrc@test.com")
+        assert me["assigned"] is True and me["state"] == "declined"
+
+
 class TestFileUpload:
     def _paper(self, client, db):
         chair = make_user(db, email="cf@test.com", role=UserRole.review_chair)

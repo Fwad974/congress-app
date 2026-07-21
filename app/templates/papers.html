@@ -178,22 +178,59 @@ async function removeFile(id){
   catch(e){showToast(e.message,'error');}
 }
 
+const REV_STATE={invited:{t:'Invited',c:'var(--gold)'},accepted:{t:'Accepted',c:'#2ecc71'},declined:{t:'Declined',c:'var(--red)'},recused:{t:'Recused',c:'var(--w5)'}};
 async function loadReview(){
   try{const d=await api('/api/papers/assigned');const c=document.getElementById('reviewList');
     if(!d.papers.length){c.innerHTML='<div class="pp-empty">No papers assigned to you.</div>';return;}
-    c.innerHTML=d.papers.map(revCard).join('');
+    // Summary of the reviewer's workload.
+    const n={invited:0,toReview:0,done:0,off:0};
+    d.papers.forEach(p=>{const s=(p.my_review||{}).state||'invited';
+      if(s==='declined'||s==='recused')n.off++;
+      else if((p.my_review||{}).submitted)n.done++;
+      else if(s==='invited')n.invited++;else n.toReview++;});
+    const sum='<div class="pp-meta" style="margin-bottom:12px;font-size:.82rem">'+
+      '<span>📥 '+n.invited+' invited</span><span>✍ '+n.toReview+' to review</span>'+
+      '<span>✓ '+n.done+' submitted</span>'+(n.off?'<span>⊘ '+n.off+' declined/recused</span>':'')+'</div>';
+    c.innerHTML=sum+d.papers.map(revCard).join('');
   }catch(e){showToast(e.message,'error');}
 }
 function revCard(p){
   const mr=p.my_review||{};
-  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
-    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+
-    '<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>'+
-    '<div class="pp-sub"><div class="pp-row"><label style="color:var(--gold)">Score</label>'+
+  const st=mr.state||'invited';
+  const meta=REV_STATE[st]||REV_STATE.invited;
+  const badge='<span style="font:600 .6rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:50px;border:1px solid '+meta.c+';color:'+meta.c+'">'+meta.t+'</span>';
+  const links='<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>';
+  const head='<div class="pp-card"><div class="pp-meta">'+badge+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+links;
+
+  if(st==='declined'||st==='recused'){
+    return head+'<div class="pp-meta" style="margin-top:8px">You '+st+' this assignment'+
+      (mr.response_reason?': '+esc(mr.response_reason):'')+'. '+
+      '<button class="pp-btn sm" onclick="respond('+p.id+',\'accept\')">Take it back</button></div></div>';
+  }
+  // Invited or accepted → offer respond controls + the review form.
+  const respondRow=st==='invited'
+    ? '<div class="pp-row" style="margin-bottom:8px"><span style="color:var(--w5);font-size:.8rem">Respond to this invitation:</span>'+
+      '<button class="pp-btn primary sm" onclick="respond('+p.id+',\'accept\')">Accept</button>'+
+      '<button class="pp-btn sm" onclick="respond('+p.id+',\'decline\')">Decline</button>'+
+      '<button class="pp-btn sm" onclick="respond('+p.id+',\'recuse\')">Recuse (COI)</button></div>'
+    : '<div class="pp-row" style="margin-bottom:8px"><button class="pp-btn sm" onclick="respond('+p.id+',\'recuse\')">Recuse (COI)</button></div>';
+  return head+
+    '<div class="pp-sub">'+respondRow+'<div class="pp-row"><label style="color:var(--gold)">Score</label>'+
       '<select class="pp-in" id="rs_'+p.id+'" style="width:auto"><option value=""'+(mr.score?'':' selected')+'>— score —</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
       '<span style="color:var(--w5);font-size:.78rem">'+(mr.submitted?'✓ submitted':'draft')+'</span></div>'+
       '<textarea class="pp-in" id="rc_'+p.id+'" rows="3" placeholder="Comments to the author">'+esc(mr.comments||'')+'</textarea>'+
       '<div style="text-align:right"><button class="pp-btn sm" onclick="saveReview('+p.id+',false)">Save draft</button> <button class="pp-btn primary sm" onclick="saveReview('+p.id+',true)">Submit review</button></div></div></div>';
+}
+async function respond(id,action){
+  let reason=null;
+  if(action==='decline'||action==='recuse'){
+    reason=prompt(action==='recuse'?'Reason for recusal (optional):':'Reason for declining (optional):')||'';
+    if(reason===null)return;   // cancelled
+  }
+  try{await api('/api/papers/'+id+'/respond','POST',{action,reason:reason||null});
+    showToast(action==='accept'?'Assignment accepted':action==='decline'?'Assignment declined':'Recused','success');loadReview();}
+  catch(e){showToast(e.message,'error');}
 }
 async function saveReview(id,submit){
   const sv=document.getElementById('rs_'+id).value;
@@ -235,7 +272,8 @@ function mgCard(p){
 async function loadReviewers(pid){
   try{const revs=await api('/api/papers/reviewers?paper_id='+pid);_pick[pid]=new Set(revs.filter(r=>r.assigned).map(r=>r.id));
     const el=document.getElementById('rev_'+pid);if(!el)return;
-    el.innerHTML=revs.length?revs.map(r=>'<span class="pp-chip'+(_pick[pid].has(r.id)?' on':'')+(r.coi?' coi':'')+'" onclick="togPick('+pid+','+r.id+',this)">'+esc(r.full_name)+(r.coi?' ⚠':'')+(r.assigned?' ✓':'')+'</span>').join(''):'<span style="color:var(--w3);font-size:.8rem">No reviewers available</span>';
+    const mark={accepted:' ✓',declined:' ✗',recused:' ⊘',invited:' …'};
+    el.innerHTML=revs.length?revs.map(r=>'<span class="pp-chip'+(_pick[pid].has(r.id)?' on':'')+(r.coi?' coi':'')+'" title="'+(r.state||'')+'" onclick="togPick('+pid+','+r.id+',this)">'+esc(r.full_name)+(r.coi?' ⚠':'')+(r.assigned?(mark[r.state]||' ✓'):'')+'</span>').join(''):'<span style="color:var(--w3);font-size:.8rem">No reviewers available</span>';
   }catch(e){}
 }
 function togPick(pid,rid,el){const s=_pick[pid]||(_pick[pid]=new Set());if(s.has(rid))s.delete(rid);else s.add(rid);el.classList.toggle('on');}

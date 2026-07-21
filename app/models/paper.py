@@ -64,6 +64,13 @@ class Review(Base):
     score = Column(Integer, nullable=True)          # 1–5
     comments = Column(Text, nullable=True)          # shared with author on decision
     submitted = Column(Boolean, default=False, nullable=False)
+    # Assignment lifecycle: the reviewer responds to an invitation.
+    #   invited  → chair assigned, awaiting the reviewer's response
+    #   accepted → reviewer agreed to review (auto-set once they save a review)
+    #   declined → reviewer turned the invitation down
+    #   recused  → reviewer stepped aside citing a conflict of interest
+    state = Column(String(20), default="invited", nullable=False, index=True)
+    response_reason = Column(Text, nullable=True)   # why declined / recused
     created_at = Column(DateTime(timezone=True),
                         default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True),
