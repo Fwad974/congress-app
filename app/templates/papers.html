@@ -61,6 +61,8 @@ textarea.pp-in{resize:vertical;min-height:90px}
       <div class="pp-row"><div style="flex:1"><label>Category / track</label><input class="pp-in" id="f_category" placeholder="iPSC, Gene Therapy…"></div>
         <div style="flex:1"><label>Full paper link (optional)</label><input class="pp-in" id="f_url" placeholder="https://…"></div></div>
       <div><label>Abstract</label><textarea class="pp-in" id="f_abstract" rows="6"></textarea></div>
+      <div><label>Manuscript file (optional)</label><input class="pp-in" type="file" id="f_file" accept=".pdf,.doc,.docx">
+        <div style="font:.72rem var(--f);color:var(--w5);margin-top:4px">PDF or Word (.pdf, .doc, .docx), up to {{ max_upload_mb }} MB.</div></div>
       <div style="text-align:right"><button class="pp-btn primary" onclick="submitPaper()" id="submitBtn">Submit</button></div>
     </div>
   </div>
@@ -97,9 +99,9 @@ async function submitPaper(){
   try{
     const p=await api('/api/papers','POST',body);
     const fi=document.getElementById('f_file');
-    if(fi.files.length)await uploadFile(p.id,fi.files[0]);
+    if(fi&&fi.files.length)await uploadFile(p.id,fi.files[0]);
     showToast('Submitted','success');
-    ['f_title','f_authors','f_category','f_url','f_abstract','f_file'].forEach(i=>document.getElementById(i).value='');
+    ['f_title','f_authors','f_category','f_url','f_abstract','f_file'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
     ppTab('mine');
   }
   catch(e){showToast(e.message,'error');}
