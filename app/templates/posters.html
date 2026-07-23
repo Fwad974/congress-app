@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Poster Gallery — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.pg-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.pg-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.pg-title h2{font:600 1.4rem var(--fh);color:var(--w)}.pg-title h2 span{color:var(--gold)}
+.pg-in{background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+.pg-in:focus{border-color:var(--gold)}
+textarea.pg-in{resize:vertical;min-height:80px;width:100%}
+.pg-btn{padding:9px 16px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .82rem var(--f);cursor:pointer;transition:.2s;white-space:nowrap}
+.pg-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pg-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.pg-btn.sm{padding:6px 12px;font-size:.76rem}
+.pg-btn.on{background:rgba(201,169,98,.16);border-color:var(--gold);color:var(--gold)}
+.pg-hunt{background:var(--glass);border:1px solid rgba(201,169,98,.18);border-radius:var(--rl);padding:16px 18px;margin:14px 0;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pg-hunt .lbl{font:600 .72rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
+.pg-bar{flex:1;min-width:160px;height:9px;background:rgba(255,255,255,.06);border-radius:50px;overflow:hidden}
+.pg-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-d));border-radius:50px;transition:width .3s}
+.pg-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.pg-card{background:var(--glass);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:.2s}
+.pg-card:hover{border-color:rgba(201,169,98,.3);transform:translateY(-2px)}
+.pg-thumb{height:150px;background:rgba(10,61,46,.35) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--w3);font:.8rem var(--f);position:relative}
+.pg-board{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.55);color:var(--gold);font:600 .66rem var(--m);padding:3px 8px;border-radius:50px}
+.pg-visited{position:absolute;top:8px;right:8px;background:rgba(46,204,113,.9);color:#052;font:600 .6rem var(--f);letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:50px}
+.pg-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pg-body h3{font:600 .96rem var(--fh);color:var(--w);line-height:1.3}
+.pg-auth{font:.76rem var(--f);color:var(--w5)}
+.pg-track{font:.68rem var(--f);color:var(--gold);text-transform:uppercase;letter-spacing:.04em}
+.pg-foot{display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid rgba(201,169,98,.08);font:.78rem var(--f);color:var(--w5)}
+.pg-empty{text-align:center;padding:48px 24px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl);grid-column:1/-1}
+.pg-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-start;justify-content:center;z-index:200;overflow-y:auto;padding:40px 16px}
+.pg-modal-overlay.open{display:flex}
+.pg-modal{background:var(--bg2);border:1px solid rgba(201,169,98,.2);border-radius:var(--rl);width:100%;max-width:640px;padding:22px}
+.pg-modal h3{font:600 1.1rem var(--fh);color:var(--w);margin-bottom:4px}.pg-modal h3 span{color:var(--gold)}
+.pg-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.pg-field label{font:600 .68rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold)}
+.pg-cmt{background:rgba(255,255,255,.03);border:1px solid rgba(201,169,98,.1);border-radius:var(--r);padding:9px 12px;margin-bottom:8px}
+.pg-cmt .h{font:600 .74rem var(--f);color:var(--w7);display:flex;justify-content:space-between;gap:8px}
+.pg-cmt .b{font:.86rem/1.5 var(--f);color:var(--w9);white-space:pre-wrap;margin-top:3px}
+.pg-x{float:right;background:none;border:none;color:var(--w5);font-size:1.3rem;cursor:pointer;line-height:1}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="pg-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="pg-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Poster <span>Gallery</span></h2></div>
+
+  <div class="pg-hunt animate-up">
+    <div><div class="lbl">🔦 Scavenger Hunt</div><div id="huntText" style="font:.86rem var(--f);color:var(--w7);margin-top:3px">Loading…</div></div>
+    <div class="pg-bar"><i id="huntBar" style="width:0%"></i></div>
+    <div style="display:flex;gap:6px"><input class="pg-in" id="huntCode" placeholder="Enter poster code" style="width:150px;text-transform:uppercase"><button class="pg-btn" onclick="checkin()">Check in</button></div>
+  </div>
+
+  <div class="pg-toolbar animate-up">
+    <input class="pg-in" id="pgSearch" placeholder="Search posters…" style="flex:1;min-width:160px" oninput="debouncedLoad()">
+    <select class="pg-in" id="pgCat" style="width:auto" onchange="loadPosters()"><option value="">All tracks</option></select>
+    <select class="pg-in" id="pgSort" style="width:auto" onchange="loadPosters()">
+      <option value="votes">Most voted</option><option value="recent">Newest</option><option value="board">By board</option>
+    </select>
+    {% if can_create %}<button class="pg-btn" id="mineToggle" onclick="toggleMine()">My posters</button>
+    <button class="pg-btn primary" onclick="openForm()">+ Add poster</button>{% endif %}
+  </div>
+
+  <div class="pg-grid" id="pgGrid"><div class="pg-empty">Loading…</div></div>
+</div></div>
+
+<!-- Detail modal -->
+<div class="pg-modal-overlay" id="detailModal"><div class="pg-modal"><button class="pg-x" onclick="closeModal('detailModal')">&times;</button><div id="detailBody"></div></div></div>
+
+<!-- Create/edit modal -->
+<div class="pg-modal-overlay" id="formModal"><div class="pg-modal">
+  <button class="pg-x" onclick="closeModal('formModal')">&times;</button>
+  <h3 id="formTitle">Add <span>Poster</span></h3>
+  <input type="hidden" id="fId">
+  <div class="pg-field"><label>Title</label><input class="pg-in" id="fTitle" maxlength="300"></div>
+  <div class="pg-field"><label>Authors</label><input class="pg-in" id="fAuthors" placeholder="Jane Doe, John Roe"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="pg-field"><label>Track / category</label><input class="pg-in" id="fCat" placeholder="iPSC…"></div>
+    <div class="pg-field"><label>Board number</label><input class="pg-in" id="fBoard" placeholder="e.g. P-14"></div>
+  </div>
+  <div class="pg-field"><label>Abstract</label><textarea class="pg-in" id="fAbstract" rows="4"></textarea></div>
+  <div class="pg-field"><label>External link (optional)</label><input class="pg-in" id="fUrl" placeholder="https://…"></div>
+  <div class="pg-field"><label>Poster image / PDF</label><input class="pg-in" type="file" id="fImg" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf">
+    <span style="font:.72rem var(--f);color:var(--w5)">Image or PDF up to {{ max_upload_mb }} MB. You can add or change it later too.</span></div>
+  <div style="text-align:right"><button class="pg-btn" onclick="closeModal('formModal')">Cancel</button> <button class="pg-btn primary" id="formSave" onclick="saveForm()">Save</button></div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CAN_CREATE={{ 'true' if can_create else 'false' }};
+const HUNT_GOAL={{ hunt_goal }};
+let _mine=false, _posters=[];
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+function fmt(iso){return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}
+
+let _t;function debouncedLoad(){clearTimeout(_t);_t=setTimeout(loadPosters,300);}
+
+async function loadHunt(){
+  try{const h=await api('/api/posters/hunt');
+    document.getElementById('huntText').textContent=h.complete
+      ? '🏆 Complete! You visited '+h.visited+' posters.'
+      : 'Visit '+h.goal+' posters — '+h.visited+'/'+h.goal+' done.';
+    document.getElementById('huntBar').style.width=Math.min(100,Math.round(100*h.visited/Math.max(1,h.goal)))+'%';
+  }catch(e){}
+}
+async function checkin(){
+  const code=document.getElementById('huntCode').value.trim();
+  if(!code){showToast('Enter the code printed on the poster','error');return;}
+  try{const h=await api('/api/posters/hunt','POST',{code});document.getElementById('huntCode').value='';
+    showToast(h.complete?'Hunt complete! 🏆':'Checked in! '+h.visited+'/'+h.goal,'success');loadHunt();loadPosters();}
+  catch(e){showToast(e.message,'error');}
+}
+
+function toggleMine(){_mine=!_mine;document.getElementById('mineToggle').classList.toggle('on',_mine);loadPosters();}
+
+async function loadPosters(){
+  try{
+    let url;
+    if(_mine){url='/api/posters/mine';}
+    else{const p=new URLSearchParams();const s=document.getElementById('pgSearch').value.trim();const c=document.getElementById('pgCat').value;const so=document.getElementById('pgSort').value;
+      if(s)p.set('search',s);if(c)p.set('category',c);p.set('sort',so);url='/api/posters?'+p;}
+    const d=await api(url);_posters=d.posters;
+    // populate categories once (from a full unfiltered fetch would be ideal; use current set)
+    const sel=document.getElementById('pgCat');if(sel.options.length<=1){const cats=[...new Set(_posters.map(p=>p.category).filter(Boolean))].sort();sel.innerHTML='<option value="">All tracks</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');}
+    const g=document.getElementById('pgGrid');
+    if(!_posters.length){g.innerHTML='<div class="pg-empty">'+(_mine?'You have no posters yet.':'No posters found.')+'</div>';return;}
+    g.innerHTML=_posters.map(card).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function card(p){
+  const thumb='<div class="pg-thumb"'+(p.has_image?' style="background-image:url(/api/posters/'+p.id+'/image)"':'')+'>'+
+    (p.has_image?'':'No image')+
+    (p.board_number?'<span class="pg-board">'+esc(p.board_number)+'</span>':'')+
+    (p.visited?'<span class="pg-visited">✓ visited</span>':'')+'</div>';
+  return '<div class="pg-card" onclick="openDetail('+p.id+')">'+thumb+
+    '<div class="pg-body"><div class="pg-track">'+esc(p.category||'Poster')+'</div><h3>'+esc(p.title)+'</h3><div class="pg-auth">'+esc(p.authors)+'</div></div>'+
+    '<div class="pg-foot"><button class="pg-btn sm'+(p.my_vote?' on':'')+'" onclick="event.stopPropagation();toggleVote('+p.id+','+p.my_vote+')">♥ '+p.vote_count+'</button>'+
+      '<span>💬 '+p.comment_count+'</span>'+
+      '<button class="pg-btn sm'+(p.visited?' on':'')+'" style="margin-left:auto" onclick="event.stopPropagation();visit('+p.id+')">'+(p.visited?'✓ Visited':'Visit')+'</button></div>'+
+    '</div>';
+}
+
+async function toggleVote(id,voted){
+  try{await api('/api/posters/'+id+'/vote',voted?'DELETE':'POST');loadPosters();}
+  catch(e){showToast(e.message,'error');}
+}
+async function visit(id){
+  try{await api('/api/posters/'+id+'/visit','POST');showToast('Marked visited','success');loadHunt();loadPosters();}
+  catch(e){showToast(e.message,'error');}
+}
+
+async function openDetail(id){
+  try{const p=await api('/api/posters/'+id);
+    const img=p.has_image?'<div style="text-align:center;margin-bottom:14px"><img src="/api/posters/'+p.id+'/image" style="max-width:100%;max-height:360px;border-radius:8px"></div>':'';
+    const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</div></div>':'';
+    const owner=p.can_edit?'<div style="display:flex;gap:8px;margin:10px 0"><button class="pg-btn sm" onclick="openForm('+p.id+')">Edit</button><label class="pg-btn sm" style="cursor:pointer">Change image<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="uploadImg('+p.id+',this)"></label><button class="pg-btn sm" onclick="delPoster('+p.id+')">Delete</button></div>':'';
+    const link=p.external_url?'<a class="pg-btn sm" href="'+esc(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
+    const cmts=p.comments.map(c=>'<div class="pg-cmt"><div class="h"><span>'+esc(c.user_name)+'</span><span style="color:var(--w3);font-weight:400">'+fmt(c.created_at)+(c.can_delete?' · <a href="#" onclick="event.preventDefault();delComment('+p.id+','+c.id+')" style="color:var(--red)">delete</a>':'')+'</span></div><div class="b">'+esc(c.body)+'</div></div>').join('')||'<div style="color:var(--w3);font-size:.84rem;margin-bottom:8px">No comments yet.</div>';
+    document.getElementById('detailBody').innerHTML=
+      '<div class="pg-track">'+esc(p.category||'Poster')+(p.board_number?' · Board '+esc(p.board_number):'')+'</div>'+
+      '<h3>'+esc(p.title)+'</h3><div class="pg-auth" style="margin-bottom:12px">'+esc(p.authors)+(p.presenter_name?' — presented by '+esc(p.presenter_name):'')+'</div>'+
+      img+(p.abstract?'<div style="font:.9rem/1.6 var(--f);color:var(--w7);white-space:pre-wrap;margin-bottom:12px">'+esc(p.abstract)+'</div>':'')+
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><button class="pg-btn sm'+(p.my_vote?' on':'')+'" onclick="toggleVote('+p.id+','+p.my_vote+');closeModal(\'detailModal\')">♥ '+p.vote_count+' vote'+(p.vote_count===1?'':'s')+'</button>'+
+        '<button class="pg-btn sm'+(p.visited?' on':'')+'" onclick="visit('+p.id+');closeModal(\'detailModal\')">'+(p.visited?'✓ Visited':'Mark visited')+'</button>'+link+'</div>'+
+      code+owner+
+      '<div class="pg-field" style="margin-top:6px"><label>Comments ('+p.comment_count+')</label>'+cmts+
+      '<textarea class="pg-in" id="cmtBox" rows="2" placeholder="Add a comment…"></textarea>'+
+      '<div style="text-align:right;margin-top:6px"><button class="pg-btn sm primary" onclick="addComment('+p.id+')">Post</button></div></div>';
+    document.getElementById('detailModal').classList.add('open');
+  }catch(e){showToast(e.message,'error');}
+}
+async function addComment(id){
+  const box=document.getElementById('cmtBox');const body=box.value.trim();if(!body){return;}
+  try{await api('/api/posters/'+id+'/comments','POST',{body});openDetail(id);loadPosters();}
+  catch(e){showToast(e.message,'error');}
+}
+async function delComment(id,cid){
+  try{await api('/api/posters/'+id+'/comments/'+cid,'DELETE');openDetail(id);loadPosters();}
+  catch(e){showToast(e.message,'error');}
+}
+
+function openForm(id){
+  document.getElementById('formTitle').innerHTML=(id?'Edit':'Add')+' <span>Poster</span>';
+  document.getElementById('fId').value=id||'';
+  const p=id?_posters.find(x=>x.id===id):null;
+  document.getElementById('fTitle').value=p?p.title:'';
+  document.getElementById('fAuthors').value=p?p.authors:'';
+  document.getElementById('fCat').value=p&&p.category?p.category:'';
+  document.getElementById('fBoard').value=p&&p.board_number?p.board_number:'';
+  document.getElementById('fAbstract').value=p&&p.abstract?p.abstract:'';
+  document.getElementById('fUrl').value=p&&p.external_url?p.external_url:'';
+  document.getElementById('fImg').value='';
+  closeModal('detailModal');
+  document.getElementById('formModal').classList.add('open');
+}
+async function saveForm(){
+  const id=document.getElementById('fId').value;
+  const body={title:v('fTitle'),authors:v('fAuthors'),category:v('fCat')||null,board_number:v('fBoard')||null,abstract:v('fAbstract')||null,external_url:v('fUrl')||null};
+  if(!body.title||!body.authors){showToast('Title and authors are required','error');return;}
+  const btn=document.getElementById('formSave');btn.disabled=true;
+  try{
+    const saved=id?await api('/api/posters/'+id,'PUT',body):await api('/api/posters','POST',body);
+    const fi=document.getElementById('fImg');
+    if(fi.files.length)await uploadImg(saved.id,fi,true);
+    showToast('Saved','success');closeModal('formModal');loadPosters();
+  }catch(e){showToast(e.message,'error');}
+  btn.disabled=false;
+}
+async function uploadImg(id,el,silent){
+  if(!el.files||!el.files.length)return;
+  const fd=new FormData();fd.append('file',el.files[0]);
+  const r=await fetch('/api/posters/'+id+'/image',{method:'POST',body:fd,credentials:'same-origin'});
+  if(!r.ok){let d={};try{d=await r.json();}catch(e){}throw new Error(d.detail||'Image upload failed');}
+  if(!silent){showToast('Image updated','success');openDetail(id);loadPosters();}
+}
+async function delPoster(id){
+  if(!confirm('Delete this poster? Votes and comments are removed too.'))return;
+  try{await api('/api/posters/'+id,'DELETE');showToast('Deleted','success');closeModal('detailModal');loadPosters();loadHunt();}
+  catch(e){showToast(e.message,'error');}
+}
+function v(id){return document.getElementById(id).value.trim();}
+function closeModal(m){document.getElementById(m).classList.remove('open');}
+
+document.addEventListener('DOMContentLoaded',()=>{loadHunt();loadPosters();});
+</script>
+{% endblock %}

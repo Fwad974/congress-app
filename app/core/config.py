@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "data/uploads"
     MAX_UPLOAD_MB: int = 15
 
+    # Poster gallery scavenger hunt: number of distinct posters an attendee must
+    # visit (check in to) before the hunt is marked complete.
+    POSTER_HUNT_GOAL: int = 5
+
     class Config:
         env_file = ".env"
 

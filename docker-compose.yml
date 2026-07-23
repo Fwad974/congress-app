@@ -66,6 +66,8 @@ services:
       # persisted volume below, so files survive restarts.
       UPLOAD_DIR: ${UPLOAD_DIR:-data/uploads}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-15}
+      # Poster-gallery scavenger hunt: posters to visit to complete the hunt.
+      POSTER_HUNT_GOAL: ${POSTER_HUNT_GOAL:-5}
     volumes:
       # Persists auto-generated VAPID keys and uploaded manuscripts so they're
       # stable across restarts (otherwise browser subscriptions / files break).

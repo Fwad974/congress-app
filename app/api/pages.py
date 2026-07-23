@@ -15,7 +15,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/logout")
 async def logout_page():
     resp = RedirectResponse(url="/", status_code=302)
-    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers"]:
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers", "/posters"]:
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=True, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=False, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0)
@@ -126,4 +126,18 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
         "request": request, "user": user,
         "is_chair": is_chair, "is_reviewer": is_reviewer,
         "max_upload_mb": get_settings().MAX_UPLOAD_MB,
+    })
+
+
+@router.get("/posters", response_class=HTMLResponse)
+async def posters_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    from app.core.config import get_settings
+    from app.api.posters import CREATOR_ROLES
+    return templates.TemplateResponse("posters.html", {
+        "request": request, "user": user,
+        "can_create": user.role in CREATOR_ROLES,
+        "max_upload_mb": get_settings().MAX_UPLOAD_MB,
+        "hunt_goal": get_settings().POSTER_HUNT_GOAL,
     })
