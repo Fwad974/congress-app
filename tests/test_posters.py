@@ -113,34 +113,34 @@ class TestComments:
 
 
 class TestScavengerHunt:
-    def test_visit_button_and_progress(self, client, db):
-        sp = _speaker(db, email="sph@test.com")
-        pid = _create(client, sp).json()["id"]
-        att = make_user(db, email="ah@test.com", role=UserRole.attendee)
-        r = client.post(f"/api/posters/{pid}/visit", cookies=auth_cookie(att)).json()
-        assert r["visited"] is True
-        h = client.get("/api/posters/hunt", cookies=auth_cookie(att)).json()
-        assert h["visited"] == 1 and pid in h["visited_poster_ids"]
-
-    def test_checkin_by_code(self, client, db):
+    def test_checkin_by_code_and_progress(self, client, db):
         sp = _speaker(db, email="sph2@test.com")
-        code = _create(client, sp).json()["hunt_code"]
+        p = _create(client, sp).json()
         att = make_user(db, email="ah2@test.com", role=UserRole.attendee)
-        h = client.post("/api/posters/hunt", json={"code": code},
+        h = client.post("/api/posters/hunt", json={"code": p["hunt_code"]},
                         cookies=auth_cookie(att)).json()
-        assert h["visited"] == 1
+        assert h["visited"] == 1 and p["id"] in h["visited_poster_ids"]
 
     def test_bad_code(self, client, db):
         att = make_user(db, email="ah3@test.com", role=UserRole.attendee)
         assert client.post("/api/posters/hunt", json={"code": "NOPE1234"},
                           cookies=auth_cookie(att)).status_code == 404
 
-    def test_visit_idempotent(self, client, db):
+    def test_no_id_based_visit_endpoint(self, client, db):
+        # The bypassable id-based /visit endpoint must not exist — the hunt
+        # requires the secret code (scanned QR or typed), not just a poster id.
         sp = _speaker(db, email="sph4@test.com")
         pid = _create(client, sp).json()["id"]
         att = make_user(db, email="ah4@test.com", role=UserRole.attendee)
-        client.post(f"/api/posters/{pid}/visit", cookies=auth_cookie(att))
-        client.post(f"/api/posters/{pid}/visit", cookies=auth_cookie(att))
+        assert client.post(f"/api/posters/{pid}/visit",
+                          cookies=auth_cookie(att)).status_code in (404, 405)
+
+    def test_checkin_idempotent(self, client, db):
+        sp = _speaker(db, email="sph4b@test.com")
+        code = _create(client, sp).json()["hunt_code"]
+        att = make_user(db, email="ah4b@test.com", role=UserRole.attendee)
+        client.post("/api/posters/hunt", json={"code": code}, cookies=auth_cookie(att))
+        client.post("/api/posters/hunt", json={"code": code}, cookies=auth_cookie(att))
         assert client.get("/api/posters/hunt", cookies=auth_cookie(att)).json()["visited"] == 1
 
     def test_hunt_completes_at_goal(self, client, db):
@@ -149,8 +149,8 @@ class TestScavengerHunt:
         sp = _speaker(db, email="sph5@test.com")
         att = make_user(db, email="ah5@test.com", role=UserRole.attendee)
         for i in range(goal):
-            pid = _create(client, sp, title=f"P{i}").json()["id"]
-            client.post(f"/api/posters/{pid}/visit", cookies=auth_cookie(att))
+            code = _create(client, sp, title=f"P{i}").json()["hunt_code"]
+            client.post("/api/posters/hunt", json={"code": code}, cookies=auth_cookie(att))
         h = client.get("/api/posters/hunt", cookies=auth_cookie(att)).json()
         assert h["complete"] is True and h["visited"] >= goal
 

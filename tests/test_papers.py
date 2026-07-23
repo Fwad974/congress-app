@@ -126,9 +126,44 @@ class TestReviewing:
     def test_reviewer_does_not_see_author_name(self, client, db):
         chair, author, rev, pid = self._assigned(client, db)
         seen = client.get(f"/api/papers/{pid}", cookies=auth_cookie(rev)).json()
-        assert seen["author_name"] is None   # blind
+        assert seen["author_name"] is None            # account identity hidden
+        assert "hidden" in seen["authors"].lower()    # free-text author list hidden too
         chair_view = client.get(f"/api/papers/{pid}", cookies=auth_cookie(chair)).json()
         assert chair_view["author_name"] is not None
+        assert chair_view["authors"] == "Jane Doe, John Roe"
+
+    def test_avg_score_hidden_from_author_until_decision(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        client.put(f"/api/papers/{pid}/review",
+                   json={"score": 4, "submitted": True}, cookies=auth_cookie(rev))
+        before = client.get(f"/api/papers/{pid}", cookies=auth_cookie(author)).json()
+        assert before["avg_score"] is None and before["submitted_review_count"] == 0
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        after = client.get(f"/api/papers/{pid}", cookies=auth_cookie(author)).json()
+        assert after["avg_score"] == 4
+
+    def test_review_frozen_after_decision(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        client.put(f"/api/papers/{pid}/review",
+                   json={"score": 3, "submitted": True}, cookies=auth_cookie(rev))
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        # Reviewer can no longer change their score or their assignment response.
+        assert client.put(f"/api/papers/{pid}/review", json={"score": 1},
+                         cookies=auth_cookie(rev)).status_code == 400
+        assert client.post(f"/api/papers/{pid}/respond", json={"action": "decline"},
+                          cookies=auth_cookie(rev)).status_code == 400
+
+    def test_cannot_re_decide_or_reassign_decided_paper(self, client, db):
+        chair, author, rev, pid = self._assigned(client, db)
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        assert client.post(f"/api/papers/{pid}/decision", json={"decision": "reject"},
+                          cookies=auth_cookie(chair)).status_code == 400
+        other = make_user(db, email="rr9@test.com", role=UserRole.reviewer)
+        assert client.post(f"/api/papers/{pid}/assign", json={"reviewer_ids": [other.id]},
+                          cookies=auth_cookie(chair)).status_code == 400
 
 
 class TestDecisionsAndRevision:
@@ -161,11 +196,18 @@ class TestDecisionsAndRevision:
 
     def test_max_revision_rounds(self, client, db):
         chair, author, pid = self._paper(client, db)
+        # Revision 1 → author resubmits (round 2).
         client.post(f"/api/papers/{pid}/decision", json={"decision": "revision"},
                     cookies=auth_cookie(chair))
         client.put(f"/api/papers/{pid}", json={"author_response": "r1"},
                    cookies=auth_cookie(author))   # round → 2
-        # A second revision request is refused (max 2 rounds).
+        # Revision 2 is still allowed (MAX_REVISION_ROUNDS = 2).
+        r = client.post(f"/api/papers/{pid}/decision", json={"decision": "revision"},
+                        cookies=auth_cookie(chair))
+        assert r.status_code == 200
+        client.put(f"/api/papers/{pid}", json={"author_response": "r2"},
+                   cookies=auth_cookie(author))   # round → 3
+        # A third revision request is refused.
         r = client.post(f"/api/papers/{pid}/decision", json={"decision": "revision"},
                         cookies=auth_cookie(chair))
         assert r.status_code == 400

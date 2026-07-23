@@ -285,13 +285,9 @@ def delete_comment(poster_id: int, comment_id: int, db: Session = Depends(get_db
     return _serialize(db, poster, user, with_comments=True)
 
 
-# ─── Scavenger-hunt check-in by poster id (gallery button) ───────
-@router.post("/{poster_id}/visit", response_model=PosterResponse)
-def visit_poster(poster_id: int, db: Session = Depends(get_db),
-                 user: User = Depends(get_current_user)):
-    poster = _get(db, poster_id)
-    _visit(db, poster_id, user.id)
-    return _serialize(db, poster, user)
+# Note: there is deliberately no id-based "visit" endpoint. Scavenger-hunt
+# check-in requires the poster's secret hunt_code (via POST /hunt or a scanned
+# QR) so a visit can't be faked by iterating poster ids from the gallery.
 
 
 def checkin_url(request: Request, hunt_code: str) -> str:

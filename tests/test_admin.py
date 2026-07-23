@@ -268,6 +268,20 @@ class TestActivateUser:
         assert resp.status_code == 200
         assert resp.json()["is_active"] is True
 
+    def test_cannot_activate_same_level(self, client, admin_user, db):
+        """An admin can't reinstate a peer admin a super-admin suspended."""
+        other = make_user(db, email="peer_admin@test.com", role=UserRole.admin,
+                          is_active=False)
+        resp = client.post(f"/api/admin/users/{other.id}/activate",
+                           cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
+    def test_cannot_unlock_higher_role(self, client, admin_user, db):
+        sa = make_user(db, email="sa_unlock@test.com", role=UserRole.super_admin)
+        resp = client.post(f"/api/admin/users/{sa.id}/unlock",
+                           cookies=auth_cookie(admin_user))
+        assert resp.status_code == 403
+
 
 class TestDeleteUser:
     def test_only_super_admin_can_delete(self, client, admin_user, db):

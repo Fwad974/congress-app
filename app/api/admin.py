@@ -331,6 +331,9 @@ def activate_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if not can_manage_user(admin, user):
+        raise HTTPException(status_code=403, detail="Cannot manage user at same or higher role")
+
     user.is_active = True
     user.updated_at = datetime.now(timezone.utc)
     db.flush()
@@ -670,6 +673,9 @@ def unlock_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if not can_manage_user(admin, user):
+        raise HTTPException(status_code=403, detail="Cannot manage user at same or higher role")
 
     login_tracker.unlock(user.email)
 

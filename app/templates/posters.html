@@ -146,16 +146,12 @@ function card(p){
     '<div class="pg-body"><div class="pg-track">'+esc(p.category||'Poster')+'</div><h3>'+esc(p.title)+'</h3><div class="pg-auth">'+esc(p.authors)+'</div></div>'+
     '<div class="pg-foot"><button class="pg-btn sm'+(p.my_vote?' on':'')+'" onclick="event.stopPropagation();toggleVote('+p.id+','+p.my_vote+')">♥ '+p.vote_count+'</button>'+
       '<span>💬 '+p.comment_count+'</span>'+
-      '<button class="pg-btn sm'+(p.visited?' on':'')+'" style="margin-left:auto" onclick="event.stopPropagation();visit('+p.id+')">'+(p.visited?'✓ Visited':'Visit')+'</button></div>'+
+      '<span style="margin-left:auto;font-size:.74rem;color:'+(p.visited?'#2ecc71':'var(--w3)')+'">'+(p.visited?'✓ Visited':'Scan to visit')+'</span></div>'+
     '</div>';
 }
 
 async function toggleVote(id,voted){
   try{await api('/api/posters/'+id+'/vote',voted?'DELETE':'POST');loadPosters();}
-  catch(e){showToast(e.message,'error');}
-}
-async function visit(id){
-  try{await api('/api/posters/'+id+'/visit','POST');showToast('Marked visited','success');loadHunt();loadPosters();}
   catch(e){showToast(e.message,'error');}
 }
 
@@ -175,7 +171,7 @@ async function openDetail(id){
       '<h3>'+esc(p.title)+'</h3><div class="pg-auth" style="margin-bottom:12px">'+esc(p.authors)+(p.presenter_name?' — presented by '+esc(p.presenter_name):'')+'</div>'+
       img+(p.abstract?'<div style="font:.9rem/1.6 var(--f);color:var(--w7);white-space:pre-wrap;margin-bottom:12px">'+esc(p.abstract)+'</div>':'')+
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><button class="pg-btn sm'+(p.my_vote?' on':'')+'" onclick="toggleVote('+p.id+','+p.my_vote+');closeModal(\'detailModal\')">♥ '+p.vote_count+' vote'+(p.vote_count===1?'':'s')+'</button>'+
-        '<button class="pg-btn sm'+(p.visited?' on':'')+'" onclick="visit('+p.id+');closeModal(\'detailModal\')">'+(p.visited?'✓ Visited':'Mark visited')+'</button>'+link+'</div>'+
+        (p.visited?'<span style="font-size:.8rem;color:#2ecc71">✓ Visited</span>':'<span style="font-size:.8rem;color:var(--w3)">Scan the QR at this poster to check in</span>')+link+'</div>'+
       code+owner+
       '<div class="pg-field" style="margin-top:6px"><label>Comments ('+p.comment_count+')</label>'+cmts+
       '<textarea class="pg-in" id="cmtBox" rows="2" placeholder="Add a comment…"></textarea>'+

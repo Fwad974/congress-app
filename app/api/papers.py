@@ -38,6 +38,10 @@ from app.schemas.paper import (
 router = APIRouter()
 
 _DECIDED = {PaperStatus.revision_requested, PaperStatus.accepted, PaperStatus.rejected}
+# Reviewers may only act while the paper is actively in review.
+_REVIEWABLE = {PaperStatus.submitted, PaperStatus.under_review}
+# Terminal states — no further assignment or decisions.
+_TERMINAL = {PaperStatus.accepted, PaperStatus.rejected, PaperStatus.withdrawn}
 
 
 def _notify(db: Session, user_id: int, title: str, body: str) -> None:
@@ -103,15 +107,27 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
                 updated_at=mine.updated_at,
             )
 
+    # Blind review: hide the free-text author list from reviewers (anyone who
+    # isn't the author or a chair) while the paper is under review. Accepted
+    # papers are public (the proceedings showcase), so authors show there.
+    blind = not (is_mine or can_manage) and paper.status != PaperStatus.accepted
+    authors_out = "(hidden for blind review)" if blind else paper.authors
+
+    # Score aggregates are for the chair always, and the author only after a
+    # decision — never leak the running average to the author mid-review or to
+    # a reviewer (who must stay blind to peers).
+    show_aggregates = can_manage or (is_mine and paper.status in _DECIDED)
     return PaperResponse(
-        id=paper.id, title=paper.title, authors=paper.authors,
+        id=paper.id, title=paper.title, authors=authors_out,
         category=paper.category, abstract=paper.abstract, file_url=paper.file_url,
         file_name=paper.file_name, has_file=bool(paper.stored_file),
         status=paper.status.value, round=paper.round,
         author_response=paper.author_response, decision_comment=paper.decision_comment,
         author_name=author_name, is_mine=is_mine, can_manage=can_manage,
-        review_count=len(reviews), submitted_review_count=len(submitted),
-        avg_score=avg, my_review=my_review, reviews=review_out,
+        review_count=len(reviews) if show_aggregates else 0,
+        submitted_review_count=len(submitted) if show_aggregates else 0,
+        avg_score=avg if show_aggregates else None,
+        my_review=my_review, reviews=review_out,
         created_at=paper.created_at, updated_at=paper.updated_at,
     )
 
@@ -379,6 +395,8 @@ def upsert_review(paper_id: int, req: ReviewUpsert, db: Session = Depends(get_db
     review = _assigned_review(db, paper_id, user.id)
     if not review:
         raise HTTPException(status_code=403, detail="You're not assigned to review this")
+    if paper.status not in _REVIEWABLE:
+        raise HTTPException(status_code=400, detail="Reviewing is closed for this paper")
     if review.state in ("declined", "recused"):
         raise HTTPException(
             status_code=400,
@@ -407,6 +425,8 @@ def respond_to_assignment(paper_id: int, req: ReviewRespond,
     review = _assigned_review(db, paper_id, user.id)
     if not review:
         raise HTTPException(status_code=403, detail="You're not assigned to review this")
+    if paper.status not in _REVIEWABLE:
+        raise HTTPException(status_code=400, detail="This assignment is closed")
 
     if req.action == "accept":
         review.state = "accepted"
@@ -435,8 +455,9 @@ def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
-    if paper.status == PaperStatus.withdrawn:
-        raise HTTPException(status_code=400, detail="This paper was withdrawn")
+    if paper.status in _TERMINAL:
+        raise HTTPException(status_code=400,
+                            detail="This paper is closed — you can't assign reviewers")
 
     author = db.query(User).filter(User.id == paper.author_id).first()
     author_inst = (author.institution or "").strip().lower() if author else ""
@@ -485,10 +506,14 @@ def decide_paper(paper_id: int, req: DecisionRequest, request: Request,
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
-    if paper.status == PaperStatus.withdrawn:
-        raise HTTPException(status_code=400, detail="This paper was withdrawn")
+    if paper.status in _TERMINAL:
+        raise HTTPException(status_code=400,
+                            detail="A decision has already been made on this paper")
 
-    if req.decision == "revision" and paper.round >= MAX_REVISION_ROUNDS:
+    # `round` starts at 1 (original submission) and increments on each resubmit,
+    # so the number of revisions already granted is `round - 1`. Allow up to
+    # MAX_REVISION_ROUNDS revisions before forcing an accept/reject.
+    if req.decision == "revision" and (paper.round - 1) >= MAX_REVISION_ROUNDS:
         raise HTTPException(
             status_code=400,
             detail=f"Max {MAX_REVISION_ROUNDS} revision rounds reached — accept or reject.")

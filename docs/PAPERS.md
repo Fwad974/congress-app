@@ -22,8 +22,13 @@ submitted ──assign──▶ under_review ──decide──┬─▶ accepte
 - **Decision** is `accept` / `reject` / `revision`. A revision returns the paper
   to the author; they edit + add a **response to reviewers** and resubmit, which
   bumps the round and re-opens it for the reviewers.
-- **REV-05:** at most **2 revision rounds** — once `round == 2`, a further
-  revision request is refused (the chair must accept or reject).
+- **REV-05:** at most **2 revision rounds** (`MAX_REVISION_ROUNDS`). `round`
+  starts at 1 for the original submission, so revisions are refused once
+  `round - 1 == 2`; the chair must then accept or reject.
+- Reviewers can only score/respond while the paper is **submitted / under
+  review** — reviews freeze once a decision is made. Decisions and reviewer
+  assignment are refused on **terminal** papers (accepted / rejected /
+  withdrawn), so a decision can't be silently flipped.
 
 ### Reviewer assignment lifecycle
 
@@ -68,8 +73,11 @@ downloadable by any authenticated attendee (the download endpoint special-cases
 - **REV-05 (rounds):** capped at 2 (`MAX_REVISION_ROUNDS`).
 - **REV-06 (no leaks):** reviews are only returned to the author *after* a
   decision, and only submitted ones, **anonymized** ("Reviewer 1", …).
-- **Blind review:** the submitter's identity (`author_name`) is withheld from
-  reviewers; chairs and the author see it.
+- **Blind review:** both the submitter's account name (`author_name`) **and**
+  the free-text `authors` list are withheld from reviewers while the paper is
+  under review; chairs and the author always see them, and accepted papers show
+  authors publicly. Score aggregates (`avg_score`, review counts) go to the
+  chair always and the author only after a decision — never to a reviewer.
 
 ## API
 

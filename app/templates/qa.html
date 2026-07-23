@@ -416,8 +416,6 @@ async function flushReact(){
   try{await api('/api/sessions/'+SESSION_ID+'/reactions','POST',{counts});}catch(e){}
 }
 
-document.getElementById('qInput').addEventListener('input',e=>{document.getElementById('qLen').textContent=e.target.value.length;});
-document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')ask();});
 document.addEventListener('DOMContentLoaded',()=>{loadSession();loadQuestions();connect();loadPolls();connectPolls();initReactions();});
 window.addEventListener('beforeunload',()=>{if(_es)_es.close();if(_pes)_pes.close();flushReact();});
 </script>
