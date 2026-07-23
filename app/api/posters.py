@@ -13,8 +13,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -292,6 +292,25 @@ def visit_poster(poster_id: int, db: Session = Depends(get_db),
     poster = _get(db, poster_id)
     _visit(db, poster_id, user.id)
     return _serialize(db, poster, user)
+
+
+def checkin_url(request: Request, hunt_code: str) -> str:
+    """Public URL the printed QR encodes: opens the gallery and checks in."""
+    base = (get_settings().OAUTH_REDIRECT_BASE or str(request.base_url)).rstrip("/")
+    return f"{base}/posters?checkin={hunt_code}"
+
+
+@router.get("/{poster_id}/qr")
+def poster_qr(poster_id: int, request: Request, db: Session = Depends(get_db),
+              user: User = Depends(get_current_user)):
+    """SVG QR for the scavenger-hunt check-in — owner/admin only (it encodes
+    the hunt code, which is a secret until printed on the physical board)."""
+    poster = _get(db, poster_id)
+    if not _can_edit(poster, user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    from app.core.qr import qr_svg_document
+    svg = qr_svg_document(checkin_url(request, poster.hunt_code))
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 # ─── Poster image (upload / serve) ───────────────────────────────

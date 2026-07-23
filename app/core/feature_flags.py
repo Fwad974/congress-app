@@ -25,6 +25,8 @@ FEATURES: Dict[str, tuple] = {
     "notes":   ("My Notes", "Personal note-taking for attendees."),
     "qa":      ("Live Q&A", "Audience Q&A during sessions."),
     "polls":   ("Live Polls", "Live polls and word clouds during sessions."),
+    "connect": ("Networking Directory",
+                "Opt-in attendee directory for finding and contacting peers."),
 }
 DEFAULT_ENABLED = True
 _ADMIN_ROLES = {UserRole.admin, UserRole.super_admin}

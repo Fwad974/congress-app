@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     # visit (check in to) before the hunt is marked complete.
     POSTER_HUNT_GOAL: int = 5
 
+    # Certificates. Attendance is recorded by scanning a session QR; each
+    # attended session earns CME_CREDITS_PER_SESSION credits.
+    CERT_MIN_SESSIONS: int = 3      # sessions for the attendance certificate
+    CME_MIN_CREDITS: int = 5        # credits for the CME/CPD certificate
+    CME_CREDITS_PER_SESSION: int = 1
+
     class Config:
         env_file = ".env"
 

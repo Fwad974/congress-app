@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session QR — {{ item.title }}</title>
+<style>
+  body{font-family:Georgia,'Times New Roman',serif;margin:0;padding:40px;color:#0a3d2e;text-align:center}
+  .sheet{max-width:520px;margin:0 auto;border:3px double #0a3d2e;padding:36px 30px;border-radius:8px}
+  .congress{font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:#8a7a4e;margin-bottom:18px}
+  h1{font-size:1.35rem;margin:0 0 6px;line-height:1.35}
+  .when{font-size:.95rem;color:#555;margin-bottom:22px}
+  .qr img{width:260px;height:260px}
+  .code{font-family:'Courier New',monospace;font-size:1.3rem;letter-spacing:.25em;font-weight:700;margin-top:14px}
+  .hint{font-size:.85rem;color:#666;margin-top:10px}
+  .actions{margin-top:26px}
+  .actions button,.actions a{font:600 .9rem sans-serif;padding:10px 22px;border-radius:50px;border:1px solid #0a3d2e;background:#0a3d2e;color:#fff;cursor:pointer;text-decoration:none;margin:0 5px}
+  .actions a{background:#fff;color:#0a3d2e}
+  @media print{.actions{display:none}body{padding:0}}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="congress">{{ congress_full }} — Session Check-in</div>
+    <h1>{{ item.title }}</h1>
+    <div class="when">{{ item.start_time.strftime('%d %b %Y · %H:%M') }}{% if item.location %} — {{ item.location }}{% endif %}</div>
+    <div class="qr"><img src="/api/schedule/{{ item.id }}/qr" alt="Attendance QR code"></div>
+    <div class="code">{{ item.attend_code }}</div>
+    <div class="hint">Scan to record your attendance and earn CME credits.</div>
+  </div>
+  <div class="actions">
+    <button onclick="window.print()">🖨 Print</button>
+    <a href="/schedule">Back to schedule</a>
+  </div>
+</body>
+</html>

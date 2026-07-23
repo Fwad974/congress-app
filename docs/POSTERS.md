@@ -33,6 +33,13 @@ type a code into the hunt bar to **check in**. Progress is tracked toward
 `POSTER_HUNT_GOAL` distinct posters (default 5); reaching it marks the hunt
 **complete**. Check-ins are idempotent (one per poster/attendee).
 
+**QR codes:** the presenter's detail view has a **🖨 Print QR** link →
+`/posters/{id}/qr-print`, a printable sheet with the poster's QR
+(`GET /api/posters/{id}/qr`, owner/admin only). The QR encodes
+`/posters?checkin=CODE`, so scanning it with a phone camera opens the gallery
+and checks the attendee in automatically. Generated with segno
+(`app/core/qr.py`); the base URL comes from `OAUTH_REDIRECT_BASE` when set.
+
 ## API
 
 | Method & path | Who | Purpose |

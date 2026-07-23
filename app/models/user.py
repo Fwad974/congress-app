@@ -32,6 +32,10 @@ class User(Base):
     profile_photo_url = Column(String(500), nullable=True)
     orcid_id = Column(String(50), nullable=True)
 
+    # Opt-in to the attendee networking directory (/connect). Off by default —
+    # listing shows name, role, institution, interests, and email.
+    networking_visible = Column(Boolean, default=False, nullable=False)
+
     # Status
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)

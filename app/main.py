@@ -22,6 +22,7 @@ from app.models.poster import (  # noqa – registers model
     Poster, PosterVote, PosterComment, PosterVisit,
 )
 from app.models.feature_flag import FeatureFlag  # noqa – registers model
+from app.models.attendance import SessionAttendance  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth
 from app.api import auth, pages
@@ -35,6 +36,8 @@ from app.api import polls as polls_api
 from app.api import reactions as reactions_api
 from app.api import papers as papers_api
 from app.api import posters as posters_api
+from app.api import certificates as certificates_api
+from app.api import connect as connect_api
 from app.core import feature_flags
 
 settings = get_settings()
@@ -98,6 +101,10 @@ def _migrate_schedule_table(connection):
             "ALTER TABLE schedule_items ADD COLUMN speaker_id INTEGER "
             "REFERENCES users(id) ON DELETE SET NULL"
         ))
+    if "attend_code" not in cols:
+        connection.execute(text(
+            "ALTER TABLE schedule_items ADD COLUMN attend_code VARCHAR(12) UNIQUE"
+        ))
     if "speaker" in cols:
         connection.execute(text(
             "ALTER TABLE schedule_items DROP COLUMN speaker"
@@ -116,6 +123,17 @@ def _migrate_users_table(connection):
     if row and row[0] == "NO":
         connection.execute(text(
             "ALTER TABLE users ALTER COLUMN hashed_password DROP NOT NULL"
+        ))
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'users'"
+        ))
+    }
+    if cols and "networking_visible" not in cols:
+        connection.execute(text(
+            "ALTER TABLE users ADD COLUMN networking_visible BOOLEAN "
+            "NOT NULL DEFAULT FALSE"
         ))
 
 
@@ -255,3 +273,6 @@ app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"],
                    dependencies=[Depends(feature_flags.require_feature("papers"))])
 app.include_router(posters_api.router, prefix="/api/posters", tags=["posters"],
                    dependencies=[Depends(feature_flags.require_feature("posters"))])
+app.include_router(certificates_api.router, prefix="/api", tags=["certificates"])
+app.include_router(connect_api.router, prefix="/api/connect", tags=["connect"],
+                   dependencies=[Depends(feature_flags.require_feature("connect"))])

@@ -42,6 +42,10 @@ class ScheduleItem(Base):
     speaker_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
                         nullable=True, index=True)
 
+    # Attendance check-in code (printed as a QR at the session door).
+    # Generated lazily the first time an admin requests the session's QR.
+    attend_code = Column(String(12), nullable=True, unique=True, index=True)
+
     start_time = Column(DateTime(timezone=True), nullable=False, index=True)
     end_time = Column(DateTime(timezone=True), nullable=False)
 

@@ -24,7 +24,7 @@ def _feature_blocked(user, key: str) -> bool:
 @router.get("/logout")
 async def logout_page():
     resp = RedirectResponse(url="/", status_code=302)
-    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers", "/posters"]:
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers", "/posters", "/connect"]:
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=True, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=False, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0)
@@ -141,6 +141,67 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
         "request": request, "user": user,
         "is_chair": is_chair, "is_reviewer": is_reviewer,
         "max_upload_mb": get_settings().MAX_UPLOAD_MB,
+    })
+
+
+@router.get("/connect", response_class=HTMLResponse)
+async def connect_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "connect"):
+        return RedirectResponse(url="/home", status_code=302)
+    return templates.TemplateResponse("connect.html", {"request": request, "user": user})
+
+
+@router.get("/schedule/{item_id}/qr-print", response_class=HTMLResponse)
+async def session_qr_print(request: Request, item_id: int,
+                           user=Depends(get_current_user_optional),
+                           db: Session = Depends(get_db)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if user.role not in (UserRole.admin, UserRole.super_admin):
+        return RedirectResponse(url="/schedule", status_code=302)
+    from app.models.schedule import ScheduleItem
+    from app.api.certificates import ensure_attend_code
+    item = db.query(ScheduleItem).filter(ScheduleItem.id == item_id).first()
+    if not item:
+        return RedirectResponse(url="/schedule", status_code=302)
+    ensure_attend_code(db, item)
+    return templates.TemplateResponse("session_qr.html", {
+        "request": request, "user": user, "item": item,
+    })
+
+
+@router.get("/certificates/{kind}/view", response_class=HTMLResponse)
+async def certificate_view(request: Request, kind: str,
+                           user=Depends(get_current_user_optional),
+                           db: Session = Depends(get_db)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    from app.api.certificates import _cert_by_kind
+    cert = _cert_by_kind(db, user, kind)
+    if not cert or not cert.unlocked:
+        return RedirectResponse(url="/certificates", status_code=302)
+    from datetime import datetime, timezone
+    return templates.TemplateResponse("certificate_view.html", {
+        "request": request, "user": user, "cert": cert,
+        "issued_on": datetime.now(timezone.utc).strftime("%d %B %Y"),
+    })
+
+
+@router.get("/posters/{poster_id}/qr-print", response_class=HTMLResponse)
+async def poster_qr_print(request: Request, poster_id: int,
+                          user=Depends(get_current_user_optional),
+                          db: Session = Depends(get_db)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    from app.api.posters import _can_edit
+    from app.models.poster import Poster
+    poster = db.query(Poster).filter(Poster.id == poster_id).first()
+    if not poster or not _can_edit(poster, user):
+        return RedirectResponse(url="/posters", status_code=302)
+    return templates.TemplateResponse("poster_qr.html", {
+        "request": request, "user": user, "poster": poster,
     })
 
 

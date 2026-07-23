@@ -6,23 +6,83 @@
 .back-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--ga2);display:flex;align-items:center;justify-content:center;color:var(--w5);text-decoration:none;font-size:1rem;background:var(--ga2);transition:.2s}
 .back-btn:hover{background:var(--ga2);color:var(--gold);border-color:var(--gold)}
 .cert-list{max-width:720px}
-.cert{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--ga2);border-radius:var(--rl);display:flex;align-items:center;gap:18px;padding:24px;margin-bottom:14px;transition:.3s;position:relative;overflow:hidden}
-.cert::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:.3s}
-.cert:hover{border-color:var(--ga3);transform:translateY(-2px)}.cert:hover::before{opacity:1}
+.checkin{background:var(--glass);border:1px solid rgba(201,169,98,.18);border-radius:var(--rl);padding:16px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:720px}
+.checkin .lbl{font:600 .72rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
+.checkin input{background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none;width:160px;text-transform:uppercase}
+.checkin button{padding:9px 18px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .84rem var(--f);cursor:pointer}
+.checkin button:hover{border-color:var(--gold);color:var(--gold)}
+.cert{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--ga2);border-radius:var(--rl);display:flex;align-items:center;gap:18px;padding:24px;margin-bottom:14px;transition:.3s}
+.cert:hover{border-color:var(--ga3)}
 .cert-ico{width:52px;height:52px;border-radius:var(--rl);display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:var(--ga2);border:1px solid var(--ga2);flex-shrink:0}
 .cert-info{flex:1}
 .cert-name{font:600 .95rem var(--fh);color:var(--w);margin-bottom:3px}
 .cert-desc{font:.82rem/1.5 var(--f);color:var(--w5)}
-.cert-status{font:600 .68rem var(--f);letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:50px;color:var(--gold-d);border:1px solid var(--ga2);background:var(--ga2);flex-shrink:0}
+.cert-bar{height:7px;background:rgba(255,255,255,.06);border-radius:50px;overflow:hidden;margin-top:9px;max-width:280px}
+.cert-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-d));border-radius:50px}
+.cert-prog{font:.7rem var(--m);color:var(--w3);margin-top:4px}
+.cert-status{font:600 .68rem var(--f);letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:50px;color:var(--gold-d);border:1px solid var(--ga2);background:var(--ga2);flex-shrink:0;text-decoration:none}
+.cert-status.unlocked{background:rgba(46,204,113,.12);color:#2ecc71;border-color:rgba(46,204,113,.3);cursor:pointer}
+.attended{max-width:720px;margin-top:22px}
+.attended h4{font:600 .74rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.att-row{font:.84rem var(--f);color:var(--w7);padding:8px 4px;border-bottom:1px solid rgba(201,169,98,.08);display:flex;justify-content:space-between;gap:10px}
+.att-row span:last-child{color:var(--w3);font-size:.74rem;flex-shrink:0}
 @media(max-width:540px){.cert{flex-direction:column;align-items:flex-start;gap:14px}}
 </style>{% endblock %}
 {% block body %}
 <div class="page-wrap">{% include "nav.html" %}<div class="container">
   <div class="page-header animate-up"><a href="/home" class="back-btn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></a><h2>My Certificates</h2></div>
-  <div class="cert-list">
-    <div class="cert animate-up delay-1"><div class="cert-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="cert-info"><div class="cert-name">Certificate of Attendance</div><div class="cert-desc">Awarded upon attending 80%+ of bookmarked sessions.</div></div><span class="cert-status">Locked</span></div>
-    <div class="cert animate-up delay-2"><div class="cert-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><div class="cert-info"><div class="cert-name">CME/CPD Credit Certificate</div><div class="cert-desc">Continuing Medical Education credits based on attendance.</div></div><span class="cert-status">Locked</span></div>
-    <div class="cert animate-up delay-3"><div class="cert-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div><div class="cert-info"><div class="cert-name">Speaker Certificate</div><div class="cert-desc">Issued to presenters after session completion.</div></div><span class="cert-status">Locked</span></div>
+
+  <div class="checkin animate-up">
+    <div><div class="lbl">📍 Session check-in</div><div style="font:.82rem var(--f);color:var(--w5);margin-top:3px">Scan the QR at the session door, or enter its code here.</div></div>
+    <div style="display:flex;gap:8px;margin-left:auto"><input id="ciCode" placeholder="Session code"><button onclick="doCheckin()">Check in</button></div>
   </div>
+
+  <div class="cert-list" id="certList"><div class="cert animate-up"><div class="cert-info"><div class="cert-desc">Loading…</div></div></div></div>
+  <div class="attended" id="attWrap" style="display:none"><h4>Sessions attended</h4><div id="attList"></div></div>
 </div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+const ICO={attendance:'📋',cme:'🎓',speaker:'🎤'};
+
+async function loadCerts(){
+  try{const d=await api('/api/certificates/status');
+    document.getElementById('certList').innerHTML=d.certificates.map(c=>{
+      const pct=Math.min(100,Math.round(100*c.progress/Math.max(1,c.goal)));
+      const badge=c.unlocked
+        ? '<a class="cert-status unlocked" href="/certificates/'+c.kind+'/view" target="_blank" rel="noopener">View ↗</a>'
+        : '<span class="cert-status">Locked</span>';
+      return '<div class="cert animate-up"><div class="cert-ico">'+(ICO[c.kind]||'🏅')+'</div>'+
+        '<div class="cert-info"><div class="cert-name">'+esc(c.title)+'</div><div class="cert-desc">'+esc(c.description)+'</div>'+
+        '<div class="cert-bar"><i style="width:'+pct+'%"></i></div><div class="cert-prog">'+c.progress+' / '+c.goal+' '+esc(c.unit)+'</div></div>'+badge+'</div>';
+    }).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+async function loadAttended(){
+  try{const rows=await api('/api/attendance/mine');
+    if(!rows.length)return;
+    document.getElementById('attWrap').style.display='block';
+    document.getElementById('attList').innerHTML=rows.map(r=>
+      '<div class="att-row"><span>'+esc(r.title)+'</span><span>'+new Date(r.checked_in_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div>').join('');
+  }catch(e){}
+}
+async function doCheckin(codeArg){
+  const el=document.getElementById('ciCode');
+  const code=(codeArg||el.value).trim();
+  if(!code){showToast('Enter the session code','error');return;}
+  try{const r=await api('/api/attendance/checkin','POST',{code});
+    el.value='';
+    showToast(r.already?'Already checked in to "'+r.session_title+'"':'Checked in to "'+r.session_title+'" ✓','success');
+    loadCerts();loadAttended();}
+  catch(e){showToast(e.message,'error');}
+}
+document.addEventListener('DOMContentLoaded',async()=>{
+  const code=new URLSearchParams(location.search).get('checkin');
+  if(code){history.replaceState(null,'',location.pathname);await doCheckin(code);}
+  loadCerts();loadAttended();
+});
+</script>
 {% endblock %}

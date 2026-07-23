@@ -22,6 +22,7 @@ a module on to release it; flip it off to hide it while you finish preparing it.
 | `notes` | My Notes |
 | `qa` | Live Q&A |
 | `polls` | Live Polls |
+| `connect` | Networking Directory (opt-in attendee directory) |
 
 All default to **on**, so existing behaviour is unchanged until an admin hides one.
 Unknown keys fail open (never accidentally hidden).

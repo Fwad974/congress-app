@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Connect — {{ congress_short }}{% endblock %}
+
+{% block head %}
+<style>
+.cn-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
+.cn-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.cn-title h2{font:600 1.4rem var(--fh);color:var(--w)}.cn-title h2 span{color:var(--gold)}
+.cn-optin{background:var(--glass);border:1px solid rgba(201,169,98,.18);border-radius:var(--rl);padding:16px 18px;margin:14px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cn-optin .lbl{font:600 .72rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
+.cn-optin .desc{font:.82rem var(--f);color:var(--w5);margin-top:3px;max-width:520px}
+.cn-switch{position:relative;width:46px;height:26px;border-radius:50px;border:1px solid rgba(201,169,98,.2);background:rgba(255,255,255,.06);cursor:pointer;flex-shrink:0;transition:.2s;padding:0;margin-left:auto}
+.cn-switch>i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--w5);transition:.2s}
+.cn-switch.on{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:#27ae60}
+.cn-switch.on>i{left:22px;background:#fff}
+.cn-in{background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+.cn-in:focus{border-color:var(--gold)}
+.cn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px}
+.cn-card{background:var(--glass);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:18px}
+.cn-card .top{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.cn-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-d));display:flex;align-items:center;justify-content:center;font:600 .95rem var(--fh);color:var(--bg);flex-shrink:0}
+.cn-card h3{font:600 .95rem var(--fh);color:var(--w)}
+.cn-role{font:.68rem var(--f);color:var(--gold);text-transform:uppercase;letter-spacing:.04em}
+.cn-inst{font:.78rem var(--f);color:var(--w5)}
+.cn-bio{font:.8rem/1.5 var(--f);color:var(--w7);margin:8px 0}
+.cn-tags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.cn-tag{font:.68rem var(--f);padding:3px 9px;border-radius:50px;border:1px solid rgba(201,169,98,.2);color:var(--w5)}
+.cn-mail{font:.78rem var(--f);color:var(--gold);text-decoration:none}
+.cn-mail:hover{text-decoration:underline}
+.cn-empty{text-align:center;padding:48px 24px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl);grid-column:1/-1}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="cn-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="cn-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Connect with <span>Researchers</span></h2></div>
+
+  <div class="cn-optin animate-up">
+    <div><div class="lbl">👥 Directory visibility</div>
+      <div class="desc">Opt in to appear in the attendee directory. Your name, role, institution, research interests, bio, and email become visible to other logged-in attendees. Turn it off anytime.</div></div>
+    <button class="cn-switch" id="visSwitch" onclick="toggleVisibility()" title="Toggle directory visibility"><i></i></button>
+  </div>
+
+  <div class="animate-up" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input class="cn-in" id="cnSearch" placeholder="Search by name, institution…" style="flex:1;min-width:180px" oninput="debouncedLoad()">
+  </div>
+
+  <div class="cn-grid" id="cnGrid"><div class="cn-empty">Loading…</div></div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _visible=false,_t;
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+function debouncedLoad(){clearTimeout(_t);_t=setTimeout(loadDirectory,300);}
+
+function render(d){
+  _visible=d.visible;
+  document.getElementById('visSwitch').classList.toggle('on',_visible);
+  const g=document.getElementById('cnGrid');
+  if(!d.people.length){
+    g.innerHTML='<div class="cn-empty">'+(_visible?'No one matches your search yet.':'The directory is opt-in — flip the switch above to appear here and browse peers.')+'</div>';
+    return;
+  }
+  g.innerHTML=d.people.map(p=>{
+    const ini=p.full_name.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
+    const tags=(p.research_interests||[]).slice(0,5).map(t=>'<span class="cn-tag">'+esc(t)+'</span>').join('');
+    return '<div class="cn-card">'+
+      '<div class="top"><div class="cn-avatar">'+ini+'</div><div><h3>'+esc(p.full_name)+(p.is_me?' <span style="color:var(--w3);font-size:.7rem">(you)</span>':'')+'</h3>'+
+      '<div class="cn-role">'+esc(p.role.replace('_',' '))+'</div></div></div>'+
+      (p.institution?'<div class="cn-inst">🏛 '+esc(p.institution)+'</div>':'')+
+      (p.bio?'<div class="cn-bio">'+esc(p.bio)+'</div>':'')+
+      (tags?'<div class="cn-tags">'+tags+'</div>':'')+
+      '<a class="cn-mail" href="mailto:'+esc(p.email)+'">✉ '+esc(p.email)+'</a>'+
+      '</div>';
+  }).join('');
+}
+async function loadDirectory(){
+  try{const s=document.getElementById('cnSearch').value.trim();
+    render(await api('/api/connect/directory'+(s?'?search='+encodeURIComponent(s):'')));}
+  catch(e){showToast(e.message,'error');}
+}
+async function toggleVisibility(){
+  try{const d=await api('/api/connect/visibility','PUT',{visible:!_visible});
+    showToast(d.visible?'You are now listed in the directory':'You are hidden from the directory','success');
+    render(d);}
+  catch(e){showToast(e.message,'error');}
+}
+document.addEventListener('DOMContentLoaded',loadDirectory);
+</script>
+{% endblock %}

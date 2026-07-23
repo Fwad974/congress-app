@@ -166,7 +166,7 @@ async function openDetail(id){
         ? '<div style="text-align:center;margin-bottom:14px"><a class="pg-btn" href="/api/posters/'+p.id+'/image" target="_blank" rel="noopener">📄 Open PDF poster ↗</a></div>'
         : '<div style="text-align:center;margin-bottom:14px"><img src="/api/posters/'+p.id+'/image" loading="lazy" style="max-width:100%;max-height:360px;border-radius:8px"></div>')
       : '';
-    const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</div></div>':'';
+    const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="display:flex;align-items:center;gap:12px"><span style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</span><a class="pg-btn sm" href="/posters/'+p.id+'/qr-print" target="_blank" rel="noopener">🖨 Print QR</a></div></div>':'';
     const owner=p.can_edit?'<div style="display:flex;gap:8px;margin:10px 0"><button class="pg-btn sm" onclick="openForm('+p.id+')">Edit</button><label class="pg-btn sm" style="cursor:pointer">Change image<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="uploadImg('+p.id+',this)"></label><button class="pg-btn sm" onclick="delPoster('+p.id+')">Delete</button></div>':'';
     const link=p.external_url?'<a class="pg-btn sm" href="'+esc(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
     const cmts=p.comments.map(c=>'<div class="pg-cmt"><div class="h"><span>'+esc(c.user_name)+'</span><span style="color:var(--w3);font-weight:400">'+fmt(c.created_at)+(c.can_delete?' · <a href="#" onclick="event.preventDefault();delComment('+p.id+','+c.id+')" style="color:var(--red)">delete</a>':'')+'</span></div><div class="b">'+esc(c.body)+'</div></div>').join('')||'<div style="color:var(--w3);font-size:.84rem;margin-bottom:8px">No comments yet.</div>';
@@ -235,6 +235,15 @@ async function delPoster(id){
 function v(id){return document.getElementById(id).value.trim();}
 function closeModal(m){document.getElementById(m).classList.remove('open');}
 
-document.addEventListener('DOMContentLoaded',()=>{loadHunt();loadPosters();});
+// Arriving from a scanned QR (?checkin=CODE): check in, then clean the URL.
+async function handleScanParam(){
+  const code=new URLSearchParams(location.search).get('checkin');
+  if(!code)return;
+  history.replaceState(null,'',location.pathname);
+  try{const h=await api('/api/posters/hunt','POST',{code});
+    showToast(h.complete?'Checked in — hunt complete! 🏆':'Checked in! '+h.visited+'/'+h.goal+' posters visited','success');}
+  catch(e){showToast(e.message,'error');}
+}
+document.addEventListener('DOMContentLoaded',async()=>{await handleScanParam();loadHunt();loadPosters();});
 </script>
 {% endblock %}

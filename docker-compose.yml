@@ -68,6 +68,10 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-15}
       # Poster-gallery scavenger hunt: posters to visit to complete the hunt.
       POSTER_HUNT_GOAL: ${POSTER_HUNT_GOAL:-5}
+      # Certificates: sessions for the attendance cert, credits for CME.
+      CERT_MIN_SESSIONS: ${CERT_MIN_SESSIONS:-3}
+      CME_MIN_CREDITS: ${CME_MIN_CREDITS:-5}
+      CME_CREDITS_PER_SESSION: ${CME_CREDITS_PER_SESSION:-1}
     volumes:
       # Persists auto-generated VAPID keys and uploaded manuscripts so they're
       # stable across restarts (otherwise browser subscriptions / files break).

@@ -450,6 +450,7 @@ function card(i){
   const presenterActs=(i.is_presenter && !IS_ADMIN)?
     '<button class="sched-act" title="Edit your abstract &amp; slides" onclick="openPresentation('+i.id+')">'+ICONS.edit+'</button>':'';
   const adminActs=IS_ADMIN?(
+    '<button class="sched-act" title="Print attendance QR" onclick="window.open(\'/schedule/'+i.id+'/qr-print\',\'_blank\')">⌗</button>'+
     '<button class="sched-act" title="Edit" onclick="openEdit('+i.id+')">'+ICONS.edit+'</button>'+
     '<button class="sched-act del" title="Delete" onclick="confirmDelete('+i.id+')">'+ICONS.trash+'</button>'
   ):'';

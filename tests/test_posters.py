@@ -200,6 +200,33 @@ class TestImage:
         assert r.status_code == 422
 
 
+class TestHuntQR:
+    def test_owner_gets_svg(self, client, db):
+        sp = _speaker(db, email="qr1@test.com")
+        pid = _create(client, sp).json()["id"]
+        r = client.get(f"/api/posters/{pid}/qr", cookies=auth_cookie(sp))
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("image/svg+xml")
+        assert b"<svg" in r.content
+
+    def test_stranger_cannot_get_qr(self, client, db):
+        sp = _speaker(db, email="qr2@test.com")
+        pid = _create(client, sp).json()["id"]
+        att = make_user(db, email="qr2a@test.com", role=UserRole.attendee)
+        assert client.get(f"/api/posters/{pid}/qr",
+                         cookies=auth_cookie(att)).status_code == 403
+
+    def test_print_page_owner_only(self, client, db):
+        sp = _speaker(db, email="qr3@test.com")
+        p = _create(client, sp).json()
+        r = client.get(f"/posters/{p['id']}/qr-print", cookies=auth_cookie(sp))
+        assert r.status_code == 200 and p["hunt_code"] in r.text
+        att = make_user(db, email="qr3a@test.com", role=UserRole.attendee)
+        r2 = client.get(f"/posters/{p['id']}/qr-print", cookies=auth_cookie(att),
+                        follow_redirects=False)
+        assert r2.status_code == 302
+
+
 class TestPostersPage:
     def test_requires_login(self, client):
         assert client.get("/posters", follow_redirects=False).status_code == 302
