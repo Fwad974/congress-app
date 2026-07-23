@@ -10,6 +10,15 @@ from app.models.user import UserRole
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+# Always defined so templates can call it even before lifespan overrides it
+# with the real, DB-backed accessor.
+templates.env.globals.setdefault("feature_enabled", lambda key: True)
+
+
+def _feature_blocked(user, key: str) -> bool:
+    """A released feature is visible to all; when hidden, only admins may preview."""
+    from app.core.feature_flags import is_enabled
+    return not is_enabled(key) and user.role not in (UserRole.admin, UserRole.super_admin)
 
 
 @router.get("/logout")
@@ -89,6 +98,8 @@ async def schedule_page(request: Request, user=Depends(get_current_user_optional
 async def notes_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "notes"):
+        return RedirectResponse(url="/home", status_code=302)
     return templates.TemplateResponse("notes.html", {"request": request, "user": user})
 
 
@@ -119,6 +130,8 @@ async def present_page(request: Request, session_id: int, user=Depends(get_curre
 async def papers_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "papers"):
+        return RedirectResponse(url="/home", status_code=302)
     is_chair = user.role in (UserRole.review_chair, UserRole.admin, UserRole.super_admin)
     is_reviewer = user.role in (UserRole.reviewer, UserRole.review_chair)
     from app.core.config import get_settings
@@ -133,6 +146,8 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
 async def posters_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "posters"):
+        return RedirectResponse(url="/home", status_code=302)
     from app.core.config import get_settings
     from app.api.posters import CREATOR_ROLES
     return templates.TemplateResponse("posters.html", {

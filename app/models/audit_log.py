@@ -41,6 +41,7 @@ class AuditAction(str, enum.Enum):
     # Papers
     paper_decision = "paper_decision"
     # System
+    feature_toggle = "feature_toggle"
     settings_change = "settings_change"
     export_data = "export_data"
     bulk_import = "bulk_import"

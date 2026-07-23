@@ -680,3 +680,38 @@ def unlock_user(
     )
 
     return {"message": f"Login unlocked for {user.email}"}
+
+
+# ─── Feature releases (module on/off switches) ───────────────────
+from pydantic import BaseModel as _BaseModel   # noqa: E402
+from app.core import feature_flags              # noqa: E402
+
+
+class FeatureToggle(_BaseModel):
+    enabled: bool
+
+
+@router.get("/features")
+def list_features(db: Session = Depends(get_db),
+                  admin: User = Depends(require_admin())):
+    return {"features": feature_flags.all_flags(db)}
+
+
+@router.put("/features/{key}")
+def toggle_feature(
+    key: str,
+    body: FeatureToggle,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin()),
+):
+    if key not in feature_flags.FEATURES:
+        raise HTTPException(status_code=404, detail="Unknown feature")
+    feature_flags.set_enabled(db, key, body.enabled, user_id=admin.id)
+    label = feature_flags.FEATURES[key][0]
+    log_action(
+        db, admin, AuditAction.feature_toggle,
+        f"{'Released' if body.enabled else 'Hid'} feature '{label}'",
+        request=request, new_value="enabled" if body.enabled else "disabled",
+    )
+    return {"key": key, "enabled": body.enabled}

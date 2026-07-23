@@ -2,7 +2,7 @@
 Dubai Stem Cell Congress — Conference App
 FastAPI Backend with Admin Dashboard
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from sqlalchemy import text
@@ -21,6 +21,7 @@ from app.models.paper import Paper, Review, PaperStatus  # noqa – registers mo
 from app.models.poster import (  # noqa – registers model
     Poster, PosterVote, PosterComment, PosterVisit,
 )
+from app.models.feature_flag import FeatureFlag  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth
 from app.api import auth, pages
@@ -34,6 +35,7 @@ from app.api import polls as polls_api
 from app.api import reactions as reactions_api
 from app.api import papers as papers_api
 from app.api import posters as posters_api
+from app.core import feature_flags
 
 settings = get_settings()
 
@@ -195,6 +197,15 @@ async def lifespan(application: FastAPI):
     page_tpl.env.globals.update(congress)
     admin_tpl.env.globals.update(congress)
 
+    # Seed + cache feature flags, and expose feature_enabled() to templates
+    # so nav links and pages can hide unreleased modules.
+    from app.core import feature_flags
+    from app.core.database import SessionLocal
+    with SessionLocal() as fdb:
+        feature_flags.ensure_seeded(fdb)
+    page_tpl.env.globals["feature_enabled"] = feature_flags.is_enabled
+    admin_tpl.env.globals["feature_enabled"] = feature_flags.is_enabled
+
     # Register configured OAuth providers (Google / ORCID).
     init_oauth()
 
@@ -237,5 +248,7 @@ app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
 app.include_router(qa_api.router, prefix="/api", tags=["qa"])
 app.include_router(polls_api.router, prefix="/api", tags=["polls"])
 app.include_router(reactions_api.router, prefix="/api", tags=["reactions"])
-app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"])
-app.include_router(posters_api.router, prefix="/api/posters", tags=["posters"])
+app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"],
+                   dependencies=[Depends(feature_flags.require_feature("papers"))])
+app.include_router(posters_api.router, prefix="/api/posters", tags=["posters"],
+                   dependencies=[Depends(feature_flags.require_feature("posters"))])

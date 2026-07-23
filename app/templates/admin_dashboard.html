@@ -101,6 +101,10 @@
 @keyframes loading-slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 @media(max-width:900px){.stat-row{grid-template-columns:repeat(2,1fr)}.hide-mobile-col{display:none}}
 @media(max-width:640px){.stat-row{grid-template-columns:1fr}.toolbar{flex-direction:column}.search-box{min-width:100%}.admin-title-bar{flex-direction:column;align-items:flex-start;gap:8px}.modal{max-width:100%;margin:0 12px}}
+.feat-switch{position:relative;width:46px;height:26px;border-radius:50px;border:1px solid rgba(201,169,98,.2);background:rgba(255,255,255,.06);cursor:pointer;flex-shrink:0;transition:.2s;padding:0}
+.feat-switch>i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--w5);transition:.2s}
+.feat-switch.on{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:#27ae60}
+.feat-switch.on>i{left:22px;background:#fff}
 </style>
 {% endblock %}
 
@@ -118,6 +122,7 @@
   <button class="admin-tab" data-tab="users" onclick="switchTab('users')">Users</button>
   <button class="admin-tab" data-tab="audit" onclick="switchTab('audit')">Audit Log</button>
   <button class="admin-tab" data-tab="broadcast" onclick="switchTab('broadcast')">Broadcast</button>
+  <button class="admin-tab" data-tab="releases" onclick="switchTab('releases')">Releases</button>
   {% if user.role.value == 'super_admin' %}<button class="admin-tab" data-tab="notes" onclick="switchTab('notes')">User Notes</button>{% endif %}
 </div>
 <div class="loading-bar" id="loadingBar"></div>
@@ -192,6 +197,15 @@
   </div>
 </div>
 
+<div class="tab-panel" id="tab-releases">
+  <div style="padding:4px 2px 14px;color:var(--w5);font:.86rem var(--f);line-height:1.5">
+    Flip a module <strong style="color:var(--w9)">on</strong> to release it to attendees, or
+    <strong style="color:var(--w9)">off</strong> to hide it (links disappear and the pages
+    return to Home). Admins can still preview a hidden module. Changes take effect immediately.
+  </div>
+  <div id="featuresList"><div class="empty-state">Loading...</div></div>
+</div>
+
 {% if user.role.value == 'super_admin' %}
 <div class="tab-panel" id="tab-notes">
   <div class="toolbar">
@@ -237,7 +251,17 @@ const IC={
 
 async function api(u,m='GET',b=null){const o={method:m,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(b)o.body=JSON.stringify(b);const r=await fetch(u,o);const d=await r.json();if(!r.ok)throw new Error(d.detail||'Failed');return d;}
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
-function switchTab(t){document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));if(t==='users')loadUsers();if(t==='audit')loadAudit();if(t==='overview')loadStats();if(t==='notes')loadNotes();if(t==='broadcast')loadBroadcasts();}
+function switchTab(t){document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));if(t==='users')loadUsers();if(t==='audit')loadAudit();if(t==='overview')loadStats();if(t==='notes')loadNotes();if(t==='broadcast')loadBroadcasts();if(t==='releases')loadFeatures();}
+
+async function loadFeatures(){ld(true);try{const d=await api('/api/admin/features');const c=document.getElementById('featuresList');
+  c.innerHTML=d.features.map(f=>`<div style="display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:10px;background:var(--glass,rgba(255,255,255,.02));border:1px solid rgba(201,169,98,.12);border-radius:12px;">
+    <div style="flex:1"><div style="font:600 .96rem var(--fh);color:var(--w9);display:flex;align-items:center;gap:10px">${esc(f.label)}<span style="font:600 .58rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:50px;${f.enabled?'background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25)':'background:rgba(255,255,255,.04);color:var(--w3);border:1px solid var(--w1)'}">${f.enabled?'Live':'Hidden'}</span></div>
+      <div style="font:.8rem var(--f);color:var(--w5);margin-top:3px">${esc(f.description)}</div></div>
+    <button class="feat-switch${f.enabled?' on':''}" onclick="toggleFeature('${f.key}',${!f.enabled})" title="${f.enabled?'Hide':'Release'}"><i></i></button>
+  </div>`).join('');
+}catch(e){showToast(e.message,'error');}ld(false);}
+
+async function toggleFeature(key,enabled){try{await api('/api/admin/features/'+key,'PUT',{enabled});showToast(enabled?'Released':'Hidden','success');loadFeatures();}catch(e){showToast(e.message,'error');}}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function loadStats(){ld(true);try{const d=await api('/api/admin/stats');document.getElementById('stat-total').textContent=d.total_users;document.getElementById('stat-active').textContent=d.active_users;document.getElementById('stat-suspended').textContent=d.suspended_users;document.getElementById('stat-today').textContent=d.new_today;document.getElementById('stat-week').textContent=d.new_this_week;const rb=document.getElementById('roleBreakdown');const ro=['super_admin','admin','moderator','review_chair','session_chair','speaker','reviewer','attendee'];rb.innerHTML=ro.filter(r=>d.roles_breakdown[r]).map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.025);"><span class="role-pill ${r}">${r.replace('_',' ')}</span><span style="font-family:var(--m);font-size:0.85rem;color:var(--w9);">${d.roles_breakdown[r]}</span></div>`).join('')||'<div class="empty-state">No users</div>';const ra=document.getElementById('recentActivity');ra.innerHTML=d.recent_activity.length?d.recent_activity.map((a,i)=>auditRow(a,i)).join(''):'<div class="empty-state">No activity</div>';}catch(e){showToast(e.message,'error');}ld(false);}
