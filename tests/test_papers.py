@@ -277,6 +277,55 @@ class TestReviewerResponse:
         assert me["assigned"] is True and me["state"] == "declined"
 
 
+class TestAcceptedShowcase:
+    def _accepted_paper(self, client, db, **over):
+        chair = make_user(db, email=f"cas{over.get('n',0)}@test.com", role=UserRole.review_chair)
+        author = make_user(db, email=f"aas{over.get('n',0)}@test.com", role=UserRole.attendee)
+        pid = _submit(client, author, **{k: v for k, v in over.items() if k != 'n'}).json()["id"]
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        return pid
+
+    def test_only_accepted_listed(self, client, db, attendee):
+        self._accepted_paper(client, db, n=1, title="Accepted one")
+        # A separate, non-accepted submission.
+        _submit(client, attendee, title="Still pending")
+        r = client.get("/api/papers/accepted", cookies=auth_cookie(attendee)).json()
+        titles = [p["title"] for p in r["papers"]]
+        assert "Accepted one" in titles and "Still pending" not in titles
+
+    def test_any_attendee_can_view_without_reviews_leaking(self, client, db):
+        self._accepted_paper(client, db, n=2, title="Public paper")
+        viewer = make_user(db, email="viewer@test.com", role=UserRole.attendee)
+        r = client.get("/api/papers/accepted", cookies=auth_cookie(viewer)).json()
+        p = r["papers"][0]
+        assert p["status"] == "accepted"
+        assert p["reviews"] == [] and p["author_name"] is None
+
+    def test_category_filter(self, client, db, attendee):
+        self._accepted_paper(client, db, n=3, title="iPSC work", category="iPSC")
+        self._accepted_paper(client, db, n=4, title="Gene work", category="Gene")
+        r = client.get("/api/papers/accepted?category=iPSC",
+                       cookies=auth_cookie(attendee)).json()
+        assert [p["title"] for p in r["papers"]] == ["iPSC work"]
+
+    def test_accepted_file_downloadable_by_anyone(self, client, db):
+        chair = make_user(db, email="cdl@test.com", role=UserRole.review_chair)
+        author = make_user(db, email="adl@test.com", role=UserRole.attendee)
+        pid = _submit(client, author).json()["id"]
+        client.post(f"/api/papers/{pid}/file",
+                    files={"file": ("m.pdf", b"%PDF-1.4 proceedings", "application/pdf")},
+                    cookies=auth_cookie(author))
+        stranger = make_user(db, email="str@test.com", role=UserRole.attendee)
+        # Before acceptance a stranger is blocked; after acceptance they can grab it.
+        assert client.get(f"/api/papers/{pid}/file",
+                         cookies=auth_cookie(stranger)).status_code == 403
+        client.post(f"/api/papers/{pid}/decision", json={"decision": "accept"},
+                    cookies=auth_cookie(chair))
+        d = client.get(f"/api/papers/{pid}/file", cookies=auth_cookie(stranger))
+        assert d.status_code == 200 and d.content == b"%PDF-1.4 proceedings"
+
+
 class TestFileUpload:
     def _paper(self, client, db):
         chair = make_user(db, email="cf@test.com", role=UserRole.review_chair)

@@ -38,6 +38,16 @@ reviewer's **To Review** tab shows a workload summary and per-paper actions:
 Chairs see each reviewer's response state on the assignment chips
 (`✓ accepted`, `✗ declined`, `⊘ recused`, `… invited`).
 
+### Accepted-papers showcase (proceedings)
+
+The **Accepted Papers** tab (the default tab, visible to *every* attendee)
+lists all `accepted` submissions as read-only cards grouped by track, with a
+search box and track filter. It reuses `_serialize`, which returns a
+public-safe view to a non-author/non-chair viewer — no reviews, scores, or
+internal identities leak. Accepted papers' uploaded manuscripts become
+downloadable by any authenticated attendee (the download endpoint special-cases
+`status == accepted`); non-accepted papers stay restricted to author/reviewer/chair.
+
 ## Data model (`app/models/paper.py`)
 
 - **`Paper`** — author, title, authors (free text), category, abstract,
@@ -72,6 +82,7 @@ Chairs see each reviewer's response state on the assignment chips
 | `POST /api/papers/{id}/file` | author | Upload/replace manuscript (PDF/Word) |
 | `GET /api/papers/{id}/file` | author / assigned reviewer / chair | Download manuscript |
 | `DELETE /api/papers/{id}/file` | author | Remove manuscript |
+| `GET /api/papers/accepted` | any attendee | Accepted-papers showcase (proceedings) |
 | `GET /api/papers/assigned` | reviewer | Papers to review |
 | `POST /api/papers/{id}/respond` | reviewer | Accept / decline / recuse an assignment |
 | `PUT /api/papers/{id}/review` | reviewer | Save/submit a review |

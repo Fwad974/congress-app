@@ -150,6 +150,25 @@ def assigned_papers(db: Session = Depends(get_db), user: User = Depends(get_curr
                              total=len(papers), can_manage=is_review_chair(user))
 
 
+# ─── Accepted papers showcase (all attendees) ────────────────────
+@router.get("/accepted", response_model=PaperListResponse)
+def accepted_papers(category: Optional[str] = Query(None),
+                    db: Session = Depends(get_db),
+                    user: User = Depends(get_current_user)):
+    """Public list of accepted papers — the in-app conference proceedings.
+
+    Any authenticated attendee can browse these. _serialize returns a
+    public-safe view for a non-author/non-chair viewer (no reviews, no
+    internal reviewer/author-identity leaks).
+    """
+    q = db.query(Paper).filter(Paper.status == PaperStatus.accepted)
+    if category:
+        q = q.filter(Paper.category == category)
+    papers = q.order_by(Paper.category, Paper.title).all()
+    return PaperListResponse(papers=[_serialize(db, p, user) for p in papers],
+                             total=len(papers), can_manage=is_review_chair(user))
+
+
 # ─── Review chair: list all + assignable reviewers ───────────────
 @router.get("", response_model=PaperListResponse)
 @router.get("/", response_model=PaperListResponse)
@@ -316,7 +335,9 @@ def download_paper_file(paper_id: int, db: Session = Depends(get_db),
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
-    if not _can_view(db, paper, user):
+    # Accepted papers are part of the public proceedings — any attendee may
+    # download them; otherwise only the author, an assigned reviewer, or a chair.
+    if paper.status != PaperStatus.accepted and not _can_view(db, paper, user):
         raise HTTPException(status_code=403, detail="Not allowed")
     if not paper.stored_file:
         raise HTTPException(status_code=404, detail="No file uploaded")

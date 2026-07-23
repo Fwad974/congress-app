@@ -48,13 +48,22 @@ textarea.pp-in{resize:vertical;min-height:90px}
 <div class="container">
   <div class="pp-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Abstracts &amp; <span>Papers</span></h2></div>
   <div class="pp-tabs animate-up">
-    <button class="pp-tab active" data-t="submit" onclick="ppTab('submit')">Submit</button>
+    <button class="pp-tab active" data-t="accepted" onclick="ppTab('accepted')">Accepted Papers</button>
+    <button class="pp-tab" data-t="submit" onclick="ppTab('submit')">Submit</button>
     <button class="pp-tab" data-t="mine" onclick="ppTab('mine')">My Submissions</button>
     {% if is_reviewer %}<button class="pp-tab" data-t="review" onclick="ppTab('review')">To Review</button>{% endif %}
     {% if is_chair %}<button class="pp-tab" data-t="manage" onclick="ppTab('manage')">Manage</button>{% endif %}
   </div>
 
-  <div class="pp-panel active" id="pt-submit">
+  <div class="pp-panel active" id="pt-accepted">
+    <div class="pp-row" style="margin-bottom:14px">
+      <input class="pp-in" id="acSearch" placeholder="Search accepted papers…" style="flex:1" oninput="renderAccepted()">
+      <select class="pp-in" id="acCat" style="width:auto" onchange="renderAccepted()"><option value="">All tracks</option></select>
+    </div>
+    <div id="acceptedList"><div class="pp-empty">Loading…</div></div>
+  </div>
+
+  <div class="pp-panel" id="pt-submit">
     <div class="pp-form">
       <div><label>Title</label><input class="pp-in" id="f_title" maxlength="300"></div>
       <div><label>Authors</label><input class="pp-in" id="f_authors" placeholder="Jane Doe, John Roe"></div>
@@ -90,7 +99,38 @@ async function api(url,method='GET',body=null){const o={method,headers:{'Content
 function stPill(s){return '<span class="pp-status st-'+s+'">'+s.replace('_',' ')+'</span>';}
 function fmt(iso){return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}
 
-function ppTab(t){document.querySelectorAll('.pp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.pp-panel').forEach(p=>p.classList.toggle('active',p.id==='pt-'+t));if(t==='mine')loadMine();if(t==='review')loadReview();if(t==='manage')loadManage();}
+function ppTab(t){document.querySelectorAll('.pp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.pp-panel').forEach(p=>p.classList.toggle('active',p.id==='pt-'+t));if(t==='accepted')loadAccepted();if(t==='mine')loadMine();if(t==='review')loadReview();if(t==='manage')loadManage();}
+
+// ─── Accepted papers (public proceedings) ───────────────────────
+let _accepted=[];
+async function loadAccepted(){
+  try{const d=await api('/api/papers/accepted');_accepted=d.papers;
+    const cats=[...new Set(_accepted.map(p=>p.category).filter(Boolean))].sort();
+    const sel=document.getElementById('acCat');const cur=sel.value;
+    sel.innerHTML='<option value="">All tracks</option>'+cats.map(c=>'<option value="'+esc(c)+'"'+(c===cur?' selected':'')+'>'+esc(c)+'</option>').join('');
+    renderAccepted();
+  }catch(e){showToast(e.message,'error');}
+}
+function renderAccepted(){
+  const c=document.getElementById('acceptedList');
+  const term=(document.getElementById('acSearch').value||'').toLowerCase();
+  const cat=document.getElementById('acCat').value;
+  let list=_accepted.filter(p=>!cat||p.category===cat);
+  if(term)list=list.filter(p=>(p.title+' '+p.authors+' '+(p.category||'')+' '+p.abstract).toLowerCase().includes(term));
+  if(!list.length){c.innerHTML='<div class="pp-empty">'+(_accepted.length?'No papers match your search.':'No accepted papers yet — check back during the congress.')+'</div>';return;}
+  // Group by track for a proceedings-style layout.
+  const groups={};list.forEach(p=>{(groups[p.category||'Other']=groups[p.category||'Other']||[]).push(p);});
+  c.innerHTML=Object.keys(groups).sort().map(g=>
+    '<div style="font:600 .74rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:18px 0 8px">'+esc(g)+' <span style="color:var(--w3)">('+groups[g].length+')</span></div>'+
+    groups[g].map(acceptedCard).join('')).join('');
+}
+function acceptedCard(p){
+  const dl=p.has_file?'<a class="pp-btn sm" href="/api/papers/'+p.id+'/file" target="_blank" rel="noopener">📄 Download</a>':'';
+  const link=p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'';
+  const foot=(dl||link)?'<div class="pp-row" style="margin-top:10px">'+dl+link+'</div>':'';
+  return '<div class="pp-card"><div class="pp-meta"><span class="pp-status st-accepted">accepted</span><span>'+esc(p.category||'—')+'</span></div>'+
+    '<h3>'+esc(p.title)+'</h3><div class="pp-meta">'+esc(p.authors)+'</div><div class="pp-abs">'+esc(p.abstract)+'</div>'+foot+'</div>';
+}
 
 async function submitPaper(){
   const body={title:val('f_title'),authors:val('f_authors'),category:val('f_category')||null,file_url:val('f_url')||null,abstract:val('f_abstract')};
@@ -284,6 +324,6 @@ async function decide(pid,decision){if(decision==='reject'&&!confirm('Reject thi
   try{await api('/api/papers/'+pid+'/decision','POST',{decision,comment:document.getElementById('dc_'+pid).value.trim()||null});showToast('Decision recorded','success');loadManage();}
   catch(e){showToast(e.message,'error');}}
 
-document.addEventListener('DOMContentLoaded',()=>{ppTab('submit');});
+document.addEventListener('DOMContentLoaded',()=>{ppTab('accepted');});
 </script>
 {% endblock %}
