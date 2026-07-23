@@ -9,7 +9,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Bound to localhost only — the app reaches Postgres over the compose
+      # network, so this host mapping is for local tools (via SSH tunnel), not
+      # the internet. (Docker's iptables rules bypass ufw, so a 0.0.0.0 bind
+      # would expose the DB directly.)
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U congress_user -d dubai_congress"]
       interval: 5s
@@ -20,7 +24,9 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Localhost only — Redis has no auth; the app reaches it over the compose
+      # network. Never publish this on 0.0.0.0.
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -36,8 +42,12 @@ services:
       # publicly on the standard HTTP port, so URLs need no ":8000".
       - "80:8000"
     environment:
+      # production makes the app refuse to boot without a strong SECRET_KEY.
+      ENVIRONMENT: ${ENVIRONMENT:-production}
       DATABASE_URL: postgresql://congress_user:congress_pass@db:5432/dubai_congress
-      SECRET_KEY: ${SECRET_KEY:-09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7}
+      # No insecure fallback: set SECRET_KEY in .env
+      # (`python -c "import secrets; print(secrets.token_hex(32))"`).
+      SECRET_KEY: ${SECRET_KEY:-}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 1440
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
@@ -82,14 +92,18 @@ services:
       redis:
         condition: service_healthy
 
+  # DB admin UI — disabled by default (profile "tools"). Enable only when
+  # needed: `docker compose --profile tools up pgadmin`. Bound to localhost and
+  # its credentials come from .env; never expose this publicly.
   pgadmin:
     image: dpage/pgadmin4:latest
     restart: unless-stopped
+    profiles: ["tools"]
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@congress.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@congress.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-}
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"
     depends_on:
       db:
         condition: service_healthy

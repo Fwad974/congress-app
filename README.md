@@ -171,7 +171,19 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ### Docker Compose (recommended)
 
-Starts the full stack: **app + PostgreSQL + Redis + pgAdmin**.
+Starts the full stack: **app + PostgreSQL + Redis** (pgAdmin is opt-in via the
+`tools` profile).
+
+> **Required in production:** compose defaults `ENVIRONMENT=production`, so the
+> app **refuses to boot without a strong `SECRET_KEY`**. Generate one once:
+> ```bash
+> echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+> ```
+> (For pure local dev you can instead set `ENVIRONMENT=development` in `.env`,
+> which permits the built-in fallback key.) Postgres/Redis are bound to
+> `127.0.0.1` and never published to the internet; reach them via an SSH tunnel.
+> To run pgAdmin: `docker compose --profile tools up -d pgadmin` (localhost only;
+> set `PGADMIN_PASSWORD` in `.env`).
 
 **Option A: Using `.env` file (recommended)**
 
@@ -248,8 +260,9 @@ docker run -p 8000:8000 \
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `ENVIRONMENT` | No | `production` (compose default) or `development`. In production the app refuses to boot with a weak/default `SECRET_KEY`. |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `SECRET_KEY` | Yes | JWT signing key (generate with `openssl rand -hex 32`) |
+| `SECRET_KEY` | Yes (prod) | JWT + session signing key (generate with `openssl rand -hex 32`). Required under `ENVIRONMENT=production`. |
 | `ALGORITHM` | No | JWT algorithm (default: `HS256`) |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiry in minutes (default: `1440`) |
 | `SUPER_ADMIN_EMAIL` | No | Auto-create super admin with this email on startup |

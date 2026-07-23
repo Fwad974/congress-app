@@ -184,8 +184,29 @@ def _migrate_reviews_table(connection):
         ))
 
 
+def _check_production_secrets():
+    """Refuse to boot a production deployment with a weak/default signing key.
+
+    SECRET_KEY signs both the JWT auth cookie and the OAuth session cookie, so a
+    known value would let anyone forge admin tokens. Only enforced when
+    ENVIRONMENT=production; development/test keep the convenience default.
+    """
+    from app.core.config import INSECURE_DEFAULT_SECRET, get_settings
+    cfg = get_settings()
+    if cfg.ENVIRONMENT.lower() != "production":
+        return
+    key = cfg.SECRET_KEY or ""
+    if key == INSECURE_DEFAULT_SECRET or len(key) < 32:
+        raise RuntimeError(
+            "SECRET_KEY is missing or insecure but ENVIRONMENT=production. "
+            "Set a strong, unique SECRET_KEY (e.g. `python -c \"import secrets; "
+            "print(secrets.token_hex(32))\"`) before starting the app."
+        )
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    _check_production_secrets()
     Base.metadata.create_all(bind=engine)
 
     # Sync Postgres enum types with current Python enum members.

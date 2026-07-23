@@ -247,3 +247,33 @@ class TestRoleHierarchy:
         assert UserRole.super_admin in ADMIN_ROLES
         assert UserRole.admin in ADMIN_ROLES
         assert UserRole.attendee not in ADMIN_ROLES
+
+
+class TestProductionSecretGuard:
+    def teardown_method(self):
+        from app.core.config import get_settings
+        get_settings.cache_clear()
+
+    def _run(self, monkeypatch, env, key):
+        from app.core.config import get_settings
+        from app.main import _check_production_secrets
+        monkeypatch.setenv("ENVIRONMENT", env)
+        monkeypatch.setenv("SECRET_KEY", key)
+        get_settings.cache_clear()
+        _check_production_secrets()
+
+    def test_dev_allows_default(self, monkeypatch):
+        from app.core.config import INSECURE_DEFAULT_SECRET
+        self._run(monkeypatch, "development", INSECURE_DEFAULT_SECRET)  # no raise
+
+    def test_production_rejects_default(self, monkeypatch):
+        from app.core.config import INSECURE_DEFAULT_SECRET
+        with pytest.raises(RuntimeError):
+            self._run(monkeypatch, "production", INSECURE_DEFAULT_SECRET)
+
+    def test_production_rejects_short(self, monkeypatch):
+        with pytest.raises(RuntimeError):
+            self._run(monkeypatch, "production", "tooshort")
+
+    def test_production_allows_strong(self, monkeypatch):
+        self._run(monkeypatch, "production", "a" * 48)  # no raise

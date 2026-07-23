@@ -4,7 +4,13 @@ function showToast(message, type = 'success') {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} show`;
-  toast.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${message}`;
+  // Build with textContent, not innerHTML — `message` can carry user-controlled
+  // text (notification titles/bodies), so interpolating it into HTML would be
+  // a stored-XSS sink.
+  const icon = document.createElement('span');
+  icon.textContent = type === 'success' ? '✓' : '✕';
+  toast.appendChild(icon);
+  toast.appendChild(document.createTextNode(' ' + message));
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0'; toast.style.transform = 'translateY(-12px)';

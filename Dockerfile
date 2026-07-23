@@ -26,5 +26,11 @@ VOLUME ["/app/data"]
 
 EXPOSE 8000
 
+# --proxy-headers + --forwarded-allow-ips="*" so uvicorn trusts the
+# X-Forwarded-Proto/For set by the Cloudflare/reverse proxy in front of it.
+# Without this, url_for() builds http:// OAuth redirect URIs behind TLS and
+# the client IP is always the proxy's. Safe because the app is only reachable
+# through that proxy (the container port isn't published directly).
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--proxy-headers", "--forwarded-allow-ips", "*"]

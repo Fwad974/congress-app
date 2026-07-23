@@ -2,9 +2,19 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 
+# The dev/test fallback signing key. It is intentionally public — the app
+# refuses to boot with this value when ENVIRONMENT=production (see
+# Settings.validate_production in app/main.py).
+INSECURE_DEFAULT_SECRET = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+
+
 class Settings(BaseSettings):
+    # "development" (default) allows the insecure fallback secret; set to
+    # "production" in real deployments so a weak/missing SECRET_KEY fails fast.
+    ENVIRONMENT: str = "development"
+
     DATABASE_URL: str = "postgresql://congress_user:congress_pass@localhost:5432/dubai_congress"
-    SECRET_KEY: str = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+    SECRET_KEY: str = INSECURE_DEFAULT_SECRET
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24h for regular users
 
