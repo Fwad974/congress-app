@@ -107,6 +107,8 @@ async def notes_page(request: Request, user=Depends(get_current_user_optional)):
 async def qa_page(request: Request, session_id: int, user=Depends(get_current_user_optional)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "qa"):
+        return RedirectResponse(url="/home", status_code=302)
     can_moderate = user.role in (
         UserRole.session_chair, UserRole.review_chair, UserRole.moderator,
         UserRole.admin, UserRole.super_admin,

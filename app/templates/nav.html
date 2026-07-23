@@ -14,7 +14,24 @@
   .nav-quick svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-menu-link svg{width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none}
-  @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}}
+  .nav-bell-wrap{position:relative}
+  .nav-bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--ga2);background:var(--ga2);color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+  .nav-bell:hover{border-color:var(--gold);color:var(--gold)}
+  .nav-bell svg{width:17px;height:17px;stroke:currentColor;fill:none}
+  .nav-bell-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;border-radius:50px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font:700 .6rem var(--f);display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg)}
+  .nav-bell-panel{position:absolute;top:calc(100% + 8px);right:0;width:330px;max-width:calc(100vw - 24px);background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--r);display:none;z-index:120;box-shadow:0 12px 40px rgba(0,0,0,.5);overflow:hidden}
+  .nav-bell-panel.open{display:block}
+  .nav-bell-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--ga2);font:600 .8rem var(--f);color:var(--w9)}
+  .nav-bell-head button{background:none;border:none;color:var(--gold);font:.72rem var(--f);cursor:pointer}
+  .nav-bell-list{max-height:340px;overflow-y:auto}
+  .nav-bell-item{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03)}
+  .nav-bell-item.unread{background:rgba(201,169,98,.05);border-left:2px solid var(--gold)}
+  .nav-bell-item .t{font:600 .8rem var(--f);color:var(--w9)}
+  .nav-bell-item .b{font:.76rem/1.45 var(--f);color:var(--w5);margin-top:2px}
+  .nav-bell-item .d{font:.66rem var(--m);color:var(--w3);margin-top:4px}
+  .nav-bell-item .k-emergency{color:#e74c3c;font-weight:700}
+  .nav-bell-empty{padding:26px 14px;text-align:center;color:var(--w3);font:.8rem var(--f)}
+  @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}.nav-bell-panel{position:fixed;top:64px;right:12px}}
 </style>
 
 <div class="nav-bar">
@@ -26,8 +43,17 @@
       {% if feature_enabled('notes') %}<a href="/notes" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
       {% if feature_enabled('papers') %}<a href="/papers" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
       {% if feature_enabled('posters') %}<a href="/posters" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Posters</a>{% endif %}
-      <a href="#" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Connect</a>
       {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}
+      <div class="nav-bell-wrap">
+        <button class="nav-bell" id="navBell" onclick="toggleBellPanel(event)" title="Notifications" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="nav-bell-badge" id="bellBadge" style="display:none">0</span>
+        </button>
+        <div class="nav-bell-panel" id="bellPanel">
+          <div class="nav-bell-head"><span>Notifications</span><button onclick="markAllRead()" id="bellMarkAll">Mark all read</button></div>
+          <div class="nav-bell-list" id="bellList"><div class="nav-bell-empty">Loading…</div></div>
+        </div>
+      </div>
       <div class="nav-user-menu">
         <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
           <div class="nav-user-avatar">{{ user.full_name[0] }}</div><span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
@@ -59,8 +85,6 @@
     {% if feature_enabled('notes') %}<a href="/notes" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
     {% if feature_enabled('papers') %}<a href="/papers" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
     {% if feature_enabled('posters') %}<a href="/posters" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Posters</a>{% endif %}
-    <a href="#" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Posters</a>
-    <a href="#" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Connect</a>
     {% if user.role.value in ['admin', 'super_admin'] %}<div class="mobile-menu-section">Admin</div><a href="/admin" class="mobile-menu-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Management</a>{% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile</a>
@@ -72,8 +96,8 @@
 <nav class="mobile-bottom-nav">
   <a href="/home" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
   <a href="/schedule" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
-  <a href="#" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Posters</a>
-  <a href="#" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Connect</a>
+  {% if feature_enabled('posters') %}<a href="/posters" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Posters</a>{% endif %}
+  {% if feature_enabled('papers') %}<a href="/papers" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Papers</a>{% endif %}
   <a href="/profile" class="mobile-nav-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Me</a>
 </nav>
 <script>
@@ -82,4 +106,26 @@ function openMobileMenu(){document.getElementById('mobileOverlay').classList.add
 function closeMobileMenu(){document.getElementById('mobileOverlay').classList.remove('open');document.getElementById('mobilePanel').classList.remove('open');document.body.style.overflow=''}
 // Highlight active bottom nav item based on current page
 (function(){var p=window.location.pathname;document.querySelectorAll('.mobile-bottom-nav .mobile-nav-item').forEach(function(a){var h=a.getAttribute('href');if(h&&h!=='#'&&p.startsWith(h)){a.classList.add('active')}});if(p==='/home'){var first=document.querySelector('.mobile-bottom-nav .mobile-nav-item');if(first)first.classList.add('active')}})();
+
+// ── Notification bell + inbox ──────────────────────────────────
+function bellEsc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function bellAgo(iso){const m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return'just now';if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
+async function refreshBell(){
+  try{const r=await fetch('/api/notifications/feed',{credentials:'same-origin'});if(!r.ok)return;const d=await r.json();
+    const badge=document.getElementById('bellBadge');
+    badge.style.display=d.unread_count>0?'flex':'none';
+    badge.textContent=d.unread_count>99?'99+':d.unread_count;
+    const list=document.getElementById('bellList');
+    list.innerHTML=d.items.length?d.items.map(n=>
+      '<div class="nav-bell-item'+(n.read?'':' unread')+'" data-id="'+n.id+'" onclick="bellRead('+n.id+',this)">'+
+      '<div class="t'+(n.kind==='emergency'?' k-emergency':'')+'">'+(n.kind==='emergency'?'🚨 ':'')+bellEsc(n.title)+'</div>'+
+      '<div class="b">'+bellEsc(n.body)+'</div><div class="d">'+bellAgo(n.created_at)+'</div></div>'
+    ).join(''):'<div class="nav-bell-empty">No notifications yet.</div>';
+  }catch(e){}
+}
+function toggleBellPanel(ev){ev.stopPropagation();const p=document.getElementById('bellPanel');p.classList.toggle('open');if(p.classList.contains('open'))refreshBell();}
+async function bellRead(id,el){el.classList.remove('unread');try{await fetch('/api/notifications/feed/'+id+'/read',{method:'POST',credentials:'same-origin'});}catch(e){}refreshBell();}
+async function markAllRead(){try{await fetch('/api/notifications/feed/read-all',{method:'POST',credentials:'same-origin'});}catch(e){}refreshBell();}
+document.addEventListener('click',e=>{if(!e.target.closest('.nav-bell-wrap'))document.getElementById('bellPanel')?.classList.remove('open')});
+refreshBell();setInterval(refreshBell,90000);
 </script>

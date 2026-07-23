@@ -201,6 +201,8 @@
 <script>
 const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 const IS_SPEAKER = {{ 'true' if is_speaker else 'false' }};
+const QA_ON = {{ 'true' if feature_enabled('qa') else 'false' }};
+const NOTES_ON = {{ 'true' if feature_enabled('notes') else 'false' }};
 const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
@@ -443,8 +445,8 @@ function card(i){
   ].filter(Boolean).join('');
   const bmTitle=i.is_bookmarked?'Remove bookmark':'Bookmark this item';
   const bmBtn='<button class="sched-act bm'+(i.is_bookmarked?' on':'')+'" title="'+bmTitle+'" onclick="toggleBookmark('+i.id+',this)">'+ICONS.bookmark+'</button>';
-  const noteBtn='<button class="sched-act" title="Add a note for this session" onclick="location.href=\'/notes?session='+i.id+'\'">'+ICONS.note+'</button>';
-  const qaBtn='<button class="sched-act" title="Live Q&amp;A for this session" onclick="location.href=\'/qa/'+i.id+'\'">'+ICONS.qa+'</button>';
+  const noteBtn=NOTES_ON?'<button class="sched-act" title="Add a note for this session" onclick="location.href=\'/notes?session='+i.id+'\'">'+ICONS.note+'</button>':'';
+  const qaBtn=QA_ON?'<button class="sched-act" title="Live Q&amp;A for this session" onclick="location.href=\'/qa/'+i.id+'\'">'+ICONS.qa+'</button>':'';
   const presenterActs=(i.is_presenter && !IS_ADMIN)?
     '<button class="sched-act" title="Edit your abstract &amp; slides" onclick="openPresentation('+i.id+')">'+ICONS.edit+'</button>':'';
   const adminActs=IS_ADMIN?(

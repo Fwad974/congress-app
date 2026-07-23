@@ -85,3 +85,62 @@ class TestReleasesTab:
     def test_tab_present_for_admin(self, client, db):
         admin = _admin(db, email="fa6@test.com")
         assert 'data-tab="releases"' in client.get("/admin", cookies=auth_cookie(admin)).text
+
+
+class TestQaNotesPollsEnforcement:
+    def test_notes_api_gated(self, client, db):
+        admin = _admin(db, email="fb1@test.com")
+        att = make_user(db, email="fb1u@test.com", role=UserRole.attendee)
+        assert client.get("/api/notes", cookies=auth_cookie(att)).status_code == 200
+        client.put("/api/admin/features/notes", json={"enabled": False},
+                   cookies=auth_cookie(admin))
+        assert client.get("/api/notes", cookies=auth_cookie(att)).status_code == 403
+        assert client.get("/api/notes", cookies=auth_cookie(admin)).status_code == 200
+
+    def test_qa_api_and_page_gated(self, client, db):
+        admin = _admin(db, email="fb2@test.com")
+        att = make_user(db, email="fb2u@test.com", role=UserRole.attendee)
+        client.put("/api/admin/features/qa", json={"enabled": False},
+                   cookies=auth_cookie(admin))
+        assert client.get("/api/sessions/1/questions",
+                         cookies=auth_cookie(att)).status_code == 403
+        r = client.get("/qa/1", cookies=auth_cookie(att), follow_redirects=False)
+        assert r.status_code == 302 and r.headers["location"].endswith("/home")
+
+    def test_polls_api_gated(self, client, db):
+        admin = _admin(db, email="fb3@test.com")
+        att = make_user(db, email="fb3u@test.com", role=UserRole.attendee)
+        client.put("/api/admin/features/polls", json={"enabled": False},
+                   cookies=auth_cookie(admin))
+        assert client.get("/api/sessions/1/polls",
+                         cookies=auth_cookie(att)).status_code == 403
+
+    def test_schedule_hides_qa_button_when_off(self, client, db):
+        admin = _admin(db, email="fb4@test.com")
+        att = make_user(db, email="fb4u@test.com", role=UserRole.attendee)
+        assert "const QA_ON = true" in client.get("/schedule", cookies=auth_cookie(att)).text
+        client.put("/api/admin/features/qa", json={"enabled": False},
+                   cookies=auth_cookie(admin))
+        assert "const QA_ON = false" in client.get("/schedule", cookies=auth_cookie(att)).text
+
+
+class TestHomeAndNav:
+    def test_home_links_new_features(self, client, attendee):
+        html = client.get("/home", cookies=auth_cookie(attendee)).text
+        assert 'href="/papers"' in html and 'href="/posters"' in html
+        assert 'href="/certificates"' in html
+
+    def test_home_hides_disabled_features(self, client, db):
+        admin = _admin(db, email="fb5@test.com")
+        att = make_user(db, email="fb5u@test.com", role=UserRole.attendee)
+        client.put("/api/admin/features/papers", json={"enabled": False},
+                   cookies=auth_cookie(admin))
+        assert 'href="/papers"' not in client.get("/home", cookies=auth_cookie(att)).text
+
+    def test_no_dead_links_in_nav_or_home(self, client, attendee):
+        html = client.get("/home", cookies=auth_cookie(attendee)).text
+        assert 'href="#"' not in html
+
+    def test_notification_bell_present(self, client, attendee):
+        html = client.get("/home", cookies=auth_cookie(attendee)).text
+        assert 'id="navBell"' in html and 'id="bellPanel"' in html

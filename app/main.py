@@ -244,9 +244,12 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin_api.router, prefix="/api/admin", tags=["admin"])
 app.include_router(schedule_api.router, prefix="/api/schedule", tags=["schedule"])
 app.include_router(notifications_api.router, prefix="/api/notifications", tags=["notifications"])
-app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"])
-app.include_router(qa_api.router, prefix="/api", tags=["qa"])
-app.include_router(polls_api.router, prefix="/api", tags=["polls"])
+app.include_router(notes_api.router, prefix="/api/notes", tags=["notes"],
+                   dependencies=[Depends(feature_flags.require_feature("notes"))])
+app.include_router(qa_api.router, prefix="/api", tags=["qa"],
+                   dependencies=[Depends(feature_flags.require_feature("qa"))])
+app.include_router(polls_api.router, prefix="/api", tags=["polls"],
+                   dependencies=[Depends(feature_flags.require_feature("polls"))])
 app.include_router(reactions_api.router, prefix="/api", tags=["reactions"])
 app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"],
                    dependencies=[Depends(feature_flags.require_feature("papers"))])

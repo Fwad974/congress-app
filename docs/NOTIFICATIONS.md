@@ -80,9 +80,12 @@ schedule endpoints then schedule a Web Push to those recipients via FastAPI
 | `POST /api/notifications/feed/{id}/read`   | Mark one read                    |
 | `POST /api/notifications/feed/read-all`    | Mark all read                    |
 
-The client polls `/feed`, surfaces unread rows as a toast + (optional) Web
-Notification + sound, then calls `/feed/read-all`. `localStorage` dedups across
-tabs.
+The client polls `/feed` and surfaces unread rows as a toast + (optional) Web
+Notification + sound; `localStorage` dedups across tabs so a toast shows once
+per browser. Toasts do **not** mark items read — read state belongs to the
+**nav bell inbox** (`nav.html`): a bell with an unread-count badge that opens a
+panel listing recent notifications, where clicking an item (or "Mark all read")
+calls the read endpoints. Dismissing an emergency banner marks it read.
 
 ---
 

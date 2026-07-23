@@ -207,7 +207,7 @@
       '<div style="flex:1"><div style="font-weight:700;font-size:.98rem;margin-bottom:3px">'+escHtml(n.title)+'</div>'+
       '<div style="font-weight:400;font-size:.9rem;opacity:.96;line-height:1.4">'+escHtml(n.body)+'</div></div>'+
       '<button style="background:rgba(0,0,0,.22);border:none;color:#fff;border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:600;flex-shrink:0">Dismiss</button>';
-    el.querySelector('button').onclick=function(){el.remove();};
+    el.querySelector('button').onclick=function(){el.remove();markFeedRead(n.id);};
     document.body.appendChild(el);
   }
 
@@ -225,8 +225,10 @@
       // Hold non-emergency notifications during quiet hours — leave them unread
       // so they surface once quiet hours end.
       if(!emg && quiet)return;
+      // Note: we deliberately do NOT mark the item read here — the toast is a
+      // transient surface; unread state belongs to the nav bell inbox, where
+      // the user reads or clears it explicitly.
       feedMarkShown(n.id);
-      markFeedRead(n.id);
       if(emg){
         showEmergency(n);
         showFeedWebNotification(n);
@@ -248,6 +250,8 @@
       const r=await fetch('/api/notifications/feed',{credentials:'same-origin'});
       if(!r.ok)return;
       handleFeed(await r.json());
+      // Keep the nav bell badge in step with what just arrived.
+      if(typeof refreshBell==='function')refreshBell();
     }catch(e){/* network blip */}
   }
 

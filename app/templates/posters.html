@@ -134,9 +134,12 @@ async function loadPosters(){
     g.innerHTML=_posters.map(card).join('');
   }catch(e){showToast(e.message,'error');}
 }
+function isPdf(p){return (p.image_name||'').toLowerCase().endsWith('.pdf');}
 function card(p){
-  const thumb='<div class="pg-thumb"'+(p.has_image?' style="background-image:url(/api/posters/'+p.id+'/image)"':'')+'>'+
-    (p.has_image?'':'No image')+
+  // A PDF can't render as a CSS background — show a document placeholder instead.
+  const showBg=p.has_image&&!isPdf(p);
+  const thumb='<div class="pg-thumb"'+(showBg?' style="background-image:url(/api/posters/'+p.id+'/image)"':'')+'>'+
+    (showBg?'':(p.has_image?'<span style="font-size:2rem">📄</span><span style="margin-left:8px">PDF poster</span>':'No image'))+
     (p.board_number?'<span class="pg-board">'+esc(p.board_number)+'</span>':'')+
     (p.visited?'<span class="pg-visited">✓ visited</span>':'')+'</div>';
   return '<div class="pg-card" onclick="openDetail('+p.id+')">'+thumb+
@@ -158,7 +161,11 @@ async function visit(id){
 
 async function openDetail(id){
   try{const p=await api('/api/posters/'+id);
-    const img=p.has_image?'<div style="text-align:center;margin-bottom:14px"><img src="/api/posters/'+p.id+'/image" style="max-width:100%;max-height:360px;border-radius:8px"></div>':'';
+    const img=p.has_image
+      ? (isPdf(p)
+        ? '<div style="text-align:center;margin-bottom:14px"><a class="pg-btn" href="/api/posters/'+p.id+'/image" target="_blank" rel="noopener">📄 Open PDF poster ↗</a></div>'
+        : '<div style="text-align:center;margin-bottom:14px"><img src="/api/posters/'+p.id+'/image" loading="lazy" style="max-width:100%;max-height:360px;border-radius:8px"></div>')
+      : '';
     const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</div></div>':'';
     const owner=p.can_edit?'<div style="display:flex;gap:8px;margin:10px 0"><button class="pg-btn sm" onclick="openForm('+p.id+')">Edit</button><label class="pg-btn sm" style="cursor:pointer">Change image<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="uploadImg('+p.id+',this)"></label><button class="pg-btn sm" onclick="delPoster('+p.id+')">Delete</button></div>':'';
     const link=p.external_url?'<a class="pg-btn sm" href="'+esc(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
