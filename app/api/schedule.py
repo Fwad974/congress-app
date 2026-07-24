@@ -42,7 +42,9 @@ def _resolve_speaker(db: Session, email: Optional[str]) -> Optional[User]:
 
 
 def _speaker_map(db: Session, items) -> Dict[int, User]:
+    """User rows keyed by id for every speaker AND chair referenced by items."""
     ids = {i.speaker_id for i in items if i.speaker_id}
+    ids |= {i.chair_id for i in items if i.chair_id}
     if not ids:
         return {}
     return {u.id: u for u in db.query(User).filter(User.id.in_(ids)).all()}
@@ -69,7 +71,8 @@ def _change_summary(item: ScheduleItem, old_start, old_end, old_location) -> str
 
 def _serialize(item: ScheduleItem, bookmarked: bool = False,
                current_user: Optional[User] = None,
-               speaker_user: Optional[User] = None) -> ScheduleItemResponse:
+               speaker_user: Optional[User] = None,
+               chair_user: Optional[User] = None) -> ScheduleItemResponse:
     """Shape a row for the response, normalizing extra/None to {}."""
     extra = item.extra or {}
     return ScheduleItemResponse(
@@ -87,6 +90,11 @@ def _serialize(item: ScheduleItem, bookmarked: bool = False,
         speaker_name=(speaker_user.full_name if speaker_user else None) or extra.get("speaker"),
         is_presenter=bool(current_user and item.speaker_id
                           and current_user.id == item.speaker_id),
+        chair_id=item.chair_id,
+        chair_email=chair_user.email if chair_user else None,
+        chair_name=chair_user.full_name if chair_user else None,
+        is_chair=bool(current_user and item.chair_id
+                      and current_user.id == item.chair_id),
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -99,6 +107,7 @@ def list_schedule(
     type: Optional[str] = Query(None),
     bookmarked: bool = Query(False),
     presenter: Optional[str] = Query(None),  # "me" = only sessions I present
+    chair: Optional[str] = Query(None),      # "me" = only sessions I chair
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -111,6 +120,8 @@ def list_schedule(
 
     if presenter == "me":
         q = q.filter(ScheduleItem.speaker_id == user.id)
+    if chair == "me":
+        q = q.filter(ScheduleItem.chair_id == user.id)
 
     bookmarks = _bookmarked_ids(db, user.id)
     if bookmarked:
@@ -119,10 +130,11 @@ def list_schedule(
         q = q.filter(ScheduleItem.id.in_(bookmarks))
 
     items = q.order_by(asc(ScheduleItem.start_time)).all()
-    speakers = _speaker_map(db, items)
+    users = _speaker_map(db, items)
     return ScheduleListResponse(
         items=[_serialize(i, bookmarked=i.id in bookmarks, current_user=user,
-                          speaker_user=speakers.get(i.speaker_id)) for i in items],
+                          speaker_user=users.get(i.speaker_id),
+                          chair_user=users.get(i.chair_id)) for i in items],
         total=len(items),
     )
 
@@ -140,8 +152,10 @@ def get_schedule_item(
         ScheduleBookmark.user_id == user.id,
         ScheduleBookmark.schedule_item_id == item_id,
     ).first() is not None
-    speaker = _speaker_map(db, [item]).get(item.speaker_id)
-    return _serialize(item, bookmarked=bm, current_user=user, speaker_user=speaker)
+    users = _speaker_map(db, [item])
+    return _serialize(item, bookmarked=bm, current_user=user,
+                      speaker_user=users.get(item.speaker_id),
+                      chair_user=users.get(item.chair_id))
 
 
 # ─── Bookmarks (any authenticated user) ──────────────────────────
@@ -239,6 +253,7 @@ def create_schedule_item(
     admin: User = Depends(require_admin()),
 ):
     speaker = _resolve_speaker(db, req.speaker_email)
+    chair = _resolve_speaker(db, req.chair_email)
     item = ScheduleItem(
         title=req.title.strip(),
         description=req.description,
@@ -248,6 +263,7 @@ def create_schedule_item(
         end_time=req.end_time,
         extra=req.extra or {},
         speaker_id=speaker.id if speaker else None,
+        chair_id=chair.id if chair else None,
         created_by=admin.id,
     )
     db.add(item)
@@ -260,7 +276,8 @@ def create_schedule_item(
         new_value=item.title,
     )
     db.refresh(item)
-    return _serialize(item, bookmarked=False, current_user=admin, speaker_user=speaker)
+    return _serialize(item, bookmarked=False, current_user=admin,
+                      speaker_user=speaker, chair_user=chair)
 
 
 @router.put("/{item_id}", response_model=ScheduleItemResponse)
@@ -308,10 +325,13 @@ def update_schedule_item(
         raw_extra = req.extra if req.extra is not None else (item.extra or {})
         item.extra = _coerce_extra(item.type.value, raw_extra)
 
-    # Reassign (or clear) the presenter only when the field is sent.
+    # Reassign (or clear) the presenter/chair only when the field is sent.
     if "speaker_email" in req.model_fields_set:
         sp = _resolve_speaker(db, req.speaker_email)
         item.speaker_id = sp.id if sp else None
+    if "chair_email" in req.model_fields_set:
+        ch = _resolve_speaker(db, req.chair_email)
+        item.chair_id = ch.id if ch else None
 
     item.updated_at = datetime.now(timezone.utc)
     db.flush()
@@ -346,8 +366,10 @@ def update_schedule_item(
         ScheduleBookmark.user_id == admin.id,
         ScheduleBookmark.schedule_item_id == item.id,
     ).first() is not None
-    speaker = _speaker_map(db, [item]).get(item.speaker_id)
-    return _serialize(item, bookmarked=bm, current_user=admin, speaker_user=speaker)
+    users = _speaker_map(db, [item])
+    return _serialize(item, bookmarked=bm, current_user=admin,
+                      speaker_user=users.get(item.speaker_id),
+                      chair_user=users.get(item.chair_id))
 
 
 @router.delete("/{item_id}")

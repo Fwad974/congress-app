@@ -204,9 +204,26 @@ def can_manage_user(admin: User, target: User) -> bool:
     return admin_level > target_level
 
 
+# Global live moderators run Q&A/polls in ANY session. Session chairs moderate
+# only sessions they're assigned to (see can_moderate_session).
+GLOBAL_LIVE_MODERATOR_ROLES = {UserRole.moderator, UserRole.admin, UserRole.super_admin}
+
+
 def is_live_moderator(user: User) -> bool:
-    """Can this user run live-session features (Q&A/polls)? Session chair+."""
-    return ROLE_HIERARCHY.get(user.role, 0) >= ROLE_HIERARCHY[UserRole.session_chair]
+    """Global live moderator — may moderate Q&A/polls in any session."""
+    return user.role in GLOBAL_LIVE_MODERATOR_ROLES
+
+
+def can_moderate_session(db, user: User, session_id: int) -> bool:
+    """Global moderators, plus the session's assigned chair or presenter."""
+    if is_live_moderator(user):
+        return True
+    from app.models.schedule import ScheduleItem
+    row = db.query(ScheduleItem.speaker_id, ScheduleItem.chair_id).filter(
+        ScheduleItem.id == session_id).first()
+    if not row:
+        return False
+    return user.id is not None and user.id in (row[0], row[1])
 
 
 REVIEW_MANAGER_ROLES = {UserRole.review_chair, UserRole.admin, UserRole.super_admin}

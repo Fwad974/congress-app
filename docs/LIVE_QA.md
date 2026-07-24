@@ -17,7 +17,16 @@ them; everyone's view stays live via Server-Sent Events.
 |--------|-----|
 | Ask, upvote, list | any authenticated user |
 | Delete own question | the author |
-| Mark answered / hide / reopen, delete any | session_chair, review_chair, moderator, admin, super_admin |
+| Moderate (answer / hide / reopen / delete any) **in any session** | moderator, admin, super_admin |
+| Moderate **their own session** | the session's assigned **chair** (`chair_id`) or **presenter** (`speaker_id`) |
+
+Moderation is **session-scoped**: `admin_security.can_moderate_session(db, user,
+session_id)` grants it to global live moderators (moderator+) or to the session's
+own chair/presenter — a `session_chair` can moderate only the sessions they're
+assigned to, not every session. The same check gates **live polls**. Assign a
+chair from the schedule item's admin form (**Chair (app account email)**); chairs
+see their sessions via **My Sessions** (`GET /api/schedule?chair=me`) and get a
+▶ "run session" action on them.
 
 Moderation actions are written to the audit log as `question_moderate`.
 Attendees never receive `hidden` questions; moderators can opt to see them

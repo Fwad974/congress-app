@@ -81,6 +81,7 @@ class ScheduleItemBase(BaseModel):
     end_time: datetime
     extra: Dict[str, Any] = {}
     speaker_email: Optional[str] = None   # app account presenting; "" clears
+    chair_email: Optional[str] = None     # app account chairing; "" clears
 
     @field_validator("title")
     @classmethod
@@ -121,6 +122,7 @@ class ScheduleItemUpdate(BaseModel):
     end_time: Optional[datetime] = None
     extra: Optional[Dict[str, Any]] = None
     speaker_email: Optional[str] = None   # present + "" clears the presenter
+    chair_email: Optional[str] = None     # present + "" clears the chair
 
     @field_validator("type")
     @classmethod
@@ -163,6 +165,10 @@ class ScheduleItemResponse(BaseModel):
     speaker_email: Optional[str] = None
     speaker_name: Optional[str] = None
     is_presenter: bool = False
+    chair_id: Optional[int] = None
+    chair_email: Optional[str] = None
+    chair_name: Optional[str] = None
+    is_chair: bool = False
     created_at: datetime
     updated_at: datetime
 

@@ -20,7 +20,7 @@ from sqlalchemy import func, asc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.core.admin_security import is_live_moderator
+from app.core.admin_security import can_moderate_session
 from app.core.realtime import broadcaster, poll_channel
 from app.models.user import User
 from app.models.schedule import ScheduleItem
@@ -50,9 +50,9 @@ def _require_session(db: Session, session_id: int) -> ScheduleItem:
     return item
 
 
-def _require_mod(user: User) -> None:
-    if not is_live_moderator(user):
-        raise HTTPException(status_code=403, detail="Not allowed to run polls")
+def _require_session_mod(db: Session, user: User, session_id: int) -> None:
+    if not can_moderate_session(db, user, session_id):
+        raise HTTPException(status_code=403, detail="Not allowed to run polls for this session")
 
 
 def _aggregate(db: Session, poll: Poll) -> PollResults:
@@ -99,7 +99,7 @@ def _serialize(db: Session, poll: Poll, user: User) -> PollOut:
         id=poll.id, session_id=poll.schedule_item_id, question=poll.question,
         type=poll.type.value, status=poll.status.value,
         options=agg.options, my_option_ids=my_options, my_words=my_words,
-        can_moderate=is_live_moderator(user),
+        can_moderate=can_moderate_session(db, user, poll.schedule_item_id),
     )
 
 
@@ -115,8 +115,8 @@ def create_poll(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _require_mod(user)
     _require_session(db, session_id)
+    _require_session_mod(db, user, session_id)
 
     ptype = PollType(req.type)
     if ptype in (PollType.single, PollType.multiple) and len(req.options) < 2:
@@ -141,7 +141,7 @@ def list_polls(
     user: User = Depends(get_current_user),
 ):
     _require_session(db, session_id)
-    can_mod = is_live_moderator(user)
+    can_mod = can_moderate_session(db, user, session_id)
     q = db.query(Poll).filter(Poll.schedule_item_id == session_id)
     if not can_mod:
         # Attendees never see drafts.
@@ -159,7 +159,7 @@ def get_poll(
     user: User = Depends(get_current_user),
 ):
     poll = db.query(Poll).filter(Poll.id == poll_id).first()
-    if not poll or (poll.status == PollStatus.draft and not is_live_moderator(user)):
+    if not poll or (poll.status == PollStatus.draft and not can_moderate_session(db, user, poll.schedule_item_id)):
         raise HTTPException(status_code=404, detail="Poll not found")
     return _serialize(db, poll, user)
 
@@ -171,7 +171,7 @@ def get_results(
     user: User = Depends(get_current_user),
 ):
     poll = db.query(Poll).filter(Poll.id == poll_id).first()
-    if not poll or (poll.status == PollStatus.draft and not is_live_moderator(user)):
+    if not poll or (poll.status == PollStatus.draft and not can_moderate_session(db, user, poll.schedule_item_id)):
         raise HTTPException(status_code=404, detail="Poll not found")
     return _aggregate(db, poll)
 
@@ -184,10 +184,10 @@ async def set_poll_status(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _require_mod(user)
     poll = db.query(Poll).filter(Poll.id == poll_id).first()
     if not poll:
         raise HTTPException(status_code=404, detail="Poll not found")
+    _require_session_mod(db, user, poll.schedule_item_id)
     new_status = (body or {}).get("status")
     if new_status not in {"draft", "open", "closed"}:
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -218,10 +218,10 @@ async def delete_poll(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _require_mod(user)
     poll = db.query(Poll).filter(Poll.id == poll_id).first()
     if not poll:
         raise HTTPException(status_code=404, detail="Poll not found")
+    _require_session_mod(db, user, poll.schedule_item_id)
     session_id = poll.schedule_item_id
     db.delete(poll)
     db.commit()

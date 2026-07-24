@@ -105,6 +105,11 @@ def _migrate_schedule_table(connection):
         connection.execute(text(
             "ALTER TABLE schedule_items ADD COLUMN attend_code VARCHAR(12) UNIQUE"
         ))
+    if "chair_id" not in cols:
+        connection.execute(text(
+            "ALTER TABLE schedule_items ADD COLUMN chair_id INTEGER "
+            "REFERENCES users(id) ON DELETE SET NULL"
+        ))
     if "speaker" in cols:
         connection.execute(text(
             "ALTER TABLE schedule_items DROP COLUMN speaker"

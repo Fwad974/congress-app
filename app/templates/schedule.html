@@ -107,6 +107,12 @@
       My Talks
     </button>
     {% endif %}
+    {% if is_session_chair %}
+    <button class="sched-btn" id="myChairsBtn" onclick="toggleMyChairs()" title="Sessions you chair">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M4 19V6a2 2 0 012-2h12a2 2 0 012 2v13"/><path d="M2 19h20"/><path d="M8 9h8"/></svg>
+      My Sessions
+    </button>
+    {% endif %}
     <button class="sched-btn" onclick="loadSchedule()">Refresh</button>
     {% if is_admin %}
       <button class="sched-btn primary" onclick="openCreate()">+ Add Item</button>
@@ -165,6 +171,10 @@
         <label class="form-label">Presenter (app account email)</label>
         <input type="email" class="form-input" id="m_speaker_email" placeholder="speaker@example.com — optional, lets them self-manage">
       </div>
+      <div class="form-group">
+        <label class="form-label">Chair (app account email)</label>
+        <input type="email" class="form-input" id="m_chair_email" placeholder="chair@example.com — optional, moderates this session's Q&amp;A &amp; polls">
+      </div>
       <div id="m_extra_fields"></div>
       <div class="form-group">
         <label class="form-label">Description</label>
@@ -201,6 +211,7 @@
 <script>
 const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 const IS_SPEAKER = {{ 'true' if is_speaker else 'false' }};
+const IS_SESSION_CHAIR = {{ 'true' if is_session_chair else 'false' }};
 const QA_ON = {{ 'true' if feature_enabled('qa') else 'false' }};
 const NOTES_ON = {{ 'true' if feature_enabled('notes') else 'false' }};
 const ICONS = {
@@ -213,6 +224,7 @@ const ICONS = {
 let _items = {};
 let _bookmarkOnly = false;
 let _presenterOnly = false;
+let _chairOnly = false;
 
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
@@ -258,6 +270,7 @@ async function loadSchedule(){
     if(t)params.set('type',t);
     if(_bookmarkOnly)params.set('bookmarked','true');
     if(_presenterOnly)params.set('presenter','me');
+    if(_chairOnly)params.set('chair','me');
     const qs=params.toString();
     const url='/api/schedule'+(qs?'?'+qs:'');
     const d=await api(url);
@@ -280,6 +293,13 @@ function toggleMyTalks(){
   _presenterOnly=!_presenterOnly;
   const b=document.getElementById('myTalksBtn');
   if(b)b.classList.toggle('active',_presenterOnly);
+  loadSchedule();
+}
+
+function toggleMyChairs(){
+  _chairOnly=!_chairOnly;
+  const b=document.getElementById('myChairsBtn');
+  if(b)b.classList.toggle('active',_chairOnly);
   loadSchedule();
 }
 
@@ -439,6 +459,8 @@ function card(i){
   const tags=[
     '<span class="sched-tag type '+esc(i.type)+'">'+esc(i.type)+'</span>',
     i.is_presenter?'<span class="sched-tag speaker">You present</span>':'',
+    i.is_chair?'<span class="sched-tag speaker">You chair</span>':'',
+    (i.chair_name&&!i.is_chair)?'<span class="sched-tag">Chair: '+esc(i.chair_name)+'</span>':'',
     extraTags(i),
     i.location?'<span class="sched-tag location">'+esc(i.location)+'</span>':'',
     x.materials_url?'<a class="sched-tag location" href="'+esc(x.materials_url)+'" target="_blank" rel="noopener">📎 Slides</a>':'',
@@ -449,6 +471,9 @@ function card(i){
   const qaBtn=QA_ON?'<button class="sched-act" title="Live Q&amp;A for this session" onclick="location.href=\'/qa/'+i.id+'\'">'+ICONS.qa+'</button>':'';
   const presenterActs=(i.is_presenter && !IS_ADMIN)?
     '<button class="sched-act" title="Edit your abstract &amp; slides" onclick="openPresentation('+i.id+')">'+ICONS.edit+'</button>':'';
+  // A chair (or presenter) can open the live control view to run polls for their session.
+  const chairActs=((i.is_chair||i.is_presenter) && !IS_ADMIN)?
+    '<button class="sched-act" title="Run this session (Q&amp;A &amp; polls)" onclick="window.open(\'/present/'+i.id+'\',\'_blank\')">▶</button>':'';
   const adminActs=IS_ADMIN?(
     '<button class="sched-act" title="Print attendance QR" onclick="window.open(\'/schedule/'+i.id+'/qr-print\',\'_blank\')">⌗</button>'+
     '<button class="sched-act" title="Edit" onclick="openEdit('+i.id+')">'+ICONS.edit+'</button>'+
@@ -462,7 +487,7 @@ function card(i){
       (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
       extraDetails(i)+
     '</div>'+
-    '<div class="sched-actions">'+qaBtn+noteBtn+bmBtn+presenterActs+adminActs+'</div>'+
+    '<div class="sched-actions">'+qaBtn+noteBtn+bmBtn+chairActs+presenterActs+adminActs+'</div>'+
   '</div>';
 }
 
@@ -485,6 +510,7 @@ function openCreate(){
   document.getElementById('m_location').value='';
   document.getElementById('m_desc').value='';
   document.getElementById('m_speaker_email').value='';
+  document.getElementById('m_chair_email').value='';
   const now=new Date();
   now.setMinutes(0,0,0);
   const later=new Date(now.getTime()+60*60000);
@@ -504,6 +530,7 @@ function openEdit(id){
   document.getElementById('m_location').value=i.location||'';
   document.getElementById('m_desc').value=i.description||'';
   document.getElementById('m_speaker_email').value=i.speaker_email||'';
+  document.getElementById('m_chair_email').value=i.chair_email||'';
   document.getElementById('m_start').value=toLocalInput(i.start_time);
   document.getElementById('m_end').value=toLocalInput(i.end_time);
   renderExtraFields(i.extra||{});
@@ -552,6 +579,7 @@ async function submitSched(){
     end_time:fromLocalInput(document.getElementById('m_end').value),
     extra:collectExtra(),
     speaker_email:document.getElementById('m_speaker_email').value.trim(),
+    chair_email:document.getElementById('m_chair_email').value.trim(),
   };
   if(!payload.title){showToast('Title is required','error');return;}
   if(!payload.start_time||!payload.end_time){showToast('Start and end time are required','error');return;}

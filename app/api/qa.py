@@ -20,7 +20,7 @@ from sqlalchemy import desc, asc
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.core.admin_security import ROLE_HIERARCHY
+from app.core.admin_security import can_moderate_session
 from app.core.audit_service import log_action
 from app.core.realtime import broadcaster, qa_channel
 from app.models.user import User, UserRole
@@ -34,25 +34,14 @@ from app.schemas.qa import (
 
 router = APIRouter()
 
-# Roles that can moderate Q&A (session chair and above).
-_MODERATE_MIN = ROLE_HIERARCHY[UserRole.session_chair]
 # Lightweight anti-spam: one question per user per N seconds.
 _SUBMIT_COOLDOWN = 2.0
 _last_submit: dict[int, float] = {}
 
 
-def _can_moderate(user: User) -> bool:
-    return ROLE_HIERARCHY.get(user.role, 0) >= _MODERATE_MIN
-
-
 def _can_moderate_session(db: Session, user: User, session_id: int) -> bool:
-    """Chairs/moderators/admins, plus the session's own presenter."""
-    if _can_moderate(user):
-        return True
-    speaker_id = db.query(ScheduleItem.speaker_id).filter(
-        ScheduleItem.id == session_id
-    ).scalar()
-    return speaker_id is not None and speaker_id == user.id
+    """Global moderators, plus the session's assigned chair or presenter."""
+    return can_moderate_session(db, user, session_id)
 
 
 def _recount_upvotes(db: Session, question_id: int) -> int:
