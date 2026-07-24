@@ -44,8 +44,8 @@ from app.models.certificate import IssuedCertificate
 
 router = APIRouter()
 
-CERT_KINDS = ("attendance", "cme", "speaker")
-_SERIAL_CODES = {"attendance": "ATT", "cme": "CME", "speaker": "SPK"}
+CERT_KINDS = ("attendance", "cme", "speaker", "survey")
+_SERIAL_CODES = {"attendance": "ATT", "cme": "CME", "speaker": "SPK", "survey": "SUR"}
 
 
 def _csv_safe(value) -> str:
@@ -167,6 +167,18 @@ def cert_status(db: Session, user: User) -> CertStatus:
                  description="Issued to presenters of a session in the program.",
                  unlocked=spoke, progress=1 if spoke else 0, goal=1, unit="sessions presented"),
     ]
+    # Participation certificate — unlocked by completing the post-event survey.
+    # Only offered when the Feedback feature is enabled.
+    from app.core import feature_flags
+    if feature_flags.is_enabled("feedback"):
+        from app.models.feedback import SurveyResponse
+        did_survey = db.query(SurveyResponse.id).filter(
+            SurveyResponse.user_id == user.id).first() is not None
+        certs.append(CertInfo(
+            kind="survey", title="Participation Certificate",
+            description="Complete the post-event survey to unlock this certificate.",
+            unlocked=did_survey, progress=1 if did_survey else 0, goal=1,
+            unit="survey"))
     return CertStatus(attended_sessions=attended, credits=credits, certificates=certs)
 
 
@@ -262,6 +274,9 @@ def _cert_body_text(cert: CertInfo, credits: int, s) -> str:
         unit = "credit" if credits == 1 else "credits"
         return (f"for earning {credits} CME/CPD {unit} through participation "
                 f"in accredited sessions at {full}, {where}")
+    if cert.kind == "survey":
+        return (f"in recognition of their active participation and feedback at "
+                f"{full}, {where}")
     return (f"in recognition of their contribution as a speaker at {full}, "
             f"{where}")
 

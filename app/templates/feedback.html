@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Feedback & Ratings — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.fb-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
+.fb-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.fb-title h2{font:600 1.4rem var(--fh);color:var(--w)}.fb-title h2 span{color:var(--gold)}
+.fb-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.fb-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.fb-tab:hover{color:var(--w7)}.fb-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.fb-panel{display:none}.fb-panel.active{display:block}
+.fb-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px}
+.fb-card h3{font:600 1.02rem var(--fh);color:var(--w);margin-bottom:6px}
+.fb-in{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+textarea.fb-in{resize:vertical;min-height:70px}
+.fb-btn{padding:9px 16px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .82rem var(--f);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.fb-btn:hover{border-color:var(--gold);color:var(--gold)}
+.fb-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.fb-label{font:600 .72rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:10px 0 4px;display:block}
+.stars{display:inline-flex;gap:4px;font-size:1.6rem;cursor:pointer;user-select:none}
+.stars .s{color:var(--w3);transition:.12s}
+.stars .s.on{color:var(--gold)}
+.stars.sm{font-size:1rem}
+.fb-empty{text-align:center;padding:40px 24px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.fb-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.fb-stat{background:rgba(10,61,46,.35);border:1px solid rgba(201,169,98,.12);border-radius:var(--r);padding:12px 16px;min-width:100px}
+.fb-stat .v{font:700 1.4rem var(--fh);color:var(--w)}
+.fb-stat .l{font:.64rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--w5);margin-top:2px}
+.fb-bar{display:flex;align-items:center;gap:8px;font:.8rem var(--f);color:var(--w7);margin:3px 0}
+.fb-bar .track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:50px;overflow:hidden}
+.fb-bar .fill{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold))}
+.fb-sess{border-bottom:1px solid rgba(201,169,98,.08);padding:10px 0}
+.fb-sess .t{font:600 .9rem var(--f);color:var(--w)}
+.fb-sess .m{font:.78rem var(--f);color:var(--w5);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.fb-comment{font:.82rem/1.5 var(--f);color:var(--w7);background:rgba(0,0,0,.18);border-left:3px solid var(--gold);border-radius:6px;padding:8px 12px;margin:4px 0}
+.fb-yesno{display:flex;gap:8px}
+.fb-yesno button{flex:0 0 auto}
+.fb-yesno button.on{background:rgba(201,169,98,.18);border-color:var(--gold);color:var(--gold)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="fb-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="fb-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Feedback &amp; <span>Ratings</span></h2></div>
+  <div class="fb-tabs animate-up">
+    <button class="fb-tab active" data-t="mine" onclick="fbTab('mine')">My Feedback</button>
+    {% if is_speaker or is_organizer %}<button class="fb-tab" data-t="talks" onclick="fbTab('talks')">My Talks</button>{% endif %}
+    {% if is_organizer %}<button class="fb-tab" data-t="sentiment" onclick="fbTab('sentiment')">Sentiment</button>{% endif %}
+  </div>
+
+  <div class="fb-panel active" id="fb-mine">
+    <div class="fb-card" id="surveyCard"><div class="fb-empty">Loading…</div></div>
+    <h3 style="font:600 .9rem var(--fh);color:var(--w);margin:18px 0 8px">Sessions you've rated</h3>
+    <div id="myRatings"><div class="fb-empty">Loading…</div></div>
+    <div style="text-align:center;margin-top:12px"><a class="fb-btn" href="/schedule">Rate more sessions on the schedule →</a></div>
+  </div>
+
+  {% if is_speaker or is_organizer %}
+  <div class="fb-panel" id="fb-talks"><div id="talksBox"><div class="fb-empty">Loading…</div></div></div>
+  {% endif %}
+  {% if is_organizer %}
+  <div class="fb-panel" id="fb-sentiment"><div id="sentimentBox"><div class="fb-empty">Loading…</div></div></div>
+  {% endif %}
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const IS_ORG={{ 'true' if is_organizer else 'false' }};
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+function starsRO(n){let h='<span class="stars sm">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=Math.round(n)?' on':'')+'">★</span>';return h+'</span>';}
+function starPicker(id,val){let h='<span class="stars" id="'+id+'" data-v="'+(val||0)+'">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=(val||0)?' on':'')+'" data-i="'+i+'">★</span>';return h+'</span>';}
+document.addEventListener('click',e=>{const s=e.target.closest('.stars [data-i]');if(!s)return;const wrap=s.parentElement;const v=parseInt(s.dataset.i,10);wrap.dataset.v=v;wrap.querySelectorAll('.s').forEach((el,idx)=>el.classList.toggle('on',idx<v));});
+function getStars(id){const el=document.getElementById(id);return el?parseInt(el.dataset.v,10)||0:0;}
+
+let _fbTabsLoaded={};
+function fbTab(t){document.querySelectorAll('.fb-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.fb-panel').forEach(p=>p.classList.toggle('active',p.id==='fb-'+t));
+  if(t==='mine'){loadSurvey();loadMyRatings();}
+  if(t==='talks')loadTalks();
+  if(t==='sentiment'){loadSentiment();if(!_fbTabsLoaded.sentiment){_fbTabsLoaded.sentiment=setInterval(()=>{if(document.getElementById('fb-sentiment').classList.contains('active'))loadSentiment();},15000);}}
+}
+
+// ── My Feedback: survey + my ratings ───────────────────────
+let _recommend=null;
+async function loadSurvey(){
+  try{const s=await api('/api/feedback/survey');const c=document.getElementById('surveyCard');
+    if(s.submitted){
+      c.innerHTML='<h3>✓ Post-event survey — completed</h3><div class="fb-bar" style="margin:6px 0">Overall '+starsRO(s.overall)+'</div>'+
+        '<div style="font:.82rem var(--f);color:var(--w5)">Thanks! Your <a href="/certificates" style="color:var(--gold)">Participation Certificate</a> is unlocked.</div>'+
+        '<div style="margin-top:8px"><button class="fb-btn" onclick="editSurvey('+JSON.stringify(s).replace(/"/g,'&quot;')+')">Update my answers</button></div>';
+      return;
+    }
+    renderSurveyForm(c,s);
+  }catch(e){document.getElementById('surveyCard').innerHTML='<div class="fb-empty">'+esc(e.message)+'</div>';}
+}
+function editSurvey(s){renderSurveyForm(document.getElementById('surveyCard'),s);}
+function renderSurveyForm(c,s){
+  _recommend=s.would_recommend===undefined?null:s.would_recommend;
+  c.innerHTML='<h3>Post-event survey</h3><div style="font:.82rem var(--f);color:var(--w5);margin-bottom:6px">Complete it to unlock your Participation Certificate.</div>'+
+    '<span class="fb-label">Overall satisfaction</span>'+starPicker('sv_overall',s.overall)+
+    '<span class="fb-label">Organization</span>'+starPicker('sv_org',s.organization)+
+    '<span class="fb-label">Venue</span>'+starPicker('sv_venue',s.venue)+
+    '<span class="fb-label">Would you recommend this congress?</span>'+
+    '<div class="fb-yesno"><button class="fb-btn'+(s.would_recommend===true?' on':'')+'" id="rec_y" onclick="setRec(true)">👍 Yes</button>'+
+    '<button class="fb-btn'+(s.would_recommend===false?' on':'')+'" id="rec_n" onclick="setRec(false)">👎 No</button></div>'+
+    '<span class="fb-label">Comments</span><textarea class="fb-in" id="sv_comment" placeholder="What worked, what could improve…">'+esc(s.comment||'')+'</textarea>'+
+    '<div style="text-align:right;margin-top:10px"><button class="fb-btn primary" onclick="submitSurvey()">Submit survey</button></div>';
+}
+function setRec(v){_recommend=v;document.getElementById('rec_y').classList.toggle('on',v===true);document.getElementById('rec_n').classList.toggle('on',v===false);}
+async function submitSurvey(){
+  const overall=getStars('sv_overall');
+  if(!overall){showToast('Please give an overall rating','error');return;}
+  const body={overall,organization:getStars('sv_org')||null,venue:getStars('sv_venue')||null,would_recommend:_recommend,comment:document.getElementById('sv_comment').value.trim()||null};
+  try{await api('/api/feedback/survey','POST',body);showToast('Thanks! Participation Certificate unlocked 🎉','success');loadSurvey();}
+  catch(e){showToast(e.message,'error');}
+}
+async function loadMyRatings(){
+  try{const rows=await api('/api/feedback/mine');const c=document.getElementById('myRatings');
+    if(!rows.length){c.innerHTML='<div class="fb-empty">You haven\'t rated any sessions yet.</div>';return;}
+    c.innerHTML=rows.map(r=>'<div class="fb-sess"><div class="t">'+esc(r.title)+' '+starsRO(r.stars)+'</div>'+
+      (r.comment?'<div class="fb-comment">'+esc(r.comment)+'</div>':'')+'</div>').join('');
+  }catch(e){showToast(e.message,'error');}
+}
+
+// ── My Talks: anonymized digest ────────────────────────────
+async function loadTalks(){
+  try{const d=await api('/api/feedback/my-talks');const c=document.getElementById('talksBox');
+    if(!d.sessions.length){c.innerHTML='<div class="fb-empty">No sessions assigned to you as presenter yet.</div>';return;}
+    const head='<div class="fb-stats"><div class="fb-stat"><div class="v">'+d.overall_average+'</div><div class="l">Avg rating</div></div>'+
+      '<div class="fb-stat"><div class="v">'+d.total_ratings+'</div><div class="l">Ratings</div></div>'+
+      '<div class="fb-stat"><div class="v">'+d.sessions.length+'</div><div class="l">Sessions</div></div></div>'+
+      '<div style="font:.78rem var(--f);color:var(--w5);margin-bottom:10px">This is an anonymized summary of audience reactions to your sessions.</div>';
+    c.innerHTML=head+d.sessions.map(sessionCard).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function distBars(dist,total){let h='';for(let s=5;s>=1;s--){const n=dist[s]||0;const pct=total?Math.round(n/total*100):0;h+='<div class="fb-bar">'+s+'★<div class="track"><div class="fill" style="width:'+pct+'%"></div></div><span style="width:32px;text-align:right">'+n+'</span></div>';}return h;}
+function sessionCard(s){
+  return '<div class="fb-card"><h3>'+esc(s.title)+' '+starsRO(s.average)+' <span style="font:.78rem var(--f);color:var(--w5)">'+s.average+' · '+s.count+' rating'+(s.count===1?'':'s')+'</span></h3>'+
+    distBars(s.distribution,s.count)+
+    (s.comments&&s.comments.length?'<div style="margin-top:8px">'+s.comments.slice(0,20).map(x=>'<div class="fb-comment">'+esc(x)+'</div>').join('')+'</div>':'<div style="font:.78rem var(--f);color:var(--w3);margin-top:6px">No written comments yet.</div>')+
+    (s.speaker_feedback&&s.speaker_feedback.length?'<div class="fb-label" style="color:var(--red)">Private speaker feedback (organizers only)</div>'+s.speaker_feedback.map(x=>'<div class="fb-comment" style="border-left-color:var(--red)">'+esc(x)+'</div>').join(''):'')+
+    '</div>';
+}
+
+// ── Sentiment dashboard (organizer, auto-refresh) ──────────
+async function loadSentiment(){
+  try{const d=await api('/api/feedback/sentiment');const c=document.getElementById('sentimentBox');
+    const sv=d.survey;
+    const tiles='<div class="fb-stats">'+
+      '<div class="fb-stat"><div class="v">'+d.overall_average+'</div><div class="l">Avg session rating</div></div>'+
+      '<div class="fb-stat"><div class="v">'+d.total_ratings+'</div><div class="l">Ratings</div></div>'+
+      '<div class="fb-stat"><div class="v">'+d.rated_sessions+'</div><div class="l">Sessions rated</div></div>'+
+      '<div class="fb-stat"><div class="v">'+sv.responses+'</div><div class="l">Survey responses</div></div>'+
+      '<div class="fb-stat"><div class="v">'+sv.avg_overall+'</div><div class="l">Survey overall</div></div>'+
+      '<div class="fb-stat"><div class="v">'+sv.recommend_pct+'%</div><div class="l">Would recommend</div></div></div>';
+    const dist='<div class="fb-card"><h3>Rating distribution</h3>'+distBars(d.distribution,d.total_ratings)+'</div>';
+    const top=d.top_sessions.length?'<div class="fb-card"><h3>Top-rated sessions</h3>'+d.top_sessions.map(miniSess).join('')+'</div>':'';
+    const low=d.low_sessions.length?'<div class="fb-card"><h3>⚠ Needs attention</h3>'+d.low_sessions.map(miniSess).join('')+'</div>':'';
+    const recent=d.recent_comments.length?'<div class="fb-card"><h3>Recent comments</h3>'+d.recent_comments.map(x=>'<div class="fb-comment">'+esc(x)+'</div>').join('')+'</div>':'';
+    const exp='<div style="margin-bottom:12px"><a class="fb-btn" href="/api/feedback/survey/export">⬇ Export survey CSV</a> <span style="font:.72rem var(--f);color:var(--w3)">updated '+new Date(d.server_time).toLocaleTimeString('en-GB')+' · auto-refresh 15s</span></div>';
+    c.innerHTML=exp+tiles+dist+top+low+recent;
+  }catch(e){showToast(e.message,'error');}
+}
+function miniSess(s){return '<div class="fb-sess"><div class="t">'+esc(s.title)+' '+starsRO(s.average)+'</div><div class="m"><span>'+s.average+' avg</span><span>'+s.count+' rating'+(s.count===1?'':'s')+'</span></div></div>';}
+
+document.addEventListener('DOMContentLoaded',()=>fbTab('mine'));
+</script>
+{% endblock %}

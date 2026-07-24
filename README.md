@@ -95,6 +95,11 @@ pytest -q
 | POST/PUT/DELETE | `/api/sponsors` · `/api/sponsors/{id}` | Manage sponsors | Organizer |
 | GET | `/api/sponsors/{id}/leads` · `/leads/export` | Read / export leads (PII, logged) | Organizer |
 | GET | `/api/sponsors/analytics` | Booth visits, leads, conversion | Organizer |
+| POST/GET | `/api/sessions/{id}/rating` | Rate a session (1–5 + comment + private speaker note) | Any user |
+| GET | `/api/sessions/{id}/rating/summary` | Session ratings (private feedback organizers-only) | Speaker / Organizer |
+| GET/POST | `/api/feedback/survey` | Post-event survey (unlocks Participation cert) | Any user |
+| GET | `/api/feedback/my-talks` | Anonymized rating digest for my sessions | Speaker |
+| GET | `/api/feedback/sentiment` · `/survey/export` | Sentiment dashboard · survey CSV | Organizer |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
@@ -394,6 +399,22 @@ A chrome-free **presenter view** (`/present/{session_id}`, opened via the
 "Present ↗" button) shows the open poll on the big screen — animated bar charts
 for choice polls, a frequency-sized word cloud for word-cloud polls — updating
 live as votes land. Built on the same realtime layer as Q&A.
+
+## Feedback & Ratings
+
+Inline session ratings, a post-event survey, and organizer sentiment at
+`/feedback` (feature flag `feedback`). See [`docs/FEEDBACK.md`](docs/FEEDBACK.md).
+
+- **Attendees** rate any session 1–5 stars (a ★ button on every schedule card)
+  with an optional comment and an optional **private note about the speaker**,
+  and complete the **post-event survey** — which unlocks a **Participation
+  Certificate**.
+- **Speakers** get an **anonymized** digest of the audience reaction to their
+  own sessions (average, distribution, comments) — never the private speaker
+  feedback.
+- **Organizers** get a **real-time sentiment dashboard** (overall average,
+  distribution, top/needs-attention sessions, recent comments, survey aggregate
+  + CSV export) and can read the private speaker feedback.
 
 ## Sponsors & Exhibitors
 

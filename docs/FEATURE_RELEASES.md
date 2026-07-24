@@ -43,8 +43,8 @@ Unknown keys fail open (never accidentally hidden).
 - **Pages** — `pages._feature_blocked(user, key)` redirects non-admins to `/home`
   (`/papers`, `/posters`, `/notes`, `/qa/{id}`, `/connect`, `/sponsors`).
 - **APIs** — `feature_flags.require_feature(key)` is a router dependency on the
-  papers, posters, notes, qa, polls, connect, and sponsors routers (403 for
-  non-admins when off).
+  papers, posters, notes, qa, polls, connect, sponsors, and feedback routers
+  (403 for non-admins when off).
 
 ## Files
 

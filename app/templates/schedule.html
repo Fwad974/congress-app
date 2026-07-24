@@ -46,6 +46,8 @@
 .sched-act{width:32px;height:32px;border-radius:8px;border:1px solid rgba(201,169,98,.12);background:none;color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
 .sched-act:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.06)}
 .sched-act svg{width:14px;height:14px}
+.sched-act.rate.on{color:var(--gold);border-color:var(--gold);background:rgba(201,169,98,.1)}
+.sched-act.rate.on svg{fill:var(--gold)}
 .sched-act.del{color:var(--red);border-color:rgba(231,76,60,.15)}
 .sched-act.del:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
 .sched-empty{text-align:center;padding:60px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
@@ -214,7 +216,9 @@ const IS_SPEAKER = {{ 'true' if is_speaker else 'false' }};
 const IS_SESSION_CHAIR = {{ 'true' if is_session_chair else 'false' }};
 const QA_ON = {{ 'true' if feature_enabled('qa') else 'false' }};
 const NOTES_ON = {{ 'true' if feature_enabled('notes') else 'false' }};
+const FEEDBACK_ON = {{ 'true' if feature_enabled('feedback') else 'false' }};
 const ICONS = {
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
   bookmark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>',
@@ -469,6 +473,8 @@ function card(i){
   const bmBtn='<button class="sched-act bm'+(i.is_bookmarked?' on':'')+'" title="'+bmTitle+'" onclick="toggleBookmark('+i.id+',this)">'+ICONS.bookmark+'</button>';
   const noteBtn=NOTES_ON?'<button class="sched-act" title="Add a note for this session" onclick="location.href=\'/notes?session='+i.id+'\'">'+ICONS.note+'</button>':'';
   const qaBtn=QA_ON?'<button class="sched-act" title="Live Q&amp;A for this session" onclick="location.href=\'/qa/'+i.id+'\'">'+ICONS.qa+'</button>':'';
+  // 1-tap session rating. Non-session rows (breaks) and future admin rows skip it.
+  const rateBtn=(FEEDBACK_ON && i.type!=='break')?'<button class="sched-act rate'+(i.my_rating?' on':'')+'" title="Rate this session" onclick="openRate('+i.id+',\''+esc(i.title).replace(/\x27/g,"")+'\')">'+ICONS.star+'</button>':'';
   const presenterActs=(i.is_presenter && !IS_ADMIN)?
     '<button class="sched-act" title="Edit your abstract &amp; slides" onclick="openPresentation('+i.id+')">'+ICONS.edit+'</button>':'';
   // A chair (or presenter) can open the live control view to run polls for their session.
@@ -487,8 +493,36 @@ function card(i){
       (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
       extraDetails(i)+
     '</div>'+
-    '<div class="sched-actions">'+qaBtn+noteBtn+bmBtn+chairActs+presenterActs+adminActs+'</div>'+
+    '<div class="sched-actions">'+qaBtn+rateBtn+noteBtn+bmBtn+chairActs+presenterActs+adminActs+'</div>'+
   '</div>';
+}
+
+// ── 1-tap session rating ─────────────────────────────────────────
+let _rateId=null,_rateStars=0;
+async function openRate(id,title){
+  _rateId=id;_rateStars=0;
+  let host=document.getElementById('rateModal');
+  if(!host){host=document.createElement('div');host.id='rateModal';host.className='modal-overlay';host.onclick=e=>{if(e.target===host)closeRate();};document.body.appendChild(host);}
+  host.innerHTML='<div class="modal" style="max-width:420px"><div class="modal-header"><h3>Rate <span>this session</span></h3><button class="modal-close" onclick="closeRate()">X</button></div>'+
+    '<div style="padding:4px 4px 8px"><div style="font:.86rem var(--f);color:var(--w7);margin-bottom:10px">'+esc(title)+'</div>'+
+    '<div id="rateStars" style="display:flex;gap:6px;font-size:2rem;cursor:pointer;color:var(--w3)">'+
+    [1,2,3,4,5].map(n=>'<span data-i="'+n+'" onclick="setRate('+n+')">★</span>').join('')+'</div>'+
+    '<textarea class="form-input" id="rateComment" rows="3" placeholder="Optional comment (shared anonymously)" style="margin-top:12px"></textarea>'+
+    '<textarea class="form-input" id="rateSpeaker" rows="2" placeholder="Private feedback about the speaker (organizers only)" style="margin-top:8px"></textarea>'+
+    '<div style="text-align:right;margin-top:12px"><button class="sched-btn primary" onclick="submitRate()">Submit rating</button></div></div></div>';
+  host.classList.add('open');
+  try{const r=await api('/api/sessions/'+id+'/rating');
+    if(r.rated){setRate(r.stars);document.getElementById('rateComment').value=r.comment||'';document.getElementById('rateSpeaker').value=r.speaker_feedback||'';}
+  }catch(e){}
+}
+function setRate(n){_rateStars=n;document.querySelectorAll('#rateStars span').forEach((el,i)=>el.style.color=i<n?'var(--gold)':'var(--w3)');}
+function closeRate(){const h=document.getElementById('rateModal');if(h){h.classList.remove('open');h.innerHTML='';}}
+async function submitRate(){
+  if(!_rateStars){showToast('Tap a star to rate','error');return;}
+  try{await api('/api/sessions/'+_rateId+'/rating','POST',{stars:_rateStars,comment:document.getElementById('rateComment').value.trim()||null,speaker_feedback:document.getElementById('rateSpeaker').value.trim()||null});
+    showToast('Thanks for your rating!','success');
+    closeRate();loadSchedule();}
+  catch(e){showToast(e.message,'error');}
 }
 
 function toLocalInput(iso){

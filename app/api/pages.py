@@ -265,6 +265,20 @@ async def poster_qr_print(request: Request, poster_id: int,
     })
 
 
+@router.get("/feedback", response_class=HTMLResponse)
+async def feedback_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "feedback"):
+        return RedirectResponse(url="/home", status_code=302)
+    is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
+    is_speaker = user.role == UserRole.speaker
+    return templates.TemplateResponse("feedback.html", {
+        "request": request, "user": user,
+        "is_organizer": is_organizer, "is_speaker": is_speaker,
+    })
+
+
 @router.get("/sponsors", response_class=HTMLResponse)
 async def sponsors_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:

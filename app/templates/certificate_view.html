@@ -39,6 +39,9 @@
         for earning <strong>{{ credits }} CME/CPD credit{{ '' if credits == 1 else 's' }}</strong>
         through participation in accredited sessions at {{ congress_full }},
         held {{ congress_dates }} at {{ congress_venue }}.
+      {% elif cert.kind == 'survey' %}
+        in recognition of their active participation and feedback at
+        {{ congress_full }}, held {{ congress_dates }} at {{ congress_venue }}.
       {% else %}
         in recognition of their contribution as a <strong>speaker</strong>
         at {{ congress_full }}, held {{ congress_dates }} at {{ congress_venue }}.

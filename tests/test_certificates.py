@@ -94,7 +94,8 @@ class TestCertificates:
         att = make_user(db, email="cs@test.com", role=UserRole.attendee)
         d = client.get("/api/certificates/status", cookies=auth_cookie(att)).json()
         kinds = {c["kind"]: c for c in d["certificates"]}
-        assert set(kinds) == {"attendance", "cme", "speaker"}
+        # "survey" appears while the feedback feature is enabled (default in tests).
+        assert {"attendance", "cme", "speaker"} <= set(kinds)
         assert not any(c["unlocked"] for c in d["certificates"])
 
     def test_attendance_cert_unlocks_at_goal(self, client, db):

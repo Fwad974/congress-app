@@ -29,6 +29,8 @@ FEATURES: Dict[str, tuple] = {
                 "Opt-in attendee directory for finding and contacting peers."),
     "sponsors": ("Sponsors & Exhibitors",
                  "Sponsor tiers, virtual exhibitor booths, and opt-in lead capture."),
+    "feedback": ("Feedback & Ratings",
+                 "Session star ratings, the post-event survey, and organizer sentiment."),
 }
 DEFAULT_ENABLED = True
 _ADMIN_ROLES = {UserRole.admin, UserRole.super_admin}

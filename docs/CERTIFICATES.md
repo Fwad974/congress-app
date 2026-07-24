@@ -8,6 +8,7 @@ session's code on `/certificates`). Certificates unlock automatically:
 | **Certificate of Attendance** | checked in to ≥ `CERT_MIN_SESSIONS` sessions (default 3) — or, when `CERT_ATTENDANCE_PCT` > 0, to ≥ that percentage of the program (see below) |
 | **CME/CPD Credit Certificate** | earned ≥ `CME_MIN_CREDITS` credits — `CME_CREDITS_PER_SESSION` (default 1) per attended session |
 | **Speaker Certificate** | presenter (`speaker_id`) on ≥ 1 schedule item |
+| **Participation Certificate** (`survey`) | completed the post-event survey — only offered while the `feedback` feature is enabled (see [`docs/FEEDBACK.md`](FEEDBACK.md)) |
 
 ### Percentage-based eligibility
 
