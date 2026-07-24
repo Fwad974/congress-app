@@ -609,15 +609,44 @@ Once created, access `/admin` to manage all users from the dashboard.
 # Install test dependencies
 pip install pytest httpx
 
-# Run all 124 tests
+# Run all 717 tests (29 files)
 pytest tests/ -v
 ```
+
+Tests run against SQLite with a fresh database per test, so no PostgreSQL is
+needed. `tests/conftest.py` swaps the Postgres `ARRAY` column for a JSON type
+and points uploads at a temp directory.
 
 ### Test Coverage
 
 | File | Tests | Coverage |
-|------|-------|---------|
-| `test_auth.py` | 17 | Signup, login, logout, profile, password, login lockout |
-| `test_admin.py` | 48 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
-| `test_security.py` | 38 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
-| `test_schemas.py` | 11 | Pydantic validation for all request schemas |
+|------|------:|---------|
+| `test_admin.py` | 50 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
+| `test_companion.py` | 48 | Intent routing, nudges, energy, serendipity, prep, Claude fallback |
+| `test_papers.py` | 46 | Submission, blind review, decisions, manuscripts |
+| `test_recordings.py` | 46 | Consent gating, publication window, VTT parsing, transcript search |
+| `test_security.py` | 43 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
+| `test_certificates.py` | 35 | Attendance check-in, CME credits, PDF, serial verification |
+| `test_schedule.py` | 35 | Program CRUD, bookmarks, presenter fields, change notifications |
+| `test_sponsors.py` | 30 | Tiers, booths, opt-in leads (DATA-06), analytics |
+| `test_knowledge.py` | 29 | Topic extraction, graph, related/threads, cross-pollination, PDF |
+| `test_moderation_advanced.py` | 29 | Auto-flagging, poster approval, MOD-04 escalation ladder |
+| `test_posters.py` | 27 | Gallery, votes, comments, scavenger hunt |
+| `test_venue.py` | 27 | Floor plan, routing, WiFi QR, EN/AR, Maps links |
+| `test_notifications.py` | 26 | Feed, preferences, push subscriptions |
+| `test_broadcasts.py` | 24 | Announcements, emergency alerts, NOTIF-02 limits |
+| `test_notes.py` | 22 | Personal notes CRUD and session links |
+| `test_auth.py` | 21 | Signup, login, logout, profile, password, login lockout |
+| `test_feedback.py` | 20 | Session ratings, survey, speaker digest, sentiment |
+| `test_review_mgmt.py` | 19 | Reviewer assignment (manual/auto + COI), rubric, overrides |
+| `test_features.py` | 17 | Feature-flag registry, toggles, enforcement |
+| `test_polls.py` | 17 | Poll lifecycle, voting, word clouds |
+| `test_schemas.py` | 16 | Pydantic validation for all request schemas |
+| `test_qa.py` | 15 | Questions, upvotes, moderation |
+| `test_moderation.py` | 14 | Reports, queue, resolution |
+| `test_review_chair.py` | 13 | Chair assignment and decision permissions |
+| `test_oauth.py` | 11 | Google / ORCID account linking |
+| `test_speaker.py` | 11 | Presenter self-service on own sessions |
+| `test_session_chair.py` | 10 | Chair moderation scope |
+| `test_connect.py` | 9 | Opt-in attendee directory |
+| `test_reactions.py` | 7 | Batched emoji reactions and SSE stream |

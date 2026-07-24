@@ -84,6 +84,9 @@
 <script>
 let GRAPH=null,TOPICS=[],FOCUS=null;
 function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+// Topic keys come from admin/author text, so quote them for the inline
+// handlers they get embedded in (JS-escape first, then HTML-escape).
+function arg(s){return esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));}
 const KIND_COLOR={topic:'#c9a962',session:'#63d297',poster:'#6cb2f0',paper:'#c9a0dc',person:'#e8b96c'};
 function kgTab(t){document.querySelectorAll('.kg-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.kg-panel').forEach(p=>p.classList.toggle('active',p.id==='kg-'+t));
   if(t==='trending')loadTrending();if(t==='thread')loadThreadChips();if(t==='mine')loadMine();}
@@ -128,7 +131,7 @@ function drawMap(){
     const n=p.n,isT=n.kind==='topic';
     const r=isT?Math.min(26,9+n.weight*1.6):5.5;
     out+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r+'" fill="'+KIND_COLOR[n.kind]+
-      '" fill-opacity="'+(isT?0.85:0.75)+'" stroke="rgba(0,0,0,.35)" onclick="pickNode(\''+n.id.replace(/'/g,"")+'\')"><title>'+esc(n.label)+'</title></circle>';
+      '" fill-opacity="'+(isT?0.85:0.75)+'" stroke="rgba(0,0,0,.35)" onclick="pickNode(\''+arg(n.id)+'\')"><title>'+esc(n.label)+'</title></circle>';
     if(isT)out+='<text class="t" x="'+p.x.toFixed(1)+'" y="'+(p.y+r+12).toFixed(1)+'" text-anchor="middle">'+esc(n.label)+'</text>';
   });
   svg.innerHTML=out;
@@ -137,15 +140,15 @@ async function pickNode(id){
   const node=GRAPH.nodes.find(n=>n.id===id);if(!node)return;
   const box=document.getElementById('nodeBox');box.style.display='block';
   if(node.kind==='topic'){box.innerHTML='<h3>'+esc(node.label)+'</h3><div class="kg-meta">'+node.weight+' items · '+node.discussion+' questions &amp; comments</div>'+
-    '<div style="margin-top:10px"><button class="kg-btn" onclick="loadGraph(\''+esc(node.topic)+'\')">Focus this topic</button> '+
-    '<button class="kg-btn" onclick="openThread(\''+esc(node.topic)+'\')">Follow across the days</button></div>';
+    '<div style="margin-top:10px"><button class="kg-btn" onclick="loadGraph(\''+arg(node.topic)+'\')">Focus this topic</button> '+
+    '<button class="kg-btn" onclick="openThread(\''+arg(node.topic)+'\')">Follow across the days</button></div>';
     return;}
   const [kind,eid]=id.split(':');
   box.innerHTML='<h3>'+esc(node.label)+'</h3><div class="kg-meta">Loading connections…</div>';
   let d;try{d=await api('/api/knowledge/related/'+kind+'/'+eid);}catch(e){box.innerHTML='<div class="kg-empty">'+esc(e.message)+'</div>';return;}
   box.innerHTML='<h3>'+esc(d.source.title)+'</h3>'+
     '<div class="kg-meta">'+esc(d.source.subtitle||'')+(d.source.when?' · '+when(d.source.when):'')+'</div>'+
-    '<div class="kg-meta">'+(d.source.topics||[]).map(t=>'<span class="kg-chip" onclick="loadGraph(\''+esc(t)+'\')">'+esc(t)+'</span>').join('')+'</div>'+
+    '<div class="kg-meta">'+(d.source.topics||[]).map(t=>'<span class="kg-chip" onclick="loadGraph(\''+arg(t)+'\')">'+esc(t)+'</span>').join('')+'</div>'+
     '<h3 style="margin-top:12px;font-size:.9rem">Because you liked this</h3>'+
     (d.related.length?d.related.map(r=>'<div class="kg-item"><div class="t"><a href="'+esc(r.url)+'" style="color:inherit;text-decoration:none">'+esc(r.title)+'</a></div>'+
       '<div class="r">'+esc(r.reason)+'</div><div class="m">'+esc(r.kind)+(r.when?' · '+when(r.when):'')+(r.subtitle?' · '+esc(r.subtitle):'')+'</div></div>').join('')
@@ -160,7 +163,7 @@ async function loadTrending(){
   box.innerHTML=d.topics.length?d.topics.map((t,i)=>
     '<div class="kg-card" style="padding:12px 16px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">'+
     '<h3 style="margin:0">'+(i<3?'🔥 ':'')+esc(t.label)+'</h3>'+
-    '<div><button class="kg-btn" onclick="openThread(\''+esc(t.topic)+'\')">Thread</button></div></div>'+
+    '<div><button class="kg-btn" onclick="openThread(\''+arg(t.topic)+'\')">Thread</button></div></div>'+
     '<div class="kg-meta"><span>'+t.count+' items</span><span>'+(t.kinds.session||0)+' sessions</span>'+
     '<span>'+(t.kinds.poster||0)+' posters</span><span>'+(t.kinds.paper||0)+' papers</span>'+
     '<span style="color:var(--gold)">'+t.discussion+' questions &amp; comments</span></div></div>').join('')
@@ -171,7 +174,7 @@ async function loadTrending(){
 async function loadThreadChips(){
   if(!TOPICS.length){try{TOPICS=(await api('/api/knowledge/topics')).topics;}catch(e){}}
   document.getElementById('threadChips').innerHTML=TOPICS.slice(0,24).map(t=>
-    '<span class="kg-chip" onclick="openThread(\''+esc(t.topic)+'\')">'+esc(t.label)+' <b>'+t.count+'</b></span>').join('')
+    '<span class="kg-chip" onclick="openThread(\''+arg(t.topic)+'\')">'+esc(t.label)+' <b>'+t.count+'</b></span>').join('')
     ||'No topics yet.';
 }
 async function openThread(topic){

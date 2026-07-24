@@ -209,8 +209,10 @@ anything?" closes several gaps at once.
 
 ## 5. Documentation drift to fix
 
-- README claims **124 tests / 4 files**; actual **447 tests / 21 files**
-  (its own table sums to 114 and conflicts with the architecture section).
+- ~~README claims **124 tests / 4 files**; actual **447 tests / 21 files**~~
+  — **fixed**: the README table now lists every test file with authoritative
+  counts (**717 tests / 29 files** as of the Recordings / Knowledge Graph /
+  Companion release).
 - README API table omits entire shipped routers: certificates/attendance,
   posters, moderation, connect, notification feed/push, feature flags.
 - README role-permission table covers only admin-dashboard roles; the four
