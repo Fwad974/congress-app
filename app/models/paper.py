@@ -9,7 +9,7 @@ and the submitter's identity is hidden from reviewers (light double-blind).
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, Boolean, Enum as SAEnum,
+    Column, Integer, String, Text, DateTime, Date, Boolean, Enum as SAEnum,
     ForeignKey, UniqueConstraint, Index,
 )
 from app.core.database import Base
@@ -46,6 +46,7 @@ class Paper(Base):
     round = Column(Integer, default=1, nullable=False)          # current revision round
     author_response = Column(Text, nullable=True)               # rebuttal on resubmit
     decision_comment = Column(Text, nullable=True)              # chair's note to author
+    review_deadline = Column(Date, nullable=True)               # chair-set review due date
     created_at = Column(DateTime(timezone=True),
                         default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True),

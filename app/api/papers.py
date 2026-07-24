@@ -12,7 +12,7 @@ Reviews stay hidden from the author until a decision; the submitter's identity
 is hidden from reviewers (light double-blind).
 """
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File
@@ -32,7 +32,8 @@ from app.models.notification import UserNotification
 from app.models.paper import Paper, Review, PaperStatus, MAX_REVISION_ROUNDS
 from app.schemas.paper import (
     PaperCreate, PaperUpdate, ReviewUpsert, ReviewRespond, AssignRequest,
-    DecisionRequest, PaperResponse, PaperListResponse, ReviewResponse, ReviewerInfo,
+    DecisionRequest, DeadlineRequest, PaperResponse, PaperListResponse,
+    ReviewResponse, ReviewerInfo, ReviewerLoad, AttentionPaper, ReviewChairOverview,
 )
 
 router = APIRouter()
@@ -63,6 +64,22 @@ def _assigned_review(db: Session, paper_id: int, user_id: int) -> Optional[Revie
     return db.query(Review).filter(
         Review.paper_id == paper_id, Review.reviewer_id == user_id
     ).first()
+
+
+def _is_overdue(paper: Paper) -> bool:
+    """Under review, past its deadline — the chair should chase reviewers."""
+    return bool(paper.review_deadline
+                and paper.status == PaperStatus.under_review
+                and paper.review_deadline < date.today())
+
+
+def _parse_date(s: Optional[str]) -> Optional[date]:
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s.strip()[:10])
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid date (use YYYY-MM-DD)")
 
 
 def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
@@ -127,6 +144,8 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
         review_count=len(reviews) if show_aggregates else 0,
         submitted_review_count=len(submitted) if show_aggregates else 0,
         avg_score=avg if show_aggregates else None,
+        review_deadline=paper.review_deadline.isoformat() if paper.review_deadline else None,
+        is_overdue=_is_overdue(paper),
         my_review=my_review, reviews=review_out,
         created_at=paper.created_at, updated_at=paper.updated_at,
     )
@@ -229,6 +248,7 @@ def assignable_reviewers(
     reviewers = db.query(User).filter(
         User.role.in_(ASSIGNABLE_REVIEWER_ROLES), User.is_active == True  # noqa: E712
     ).all()
+    active_load, completed_load = _reviewer_loads(db)
     out = []
     for r in reviewers:
         if r.id == paper.author_id:
@@ -239,8 +259,93 @@ def assignable_reviewers(
             coi=bool(author_inst and inst == author_inst),
             assigned=r.id in state_by_reviewer,
             state=state_by_reviewer.get(r.id),
+            active_load=active_load.get(r.id, 0),
+            completed_load=completed_load.get(r.id, 0),
         ))
     return out
+
+
+def _reviewer_loads(db: Session):
+    """Per-reviewer workload across all papers: (active dict, completed dict).
+
+    active   = assignments accepted/invited and not yet submitted.
+    completed = reviews submitted.
+    """
+    active: dict = {}
+    completed: dict = {}
+    rows = db.query(Review.reviewer_id, Review.submitted, Review.state).all()
+    for rid, submitted, state in rows:
+        if submitted:
+            completed[rid] = completed.get(rid, 0) + 1
+        elif state not in ("declined", "recused"):
+            active[rid] = active.get(rid, 0) + 1
+    return active, completed
+
+
+# ─── Review-chair dashboard ──────────────────────────────────────
+MIN_REVIEWERS = 2  # REV-01
+
+
+@router.get("/overview", response_model=ReviewChairOverview)
+def review_overview(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if not is_review_chair(user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    papers = db.query(Paper).all()
+    reviews = db.query(Review).all()
+    by_paper: dict = {}
+    for r in reviews:
+        by_paper.setdefault(r.paper_id, []).append(r)
+
+    status_counts: dict = {}
+    reviews_assigned = reviews_submitted = 0
+    for r in reviews:
+        if r.submitted:
+            reviews_submitted += 1
+        if r.state not in ("declined", "recused"):
+            reviews_assigned += 1
+
+    def _att(p: Paper) -> AttentionPaper:
+        rs = by_paper.get(p.id, [])
+        active = [r for r in rs if r.state not in ("declined", "recused")]
+        return AttentionPaper(
+            id=p.id, title=p.title, status=p.status.value, category=p.category,
+            review_count=len(active),
+            submitted_review_count=len([r for r in active if r.submitted]),
+            review_deadline=p.review_deadline.isoformat() if p.review_deadline else None,
+            is_overdue=_is_overdue(p),
+        )
+
+    needs_assignment, awaiting_decision, overdue = [], [], []
+    for p in papers:
+        status_counts[p.status.value] = status_counts.get(p.status.value, 0) + 1
+        rs = by_paper.get(p.id, [])
+        active = [r for r in rs if r.state not in ("declined", "recused")]
+        submitted = [r for r in active if r.submitted]
+        if p.status in (PaperStatus.submitted, PaperStatus.under_review) and len(active) < MIN_REVIEWERS:
+            needs_assignment.append(_att(p))
+        if p.status == PaperStatus.under_review and active and len(submitted) == len(active):
+            awaiting_decision.append(_att(p))
+        if _is_overdue(p):
+            overdue.append(_att(p))
+
+    from app.core.admin_security import ASSIGNABLE_REVIEWER_ROLES
+    active_load, completed_load = _reviewer_loads(db)
+    roster = db.query(User).filter(
+        User.role.in_(ASSIGNABLE_REVIEWER_ROLES), User.is_active == True  # noqa: E712
+    ).order_by(User.full_name).all()
+    reviewers = [ReviewerLoad(
+        id=u.id, full_name=u.full_name, email=u.email,
+        active=active_load.get(u.id, 0), completed=completed_load.get(u.id, 0),
+    ) for u in roster]
+
+    return ReviewChairOverview(
+        total=len(papers), status_counts=status_counts,
+        reviews_assigned=reviews_assigned, reviews_submitted=reviews_submitted,
+        reviews_pending=reviews_assigned - reviews_submitted,
+        needs_assignment=needs_assignment, awaiting_decision=awaiting_decision,
+        overdue=overdue, reviewers=reviewers,
+    )
 
 
 # ─── Single paper (author / assigned reviewer / chair) ───────────
@@ -490,10 +595,62 @@ def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
 
     if paper.status == PaperStatus.submitted:
         paper.status = PaperStatus.under_review
+    if req.deadline is not None:
+        paper.review_deadline = _parse_date(req.deadline)
     paper.updated_at = datetime.now(timezone.utc)
     log_action(db, user, AuditAction.paper_decision,
                f"Assigned {len(new_ids)} reviewer(s) to paper #{paper.id}",
                request=request, target_type="paper", target_id=paper.id)
+    db.refresh(paper)
+    return _serialize(db, paper, user)
+
+
+@router.put("/{paper_id}/deadline", response_model=PaperResponse)
+def set_review_deadline(paper_id: int, req: DeadlineRequest,
+                        db: Session = Depends(get_db),
+                        user: User = Depends(get_current_user)):
+    """Chair sets or clears a paper's review due date."""
+    if not is_review_chair(user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    paper.review_deadline = _parse_date(req.deadline)
+    paper.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(paper)
+    return _serialize(db, paper, user)
+
+
+@router.delete("/{paper_id}/assign/{reviewer_id}", response_model=PaperResponse)
+def unassign_reviewer(paper_id: int, reviewer_id: int,
+                      db: Session = Depends(get_db),
+                      user: User = Depends(get_current_user)):
+    """Chair removes a reviewer assignment (only if not already submitted)."""
+    if not is_review_chair(user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    review = db.query(Review).filter(
+        Review.paper_id == paper_id, Review.reviewer_id == reviewer_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="That reviewer isn't assigned")
+    if review.submitted:
+        raise HTTPException(status_code=400,
+                            detail="This reviewer already submitted — their review can't be removed")
+    db.delete(review)
+    db.flush()   # ensure the removed row isn't counted below
+    _notify(db, reviewer_id, "Review assignment removed",
+            f"You're no longer assigned to review a submission ({paper.category or 'paper'}).")
+    # If no active reviewers remain, drop the paper back to awaiting assignment.
+    remaining = db.query(Review).filter(
+        Review.paper_id == paper_id,
+        Review.state.notin_(("declined", "recused"))).count()
+    if remaining == 0 and paper.status == PaperStatus.under_review:
+        paper.status = PaperStatus.submitted
+    paper.updated_at = datetime.now(timezone.utc)
+    db.commit()
     db.refresh(paper)
     return _serialize(db, paper, user)
 

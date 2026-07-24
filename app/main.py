@@ -163,6 +163,10 @@ def _migrate_papers_table(connection):
         connection.execute(text(
             "ALTER TABLE papers ADD COLUMN stored_file VARCHAR(255)"
         ))
+    if "review_deadline" not in cols:
+        connection.execute(text(
+            "ALTER TABLE papers ADD COLUMN review_deadline DATE"
+        ))
 
 
 def _migrate_broadcasts_table(connection):

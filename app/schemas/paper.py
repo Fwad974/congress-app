@@ -102,6 +102,11 @@ class ReviewRespond(BaseModel):
 class AssignRequest(BaseModel):
     reviewer_ids: List[int]
     override_coi: bool = False
+    deadline: Optional[str] = None   # optional review due date (ISO, set on assign)
+
+
+class DeadlineRequest(BaseModel):
+    deadline: Optional[str] = None   # ISO date "YYYY-MM-DD"; null clears it
 
 
 class DecisionRequest(BaseModel):
@@ -147,6 +152,8 @@ class PaperResponse(BaseModel):
     review_count: int = 0
     submitted_review_count: int = 0
     avg_score: Optional[float] = None
+    review_deadline: Optional[str] = None        # ISO date, if the chair set one
+    is_overdue: bool = False                     # under review past its deadline
     my_review: Optional[ReviewResponse] = None   # for an assigned reviewer
     reviews: List[ReviewResponse] = []           # visible to chair, or author post-decision
     created_at: datetime
@@ -167,3 +174,37 @@ class ReviewerInfo(BaseModel):
     coi: bool = False        # same institution as the paper's author
     assigned: bool = False
     state: Optional[str] = None   # invited/accepted/declined/recused (if assigned)
+    active_load: int = 0     # assignments in progress across all papers
+    completed_load: int = 0  # reviews submitted across all papers
+
+
+# ─── Review-chair dashboard ──────────────────────────────────────
+class ReviewerLoad(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    active: int = 0
+    completed: int = 0
+
+
+class AttentionPaper(BaseModel):
+    id: int
+    title: str
+    status: str
+    category: Optional[str] = None
+    review_count: int = 0
+    submitted_review_count: int = 0
+    review_deadline: Optional[str] = None
+    is_overdue: bool = False
+
+
+class ReviewChairOverview(BaseModel):
+    total: int
+    status_counts: dict
+    reviews_assigned: int
+    reviews_submitted: int
+    reviews_pending: int
+    needs_assignment: List[AttentionPaper] = []
+    awaiting_decision: List[AttentionPaper] = []
+    overdue: List[AttentionPaper] = []
+    reviewers: List[ReviewerLoad] = []

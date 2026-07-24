@@ -39,6 +39,10 @@ textarea.pp-in{resize:vertical;min-height:90px}
 .pp-chip{font:.76rem var(--f);padding:5px 10px;border-radius:50px;border:1px solid rgba(201,169,98,.2);color:var(--w7);cursor:pointer;background:rgba(0,0,0,.15)}
 .pp-chip.on{background:rgba(201,169,98,.18);border-color:var(--gold);color:var(--gold)}
 .pp-chip.coi{border-color:rgba(231,76,60,.35);color:var(--red)}
+.pp-stats{display:flex;flex-wrap:wrap;gap:10px}
+.pp-stat{background:rgba(10,61,46,.35);border:1px solid rgba(201,169,98,.12);border-radius:var(--r);padding:12px 16px;min-width:92px}
+.pp-stat .v{font:700 1.3rem var(--fh);color:var(--w)}
+.pp-stat .l{font:.68rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--w5);margin-top:2px}
 </style>
 {% endblock %}
 
@@ -79,7 +83,8 @@ textarea.pp-in{resize:vertical;min-height:90px}
   <div class="pp-panel" id="pt-mine"><div id="mineList"><div class="pp-empty">Loading…</div></div></div>
   {% if is_reviewer %}<div class="pp-panel" id="pt-review"><div id="reviewList"><div class="pp-empty">Loading…</div></div></div>{% endif %}
   {% if is_chair %}<div class="pp-panel" id="pt-manage">
-    <div class="pp-row" style="margin-bottom:14px">
+    <div id="chairOverview"></div>
+    <div class="pp-row" style="margin:18px 0 14px">
       <select class="pp-in" id="mgStatus" style="width:auto" onchange="loadManage()">
         <option value="">All statuses</option><option value="submitted">Submitted</option><option value="under_review">Under review</option>
         <option value="revision_requested">Revision requested</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option>
@@ -240,7 +245,8 @@ function revCard(p){
   const meta=REV_STATE[st]||REV_STATE.invited;
   const badge='<span style="font:600 .6rem var(--f);letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:50px;border:1px solid '+meta.c+';color:'+meta.c+'">'+meta.t+'</span>';
   const links='<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>';
-  const head='<div class="pp-card"><div class="pp-meta">'+badge+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
+  const due=p.review_deadline?'<span style="font:600 .62rem var(--f);padding:3px 9px;border-radius:50px;border:1px solid '+(p.is_overdue?'var(--red)':'var(--gold)')+';color:'+(p.is_overdue?'var(--red)':'var(--gold)')+'">'+(p.is_overdue?'⏰ overdue — due ':'due ')+esc(p.review_deadline)+'</span>':'';
+  const head='<div class="pp-card"><div class="pp-meta">'+badge+due+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span></div>'+
     '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+links;
 
   if(st==='declined'||st==='recused'){
@@ -285,11 +291,49 @@ async function saveReview(id,submit){
 }
 
 async function loadManage(){
+  loadOverview();
   try{const s=document.getElementById('mgStatus').value;const d=await api('/api/papers'+(s?'?status='+s:''));const c=document.getElementById('manageList');
     if(!d.papers.length){c.innerHTML='<div class="pp-empty">No submissions.</div>';return;}
     c.innerHTML=d.papers.map(mgCard).join('');
     d.papers.forEach(p=>{if(!TERMINAL.includes(p.status))loadReviewers(p.id);});
   }catch(e){showToast(e.message,'error');}
+}
+
+// ─── Review-chair dashboard ─────────────────────────────────────
+const STAT_LABEL={submitted:'Submitted',under_review:'Under review',revision_requested:'In revision',accepted:'Accepted',rejected:'Rejected',withdrawn:'Withdrawn'};
+async function loadOverview(){
+  try{const o=await api('/api/papers/overview');document.getElementById('chairOverview').innerHTML=renderOverview(o);}
+  catch(e){}
+}
+function _attList(title,arr,color){
+  if(!arr.length)return'';
+  return '<div style="margin-top:10px"><div style="font:600 .68rem var(--f);text-transform:uppercase;letter-spacing:.05em;color:'+color+';margin-bottom:6px">'+title+' ('+arr.length+')</div>'+
+    arr.map(p=>'<div class="pp-row" style="font:.82rem var(--f);color:var(--w7);padding:4px 0;border-bottom:1px solid rgba(201,169,98,.06)"><span style="flex:1">'+esc(p.title)+'</span>'+
+      (p.review_deadline?'<span style="color:'+(p.is_overdue?'var(--red)':'var(--w5)')+';font:.72rem var(--m)">due '+esc(p.review_deadline)+'</span>':'')+
+      '<span style="color:var(--w5);font-size:.74rem">'+p.submitted_review_count+'/'+p.review_count+'</span></div>').join('')+'</div>';
+}
+function renderOverview(o){
+  const tiles=Object.keys(STAT_LABEL).filter(k=>o.status_counts[k]).map(k=>
+    '<div class="pp-stat"><div class="v">'+o.status_counts[k]+'</div><div class="l">'+STAT_LABEL[k]+'</div></div>').join('')||'<div class="pp-stat"><div class="v">0</div><div class="l">No submissions</div></div>';
+  const rev='<div class="pp-stat"><div class="v">'+o.reviews_submitted+'/'+o.reviews_assigned+'</div><div class="l">Reviews in</div></div>'+
+    (o.reviews_pending?'<div class="pp-stat"><div class="v" style="color:var(--gold)">'+o.reviews_pending+'</div><div class="l">Pending</div></div>':'');
+  const attention=_attList('⚠ Needs reviewers',o.needs_assignment,'var(--gold)')+
+    _attList('✓ Ready to decide',o.awaiting_decision,'#2ecc71')+
+    _attList('⏰ Overdue',o.overdue,'var(--red)');
+  const busiest=[...o.reviewers].sort((a,b)=>b.active-a.active).slice(0,6);
+  const roster=busiest.length?'<div style="margin-top:12px"><div style="font:600 .68rem var(--f);text-transform:uppercase;letter-spacing:.05em;color:var(--w5);margin-bottom:6px">Reviewer workload</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+o.reviewers.map(r=>'<span class="pp-chip" title="'+r.completed+' submitted, '+r.active+' active">'+esc(r.full_name)+' <strong style="color:var(--gold)">'+r.active+'</strong>/'+r.completed+'</span>').join('')+'</div></div>':'';
+  return '<div class="pp-card"><div style="font:600 1rem var(--fh);color:var(--w);margin-bottom:12px">Review dashboard</div>'+
+    '<div class="pp-stats">'+tiles+rev+'</div>'+attention+roster+'</div>';
+}
+async function setDeadline(pid,val){
+  try{await api('/api/papers/'+pid+'/deadline','PUT',{deadline:val||null});showToast(val?'Deadline set':'Deadline cleared','success');loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+async function unassignReviewer(pid,rid){
+  if(!await confirmDialog({title:'Remove reviewer',message:'Remove this reviewer from the paper?',confirmText:'Remove',danger:true}))return;
+  try{await api('/api/papers/'+pid+'/assign/'+rid,'DELETE');showToast('Reviewer removed','success');loadManage();}
+  catch(e){showToast(e.message,'error');}
 }
 const _pick={};
 const TERMINAL=['accepted','rejected','withdrawn'];
@@ -303,7 +347,10 @@ function mgCard(p){
   }else{
     const hint=p.review_count<2?'<div style="font:.74rem var(--f);color:var(--gold);margin-top:6px">⚠ Assign at least 2 reviewers (REV-01).</div>':'';
     const reviseBtn=p.round>=2?'':'<button class="pp-btn sm" style="color:var(--gold)" onclick="decide('+p.id+',\'revision\')">Revise</button>';
-    controls='<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+hint+
+    const dl='<div class="pp-row" style="margin-top:8px;align-items:center"><label style="color:var(--w5);font:.76rem var(--f)">Review deadline</label>'+
+      '<input type="date" class="pp-in" style="width:auto" value="'+(p.review_deadline||'')+'" onchange="setDeadline('+p.id+',this.value)">'+
+      (p.is_overdue?'<span style="color:var(--red);font:600 .72rem var(--f)">⏰ Overdue</span>':'')+'</div>';
+    controls='<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+hint+dl+
       '<div class="pp-row"><button class="pp-btn sm" onclick="doAssign('+p.id+')">Assign selected</button>'+
       '<label style="font:.76rem var(--f);color:var(--w5);display:flex;align-items:center;gap:5px"><input type="checkbox" id="ov_'+p.id+'"> override COI</label></div>'+
       '<div class="pp-row" style="margin-top:6px"><input class="pp-in" id="dc_'+p.id+'" placeholder="Decision note to author (optional)" style="flex:1">'+
@@ -317,7 +364,13 @@ async function loadReviewers(pid){
   try{const revs=await api('/api/papers/reviewers?paper_id='+pid);_pick[pid]=new Set(revs.filter(r=>r.assigned).map(r=>r.id));
     const el=document.getElementById('rev_'+pid);if(!el)return;
     const mark={accepted:' ✓',declined:' ✗',recused:' ⊘',invited:' …'};
-    el.innerHTML=revs.length?revs.map(r=>'<span class="pp-chip'+(_pick[pid].has(r.id)?' on':'')+(r.coi?' coi':'')+'" title="'+(r.state||'')+'" onclick="togPick('+pid+','+r.id+',this)">'+esc(r.full_name)+(r.coi?' ⚠':'')+(r.assigned?(mark[r.state]||' ✓'):'')+'</span>').join(''):'<span style="color:var(--w3);font-size:.8rem">No reviewers available</span>';
+    el.innerHTML=revs.length?revs.map(r=>{
+      // Assigned + not yet submitted → show an ✕ to unassign.
+      const canRemove=r.assigned&&r.state!=='declined'&&r.state!=='recused';
+      const load=' <span style="color:var(--w3);font-size:.72rem" title="'+r.active_load+' active / '+r.completed_load+' done">('+r.active_load+')</span>';
+      const rm=canRemove?' <span onclick="event.stopPropagation();unassignReviewer('+pid+','+r.id+')" title="Remove" style="color:var(--red);cursor:pointer">✕</span>':'';
+      return '<span class="pp-chip'+(_pick[pid].has(r.id)?' on':'')+(r.coi?' coi':'')+'" title="'+(r.state||'')+'" onclick="togPick('+pid+','+r.id+',this)">'+esc(r.full_name)+(r.coi?' ⚠':'')+(r.assigned?(mark[r.state]||' ✓'):'')+load+rm+'</span>';
+    }).join(''):'<span style="color:var(--w3);font-size:.8rem">No reviewers available</span>';
   }catch(e){}
 }
 function togPick(pid,rid,el){const s=_pick[pid]||(_pick[pid]=new Set());if(s.has(rid))s.delete(rid);else s.add(rid);el.classList.toggle('on');}

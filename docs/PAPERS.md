@@ -9,7 +9,20 @@ UI at `/papers` with role-based tabs (Submit, My Submissions, To Review, Manage)
 |-----|-----|
 | **Author** — any authenticated user | Submit, track status, respond to reviewers, resubmit revisions, withdraw |
 | **Reviewer** — `reviewer` / `review_chair` | Accept/decline/recuse assignments, then review (score 1–5 + comments) |
-| **Review chair** — `review_chair` / `admin` / `super_admin` | List all, assign reviewers, decide |
+| **Review chair** — `review_chair` / `admin` / `super_admin` | Dashboard overview, list all, assign/unassign reviewers, set review deadlines, decide |
+
+### Review-chair dashboard (`GET /api/papers/overview`)
+
+The **Manage** tab leads with a dashboard: submission counts by status, review
+progress (`submitted / assigned`, pending), and three "needs attention" lists —
+**needs reviewers** (`< 2` active reviewers), **ready to decide** (all active
+reviews in), and **overdue** (past `review_deadline`) — plus a **reviewer
+workload** roster (`active`/`completed` counts). The reviewer picker shows each
+reviewer's active load, assigned reviewers can be **unassigned** with the ✕
+(`DELETE /api/papers/{id}/assign/{reviewer_id}`, blocked once they've submitted;
+removing the last one reverts the paper to `submitted`), and the chair can set a
+per-paper **review deadline** (`PUT /api/papers/{id}/deadline`, or the `deadline`
+field on `assign`). Reviewers see the deadline and an overdue flag on their card.
 
 ## Lifecycle
 
@@ -57,7 +70,8 @@ downloadable by any authenticated attendee (the download endpoint special-cases
 
 - **`Paper`** — author, title, authors (free text), category, abstract,
   `file_url` (optional external link), `file_name`/`stored_file` (uploaded
-  manuscript), `status`, `round`, `author_response`, `decision_comment`.
+  manuscript), `status`, `round`, `author_response`, `decision_comment`,
+  `review_deadline` (chair-set review due date).
 - **`Review`** — one per (paper, reviewer): `score` (1–5), `comments`,
   `submitted`, plus an assignment lifecycle `state`
   (`invited` → `accepted` / `declined` / `recused`) and `response_reason`.
@@ -94,9 +108,12 @@ downloadable by any authenticated attendee (the download endpoint special-cases
 | `GET /api/papers/assigned` | reviewer | Papers to review |
 | `POST /api/papers/{id}/respond` | reviewer | Accept / decline / recuse an assignment |
 | `PUT /api/papers/{id}/review` | reviewer | Save/submit a review |
+| `GET /api/papers/overview` | chair | Review dashboard (counts, attention lists, reviewer load) |
 | `GET /api/papers` | chair | All submissions (filter `status`, `category`) |
-| `GET /api/papers/reviewers?paper_id=` | chair | Assignable reviewers + COI flags |
-| `POST /api/papers/{id}/assign` | chair | Assign reviewers (`override_coi`) |
+| `GET /api/papers/reviewers?paper_id=` | chair | Assignable reviewers + COI flags + workload |
+| `POST /api/papers/{id}/assign` | chair | Assign reviewers (`override_coi`, optional `deadline`) |
+| `DELETE /api/papers/{id}/assign/{reviewer_id}` | chair | Unassign a reviewer (not yet submitted) |
+| `PUT /api/papers/{id}/deadline` | chair | Set / clear the review deadline |
 | `POST /api/papers/{id}/decision` | chair | `accept` / `reject` / `revision` |
 | `GET /api/papers/{id}` | author / assigned reviewer / chair | View one |
 
