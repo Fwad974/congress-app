@@ -87,6 +87,9 @@ pytest -q
 | POST | `/api/admin/notifications/broadcast` | Send an announcement / emergency alert | Admin |
 | GET | `/api/admin/notifications/broadcasts` | Broadcast history + daily count | Admin |
 | GET | `/api/reactions/emojis` | Allowed reaction emojis | Any user |
+| GET | `/api/certificates/{kind}/download` | Certificate PDF (serial + verification QR) | Any user (unlocked) |
+| GET | `/api/certificates/verify/{serial}` · `/verify/{serial}` | Verify a certificate (JSON · page) | Public |
+| GET | `/api/attendance/report/export` | CSV attendance report for institutions | Any user |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 

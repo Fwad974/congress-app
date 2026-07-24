@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.models.schedule import ScheduleItem, ScheduleType
 from app.models.attendance import SessionAttendance  # noqa: F401 - register table
+from app.models.certificate import IssuedCertificate  # noqa: F401 - register table
 from app.models.user import UserRole
 from tests.conftest import auth_cookie, make_user
 
@@ -134,3 +135,144 @@ class TestCertificates:
     def test_certificates_page_dynamic(self, client, attendee):
         html = client.get("/certificates", cookies=auth_cookie(attendee)).text
         assert "Session check-in" in html and "certificates/status" in html
+
+
+class TestCertificatePDF:
+    def _speaker(self, db, email="pdf@test.com", name="Dr PDF"):
+        sp = make_user(db, email=email, role=UserRole.speaker, full_name=name)
+        _item(db, title="PDF talk", speaker_id=sp.id)
+        return sp
+
+    def test_download_locked_403(self, client, db):
+        att = make_user(db, email="pl@test.com", role=UserRole.attendee)
+        r = client.get("/api/certificates/attendance/download", cookies=auth_cookie(att))
+        assert r.status_code == 403
+
+    def test_download_unknown_kind_404(self, client, db):
+        att = make_user(db, email="pk@test.com", role=UserRole.attendee)
+        assert client.get("/api/certificates/bogus/download",
+                          cookies=auth_cookie(att)).status_code == 404
+
+    def test_download_requires_auth(self, client, db):
+        assert client.get("/api/certificates/attendance/download").status_code == 401
+
+    def test_download_pdf_with_stable_serial(self, client, db):
+        sp = self._speaker(db)
+        r1 = client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        assert r1.status_code == 200
+        assert r1.headers["content-type"].startswith("application/pdf")
+        assert r1.content.startswith(b"%PDF")
+        assert "attachment" in r1.headers["content-disposition"]
+        rec = db.query(IssuedCertificate).filter_by(user_id=sp.id, kind="speaker").one()
+        assert rec.serial.startswith("DSCC") and "-SPK-" in rec.serial
+        # Second download reuses the same serial and issue date.
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        assert db.query(IssuedCertificate).filter_by(user_id=sp.id).count() == 1
+
+    def test_view_page_shows_serial_and_matches_download(self, client, db):
+        sp = self._speaker(db, email="pv@test.com", name="Dr View")
+        html = client.get("/certificates/speaker/view", cookies=auth_cookie(sp)).text
+        rec = db.query(IssuedCertificate).filter_by(user_id=sp.id, kind="speaker").one()
+        assert rec.serial in html and "Scan to verify" in html and "<svg" in html
+        # Download after view keeps the same record.
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        assert db.query(IssuedCertificate).filter_by(user_id=sp.id).count() == 1
+
+
+class TestCertificateVerification:
+    def _issued_serial(self, client, db, email="vf@test.com", name="Dr Verify"):
+        sp = make_user(db, email=email, role=UserRole.speaker, full_name=name)
+        _item(db, speaker_id=sp.id)
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        return db.query(IssuedCertificate).filter_by(user_id=sp.id).one().serial
+
+    def test_verify_api_public_and_valid(self, client, db):
+        serial = self._issued_serial(client, db)
+        r = client.get(f"/api/certificates/verify/{serial}")  # no auth cookie
+        assert r.status_code == 200
+        b = r.json()
+        assert b["valid"] is True and b["holder"] == "Dr Verify"
+        assert b["kind"] == "speaker" and b["serial"] == serial
+
+    def test_verify_api_unknown_404(self, client, db):
+        assert client.get("/api/certificates/verify/DSCC2027-ATT-NOPE").status_code == 404
+
+    def test_verify_page_valid(self, client, db):
+        serial = self._issued_serial(client, db, email="vp@test.com", name="Dr Page")
+        html = client.get(f"/verify/{serial}").text
+        assert "Valid certificate" in html and "Dr Page" in html and serial in html
+
+    def test_verify_page_not_found(self, client, db):
+        html = client.get("/verify/DSCC2027-CME-FFFFFFFF").text
+        assert "Not found" in html
+
+    def test_verify_page_revoked(self, client, db):
+        serial = self._issued_serial(client, db, email="vr@test.com", name="Dr Revoked")
+        rec = db.query(IssuedCertificate).filter_by(serial=serial).one()
+        rec.revoked = True
+        db.commit()
+        html = client.get(f"/verify/{serial}").text
+        assert "Revoked" in html and "Dr Revoked" not in html
+        assert client.get(f"/api/certificates/verify/{serial}").json()["valid"] is False
+
+
+class TestAttendanceReport:
+    def test_export_requires_auth(self, client, db):
+        assert client.get("/api/attendance/report/export").status_code == 401
+
+    def test_export_csv_contents(self, client, db):
+        admin = make_user(db, email="re@test.com", role=UserRole.admin)
+        att = make_user(db, email="rea@test.com", role=UserRole.attendee,
+                        full_name="Report User")
+        for title in ("Morning Keynote", "Gene Therapy Workshop"):
+            code = _code_for(client, db, _item(db, title=title), admin)
+            client.post("/api/attendance/checkin", json={"code": code},
+                        cookies=auth_cookie(att))
+        r = client.get("/api/attendance/report/export", cookies=auth_cookie(att))
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/csv")
+        assert "attachment" in r.headers["content-disposition"]
+        body = r.text
+        assert "Report User" in body
+        assert "Morning Keynote" in body and "Gene Therapy Workshop" in body
+        assert "Total sessions attended,2" in body
+
+    def test_export_includes_issued_serials(self, client, db):
+        sp = make_user(db, email="res@test.com", role=UserRole.speaker)
+        _item(db, speaker_id=sp.id)
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        serial = db.query(IssuedCertificate).filter_by(user_id=sp.id).one().serial
+        body = client.get("/api/attendance/report/export", cookies=auth_cookie(sp)).text
+        assert serial in body and f"/verify/{serial}" in body
+
+
+class TestAttendancePctThreshold:
+    def test_pct_goal_scales_with_program(self, client, db, monkeypatch):
+        from app.core.config import get_settings
+        monkeypatch.setattr(get_settings(), "CERT_ATTENDANCE_PCT", 50)
+        admin = make_user(db, email="pc@test.com", role=UserRole.admin)
+        att = make_user(db, email="pca@test.com", role=UserRole.attendee)
+        items = [_item(db, title=f"T{i}") for i in range(4)]
+        # Breaks don't count toward the denominator.
+        now = datetime.now(timezone.utc)
+        db.add(ScheduleItem(title="Coffee", type=ScheduleType.break_,
+                            start_time=now, end_time=now + timedelta(minutes=30)))
+        db.commit()
+        # 50% of 4 non-break sessions = goal of 2.
+        d = client.get("/api/certificates/status", cookies=auth_cookie(att)).json()
+        cert = {c["kind"]: c for c in d["certificates"]}["attendance"]
+        assert cert["goal"] == 2 and cert["unlocked"] is False
+        for item in items[:2]:
+            code = _code_for(client, db, item, admin)
+            client.post("/api/attendance/checkin", json={"code": code},
+                        cookies=auth_cookie(att))
+        d = client.get("/api/certificates/status", cookies=auth_cookie(att)).json()
+        cert = {c["kind"]: c for c in d["certificates"]}["attendance"]
+        assert cert["unlocked"] is True and cert["progress"] == 2
+
+    def test_pct_zero_keeps_fixed_goal(self, client, db):
+        from app.core.config import get_settings
+        att = make_user(db, email="pz@test.com", role=UserRole.attendee)
+        d = client.get("/api/certificates/status", cookies=auth_cookie(att)).json()
+        cert = {c["kind"]: c for c in d["certificates"]}["attendance"]
+        assert cert["goal"] == get_settings().CERT_MIN_SESSIONS

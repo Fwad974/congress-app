@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     CERT_MIN_SESSIONS: int = 3      # sessions for the attendance certificate
     CME_MIN_CREDITS: int = 5        # credits for the CME/CPD certificate
     CME_CREDITS_PER_SESSION: int = 1
+    # Percentage-based eligibility for the attendance certificate. When > 0,
+    # the goal becomes ceil(PCT% of non-break schedule items) instead of the
+    # fixed CERT_MIN_SESSIONS (e.g. 80 = attend 80% of the program). With
+    # parallel tracks, tune the percentage to what one person can attend.
+    CERT_ATTENDANCE_PCT: int = 0
 
     class Config:
         env_file = ".env"

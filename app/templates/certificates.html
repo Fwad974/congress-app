@@ -38,7 +38,12 @@
   </div>
 
   <div class="cert-list" id="certList"><div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w80"></div></div><div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w60"></div></div></div>
-  <div class="attended" id="attWrap" style="display:none"><h4>Sessions attended</h4><div id="attList"></div></div>
+  <div class="attended" id="attWrap" style="display:none">
+    <h4 style="display:flex;align-items:center;justify-content:space-between;gap:10px">Sessions attended
+      <a href="/api/attendance/report/export" style="font:500 .74rem var(--f);letter-spacing:0;text-transform:none;color:var(--gold);text-decoration:none;border:1px solid var(--ga2);border-radius:50px;padding:5px 14px">⬇ Export report (CSV)</a>
+    </h4>
+    <div id="attList"></div>
+  </div>
 </div></div>
 {% endblock %}
 
@@ -53,7 +58,10 @@ async function loadCerts(){
     document.getElementById('certList').innerHTML=d.certificates.map(c=>{
       const pct=Math.min(100,Math.round(100*c.progress/Math.max(1,c.goal)));
       const badge=c.unlocked
-        ? '<a class="cert-status unlocked" href="/certificates/'+c.kind+'/view" target="_blank" rel="noopener">View ↗</a>'
+        ? '<span style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
+          +'<a class="cert-status unlocked" href="/certificates/'+c.kind+'/view" target="_blank" rel="noopener">View ↗</a>'
+          +'<a class="cert-status unlocked" href="/api/certificates/'+c.kind+'/download">PDF ⬇</a>'
+          +'</span>'
         : '<span class="cert-status">Locked</span>';
       return '<div class="cert animate-up"><div class="cert-ico">'+(ICO[c.kind]||'🏅')+'</div>'+
         '<div class="cert-info"><div class="cert-name">'+esc(c.title)+'</div><div class="cert-desc">'+esc(c.description)+'</div>'+

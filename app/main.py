@@ -23,6 +23,7 @@ from app.models.poster import (  # noqa – registers model
 )
 from app.models.feature_flag import FeatureFlag  # noqa – registers model
 from app.models.attendance import SessionAttendance  # noqa – registers model
+from app.models.certificate import IssuedCertificate  # noqa – registers model
 from app.models.report import ContentReport  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth

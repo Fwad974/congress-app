@@ -189,15 +189,50 @@ async def certificate_view(request: Request, kind: str,
                            db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
-    from app.api.certificates import _cert_by_kind
-    cert = _cert_by_kind(db, user, kind)
+    from app.api.certificates import (CERT_KINDS, cert_status, ensure_issued,
+                                      _public_base)
+    if kind not in CERT_KINDS:
+        return RedirectResponse(url="/certificates", status_code=302)
+    status = cert_status(db, user)
+    cert = next((c for c in status.certificates if c.kind == kind), None)
     if not cert or not cert.unlocked:
         return RedirectResponse(url="/certificates", status_code=302)
-    from datetime import datetime, timezone
+    issued = ensure_issued(db, user, kind, status)
+    verify_url = f"{_public_base(request)}/verify/{issued.serial}"
+    from app.core.qr import qr_svg_document
     return templates.TemplateResponse("certificate_view.html", {
         "request": request, "user": user, "cert": cert,
-        "issued_on": datetime.now(timezone.utc).strftime("%d %B %Y"),
+        "issued_on": issued.issued_at.strftime("%d %B %Y"),
+        "serial": issued.serial,
+        "verify_qr_svg": qr_svg_document(verify_url, scale=3),
+        "verify_url": verify_url,
     })
+
+
+@router.get("/verify/{serial}", response_class=HTMLResponse)
+async def certificate_verify_page(request: Request, serial: str,
+                                  db: Session = Depends(get_db)):
+    """Public certificate verification — no login required, so institutions
+    can confirm a serial (or scan the QR on a certificate) directly."""
+    from app.models.certificate import IssuedCertificate
+    from app.models.user import User as UserModel
+    row = (db.query(IssuedCertificate, UserModel)
+           .join(UserModel, UserModel.id == IssuedCertificate.user_id)
+           .filter(IssuedCertificate.serial == serial.strip().upper()).first())
+    titles = {"attendance": "Certificate of Attendance",
+              "cme": "CME/CPD Credit Certificate",
+              "speaker": "Speaker Certificate"}
+    ctx = {"request": request, "serial": serial.strip().upper(), "found": False}
+    if row:
+        cert, holder = row
+        ctx.update({
+            "found": True, "revoked": cert.revoked,
+            "title": titles.get(cert.kind, cert.kind), "kind": cert.kind,
+            "holder": holder.full_name, "institution": holder.institution,
+            "issued_on": cert.issued_at.strftime("%d %B %Y"),
+            "sessions": cert.sessions_count, "credits": cert.credits,
+        })
+    return templates.TemplateResponse("certificate_verify.html", ctx)
 
 
 @router.get("/posters/{poster_id}/qr-print", response_class=HTMLResponse)
