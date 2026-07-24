@@ -16,7 +16,7 @@ Full-stack User Management dashboard at `/admin` with:
 | **ROLE-01** | Only Super Admin can create other Super Admins |
 | **ROLE-02** | Admins can assign up to Moderator level only |
 | **ROLE-04** | Self-demotion/role-change prohibited |
-| **MOD-04** | Escalation: warn → 24h mute → suspend |
+| **MOD-04** | Escalation ladder: warn → 24h mute → suspend, enforced (muted users can't post; suspended users are logged out) and audit-logged with a reason. See [`docs/MODERATION.md`](docs/MODERATION.md). |
 | **AUDIT-01** | All admin actions logged: who, what, when, target, IP hash |
 | **AUDIT-02** | Logs are write-once, immutable (no updated_at column) |
 | **DATA-03** | PII exports are admin-only and logged |

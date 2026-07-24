@@ -94,7 +94,7 @@ def _serialize(db: Session, p: Poster, viewer: User, with_comments: bool = False
         id=p.id, title=p.title, authors=p.authors, category=p.category,
         abstract=p.abstract, board_number=p.board_number, external_url=p.external_url,
         image_name=p.image_name, has_image=bool(p.stored_image),
-        hunt_code=p.hunt_code if can_edit else None,
+        hunt_code=p.hunt_code if can_edit else None, status=p.status,
         presenter_name=presenter_name, vote_count=vote_count, my_vote=my_vote,
         comment_count=comment_count, visited=visited,
         is_mine=(p.presenter_id == viewer.id or p.created_by == viewer.id),
@@ -128,6 +128,12 @@ def list_posters(
         q = q.filter(Poster.title.ilike(like) | Poster.authors.ilike(like)
                      | Poster.abstract.ilike(like))
     posters = q.all()
+    # Upload-approval: hide non-approved posters from everyone except the owner
+    # and moderators (owners keep seeing their own, badged "pending").
+    from app.core.admin_security import is_moderator
+    mod = is_moderator(user)
+    posters = [p for p in posters if p.status == "approved" or mod
+               or p.presenter_id == user.id or p.created_by == user.id]
     out = [_serialize(db, p, user) for p in posters]
     if sort == "recent":
         out.sort(key=lambda r: r.created_at, reverse=True)
@@ -145,11 +151,17 @@ def create_poster(req: PosterCreate, db: Session = Depends(get_db),
     if not _can_create(user):
         raise HTTPException(status_code=403,
                             detail="Only speakers and organizers can add posters")
+    from app.core.moderation_service import ensure_can_post
+    ensure_can_post(user)
+    # Upload-approval workflow: when required, non-organizer posters wait for a
+    # moderator; organizer uploads (and everything when approval is off) go live.
+    approval_on = get_settings().POSTER_APPROVAL_REQUIRED
+    status = "approved" if (_is_admin(user) or not approval_on) else "pending"
     poster = Poster(
         title=req.title, authors=req.authors, category=req.category,
         abstract=req.abstract, board_number=req.board_number,
         external_url=req.external_url, hunt_code=_new_hunt_code(db),
-        presenter_id=user.id, created_by=user.id,
+        presenter_id=user.id, created_by=user.id, status=status,
     )
     db.add(poster)
     db.commit()
@@ -203,7 +215,12 @@ def _visit(db: Session, poster_id: int, user_id: int) -> None:
 @router.get("/{poster_id}", response_model=PosterResponse)
 def get_poster(poster_id: int, db: Session = Depends(get_db),
                user: User = Depends(get_current_user)):
-    return _serialize(db, _get(db, poster_id), user, with_comments=True)
+    poster = _get(db, poster_id)
+    # A not-yet-approved poster is visible only to its owner and moderators.
+    from app.core.admin_security import is_moderator
+    if poster.status != "approved" and not (_can_edit(poster, user) or is_moderator(user)):
+        raise HTTPException(status_code=404, detail="Poster not found")
+    return _serialize(db, poster, user, with_comments=True)
 
 
 @router.put("/{poster_id}", response_model=PosterResponse)
@@ -264,8 +281,13 @@ def unvote_poster(poster_id: int, db: Session = Depends(get_db),
 def add_comment(poster_id: int, req: CommentCreate, db: Session = Depends(get_db),
                 user: User = Depends(get_current_user)):
     poster = _get(db, poster_id)
-    db.add(PosterComment(poster_id=poster_id, user_id=user.id, body=req.body))
+    from app.core.moderation_service import ensure_can_post, auto_flag
+    ensure_can_post(user)
+    c = PosterComment(poster_id=poster_id, user_id=user.id, body=req.body)
+    db.add(c)
     db.commit()
+    db.refresh(c)
+    auto_flag(db, "poster_comment", c.id, c.body)
     return _serialize(db, poster, user, with_comments=True)
 
 

@@ -7,7 +7,8 @@ Implements rules:
 - AUTH-03: Login attempt tracking
 - ROLE-01/02: Role assignment hierarchy
 - ROLE-04: Self-demotion prohibited
-- MOD-04: Escalation ladder (warn → mute → suspend)
+- MOD-04: Escalation ladder (warn → mute → suspend) — implemented in
+  app/api/moderation.py + app/core/moderation_service.py
 - AUDIT-01: All actions logged
 - DATA-03: PII exports logged
 """

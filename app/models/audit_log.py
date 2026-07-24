@@ -17,6 +17,8 @@ class AuditAction(str, enum.Enum):
     user_suspend = "user_suspend"
     user_activate = "user_activate"
     user_unlock = "user_unlock"
+    user_warn = "user_warn"
+    user_mute = "user_mute"
     role_change = "role_change"
     # Auth
     login_success = "login_success"

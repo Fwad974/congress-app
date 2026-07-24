@@ -33,6 +33,10 @@ class Poster(Base):
     stored_image = Column(String(255), nullable=True)
     # Short code printed on the physical poster for scavenger-hunt check-in.
     hunt_code = Column(String(12), nullable=False, unique=True, index=True)
+    # Upload-approval workflow (enabled by POSTER_APPROVAL_REQUIRED). New
+    # posters from non-organizers start "pending" and stay out of the public
+    # gallery until a moderator approves them. approved | pending | rejected.
+    status = Column(String(12), nullable=False, default="approved", index=True)
 
     presenter_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
                           nullable=True, index=True)

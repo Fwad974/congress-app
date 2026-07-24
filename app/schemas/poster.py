@@ -90,6 +90,7 @@ class PosterResponse(BaseModel):
     image_name: Optional[str] = None
     has_image: bool = False
     hunt_code: Optional[str] = None        # only exposed to owner/organizer
+    status: str = "approved"               # approved | pending | rejected
     presenter_name: Optional[str] = None
     vote_count: int = 0
     my_vote: bool = False

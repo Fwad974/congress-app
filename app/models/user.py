@@ -37,9 +37,12 @@ class User(Base):
     networking_visible = Column(Boolean, default=False, nullable=False)
 
     # Status
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)         # False = suspended
     is_verified = Column(Boolean, default=False)
     two_factor_enabled = Column(Boolean, default=False)
+    # Moderation: temporary posting ban (MOD-04 mute step). When set to a
+    # future time, the user can browse/read but not create content.
+    muted_until = Column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

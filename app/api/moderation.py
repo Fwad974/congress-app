@@ -17,13 +17,17 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.core.admin_security import is_moderator
+from app.core.admin_security import is_moderator, can_manage_user
 from app.core.audit_service import log_action
+from app.core import moderation_service as mod
 from app.models.user import User
 from app.models.audit_log import AuditAction
 from app.models.report import ContentReport
+from app.models.moderation import ModerationAction
 from app.schemas.moderation import (
     ReportCreate, ReportItem, ReportListResponse, ResolveRequest, ModStats,
+    PendingPoster, ApprovalRequest, UserActionRequest, EscalateRequest,
+    ModActionItem, UserModerationState,
 )
 
 router = APIRouter()
@@ -39,7 +43,8 @@ def _q_preview(db: Session, cid: int) -> Optional[dict]:
     session = db.query(ScheduleItem.title).filter(
         ScheduleItem.id == q.schedule_item_id).scalar()
     author = db.query(User.full_name).filter(User.id == q.user_id).scalar()
-    return {"preview": q.text, "context": f"Q&A · {session or 'session'}", "author": author}
+    return {"preview": q.text, "context": f"Q&A · {session or 'session'}",
+            "author": author, "author_id": q.user_id}
 
 
 def _q_remove(db: Session, cid: int) -> bool:
@@ -58,7 +63,8 @@ def _pc_preview(db: Session, cid: int) -> Optional[dict]:
         return None
     title = db.query(Poster.title).filter(Poster.id == c.poster_id).scalar()
     author = db.query(User.full_name).filter(User.id == c.user_id).scalar()
-    return {"preview": c.body, "context": f"Poster · {title or 'poster'}", "author": author}
+    return {"preview": c.body, "context": f"Poster · {title or 'poster'}",
+            "author": author, "author_id": c.user_id}
 
 
 def _pc_remove(db: Session, cid: int) -> bool:
@@ -130,7 +136,9 @@ def list_reports(db: Session = Depends(get_db), user: User = Depends(get_current
         items.append(ReportItem(
             id=min(rr.id for rr in reps), content_type=ctype, content_id=cid,
             content_preview=info["preview"], content_context=info["context"],
-            content_author=info["author"], reasons=reasons, report_count=len(reps),
+            content_author=info["author"], content_author_id=info.get("author_id"),
+            reasons=reasons, report_count=len(reps),
+            auto_flagged=any(rr.source == "auto" for rr in reps),
             first_reported_at=min(rr.created_at for rr in reps),
         ))
     if orphaned:
@@ -158,8 +166,11 @@ def mod_stats(db: Session = Depends(get_db), user: User = Depends(get_current_us
     by_type = dict(db.query(ContentReport.content_type, func.count(ContentReport.id))
                    .filter(ContentReport.status == "open")
                    .group_by(ContentReport.content_type).all())
+    from app.models.poster import Poster
+    pending = db.query(func.count(Poster.id)).filter(Poster.status == "pending").scalar() or 0
     return ModStats(open=counts.get("open", 0), resolved=counts.get("resolved", 0),
-                    dismissed=counts.get("dismissed", 0), by_type=by_type)
+                    dismissed=counts.get("dismissed", 0), pending_posters=pending,
+                    by_type=by_type)
 
 
 @router.post("/reports/{report_id}/resolve")
@@ -192,12 +203,140 @@ def resolve_report(report_id: int, req: ResolveRequest, request: Request,
         s.resolved_by = user.id
         s.resolved_at = now
 
+    detail = (f"{action.title()} {rep.content_type} #{rep.content_id} "
+              f"({len(siblings)} report(s))")
+    if req.reason:
+        detail += f" — {req.reason}"
     log_action(
         db, user,
         AuditAction.content_remove if req.action == "remove" else AuditAction.content_approve,
-        f"{action.title()} {rep.content_type} #{rep.content_id} "
-        f"({len(siblings)} report(s))",
-        request=request, target_type=rep.content_type, target_id=rep.content_id,
+        detail, request=request, target_type=rep.content_type,
+        target_id=rep.content_id,
     )
     db.commit()
     return {"action": action, "removed": removed, "reports_closed": len(siblings)}
+
+
+# ─── Poster upload-approval workflow (moderators) ────────────────
+def _poster_or_404(db: Session, poster_id: int):
+    from app.models.poster import Poster
+    p = db.query(Poster).filter(Poster.id == poster_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Poster not found")
+    return p
+
+
+@router.get("/posters", response_model=List[PendingPoster])
+def pending_posters(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _require_mod(user)
+    from app.models.poster import Poster
+    rows = db.query(Poster).filter(Poster.status == "pending").order_by(
+        Poster.created_at.asc()).all()
+    out = []
+    for p in rows:
+        presenter = db.query(User.full_name).filter(
+            User.id == p.presenter_id).scalar() if p.presenter_id else None
+        out.append(PendingPoster(
+            id=p.id, title=p.title, authors=p.authors, category=p.category,
+            abstract=p.abstract, presenter_name=presenter,
+            has_image=bool(p.stored_image), created_at=p.created_at))
+    return out
+
+
+def _notify_poster_owner(db: Session, poster, title: str, body: str) -> None:
+    from app.models.notification import UserNotification
+    owner = poster.presenter_id or poster.created_by
+    if owner:
+        db.add(UserNotification(user_id=owner, schedule_item_id=None,
+                                kind="poster", title=title, body=body))
+
+
+@router.post("/posters/{poster_id}/approve")
+def approve_poster(poster_id: int, req: ApprovalRequest, request: Request,
+                   db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _require_mod(user)
+    p = _poster_or_404(db, poster_id)
+    p.status = "approved"
+    _notify_poster_owner(db, p, "Poster approved",
+                         f"Your poster \"{p.title[:60]}\" is now live in the gallery.")
+    log_action(db, user, AuditAction.content_approve,
+               f"Approved poster #{p.id}" + (f" — {req.reason}" if req.reason else ""),
+               request=request, target_type="poster", target_id=p.id)
+    db.commit()
+    return {"status": "approved", "id": p.id}
+
+
+@router.post("/posters/{poster_id}/reject")
+def reject_poster(poster_id: int, req: ApprovalRequest, request: Request,
+                  db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _require_mod(user)
+    p = _poster_or_404(db, poster_id)
+    p.status = "rejected"
+    reason = req.reason or "It didn't meet the gallery guidelines."
+    _notify_poster_owner(db, p, "Poster not approved",
+                         f"Your poster \"{p.title[:60]}\" wasn't approved. {reason}")
+    log_action(db, user, AuditAction.content_reject,
+               f"Rejected poster #{p.id} — {reason}",
+               request=request, target_type="poster", target_id=p.id)
+    db.commit()
+    return {"status": "rejected", "id": p.id}
+
+
+# ─── User escalation ladder: warn → 24h mute → suspend ───────────
+def _target_or_404(db: Session, user_id: int) -> User:
+    u = db.query(User).filter(User.id == user_id).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    return u
+
+
+def _state(db: Session, target: User, applied: Optional[str] = None) -> UserModerationState:
+    hist = db.query(ModerationAction).filter(
+        ModerationAction.user_id == target.id).order_by(
+        ModerationAction.created_at.desc()).all()
+    return UserModerationState(
+        user_id=target.id, name=target.full_name, email=target.email,
+        is_active=target.is_active, muted=mod.is_muted(target),
+        muted_until=target.muted_until, next_step=mod.next_escalation(db, target),
+        applied=applied,
+        history=[ModActionItem(id=h.id, action=h.action, reason=h.reason,
+                               actor_id=h.actor_id, expires_at=h.expires_at,
+                               created_at=h.created_at) for h in hist])
+
+
+@router.get("/users/{user_id}/moderation", response_model=UserModerationState)
+def user_moderation(user_id: int, db: Session = Depends(get_db),
+                    user: User = Depends(get_current_user)):
+    _require_mod(user)
+    return _state(db, _target_or_404(db, user_id))
+
+
+@router.post("/users/{user_id}/escalate", response_model=UserModerationState)
+def escalate_user(user_id: int, req: EscalateRequest, request: Request,
+                  db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Apply the next rung of the ladder (warn → mute → suspend)."""
+    _require_mod(user)
+    target = _target_or_404(db, user_id)
+    if not can_manage_user(user, target):
+        raise HTTPException(status_code=403,
+                            detail="You can't take action on this user")
+    step = mod.next_escalation(db, target)
+    if step is None:
+        raise HTTPException(status_code=400, detail="User is already suspended")
+    mod.apply_action(db, user, target, step, req.reason, request=request)
+    db.refresh(target)
+    return _state(db, target, applied=step)
+
+
+@router.post("/users/{user_id}/action", response_model=UserModerationState)
+def user_action(user_id: int, req: UserActionRequest, request: Request,
+                db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Apply a specific action (warn / mute / suspend / unmute / unsuspend)."""
+    _require_mod(user)
+    target = _target_or_404(db, user_id)
+    if not can_manage_user(user, target):
+        raise HTTPException(status_code=403,
+                            detail="You can't take action on this user")
+    mod.apply_action(db, user, target, req.action, req.reason, request=request)
+    db.refresh(target)
+    return _state(db, target, applied=req.action)

@@ -129,6 +129,8 @@ async def create_question(
     user: User = Depends(get_current_user),
 ):
     _require_session(db, session_id)
+    from app.core.moderation_service import ensure_can_post, auto_flag
+    ensure_can_post(user)
 
     now = time.monotonic()
     last = _last_submit.get(user.id, 0.0)
@@ -140,6 +142,9 @@ async def create_question(
     db.add(q)
     db.commit()
     db.refresh(q)
+
+    # Auto-flag spam / profanity / links into the moderator queue (still posts).
+    auto_flag(db, "question", q.id, q.text)
 
     await _broadcast(db, q, "created")
     return _serialize(q, user.full_name, is_mine=True, has_upvoted=False)

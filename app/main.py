@@ -26,6 +26,7 @@ from app.models.attendance import SessionAttendance  # noqa – registers model
 from app.models.certificate import IssuedCertificate  # noqa – registers model
 from app.models.sponsor import Sponsor, SponsorLead, SponsorVisit  # noqa – registers model
 from app.models.report import ContentReport  # noqa – registers model
+from app.models.moderation import ModerationAction  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth
 from app.api import auth, pages
@@ -145,6 +146,10 @@ def _migrate_users_table(connection):
             "ALTER TABLE users ADD COLUMN networking_visible BOOLEAN "
             "NOT NULL DEFAULT FALSE"
         ))
+    if cols and "muted_until" not in cols:
+        connection.execute(text(
+            "ALTER TABLE users ADD COLUMN muted_until TIMESTAMPTZ"
+        ))
 
 
 def _migrate_papers_table(connection):
@@ -224,6 +229,47 @@ def _migrate_reviews_table(connection):
         ))
 
 
+def _migrate_reports_table(connection):
+    """Add the auto-flag columns to an existing content_reports table."""
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'content_reports'"
+        ))
+    }
+    if not cols:
+        return
+    if "source" not in cols:
+        connection.execute(text(
+            "ALTER TABLE content_reports ADD COLUMN source VARCHAR(10) "
+            "NOT NULL DEFAULT 'user'"
+        ))
+    # reporter_id becomes nullable so system auto-flags have no human reporter.
+    row = connection.execute(text(
+        "SELECT is_nullable FROM information_schema.columns WHERE "
+        "table_name = 'content_reports' AND column_name = 'reporter_id'"
+    )).first()
+    if row and row[0] == "NO":
+        connection.execute(text(
+            "ALTER TABLE content_reports ALTER COLUMN reporter_id DROP NOT NULL"
+        ))
+
+
+def _migrate_posters_table(connection):
+    """Add the approval-status column to an existing posters table."""
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'posters'"
+        ))
+    }
+    if cols and "status" not in cols:
+        connection.execute(text(
+            "ALTER TABLE posters ADD COLUMN status VARCHAR(12) "
+            "NOT NULL DEFAULT 'approved'"
+        ))
+
+
 def _check_production_secrets():
     """Refuse to boot a production deployment with a weak/default signing key.
 
@@ -261,6 +307,8 @@ async def lifespan(application: FastAPI):
             _migrate_papers_table(conn)
             _migrate_reviews_table(conn)
             _migrate_broadcasts_table(conn)
+            _migrate_reports_table(conn)
+            _migrate_posters_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl

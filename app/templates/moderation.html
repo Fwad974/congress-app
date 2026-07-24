@@ -32,9 +32,22 @@
 <div class="container">
   <div class="md-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Content <span>Moderation</span></h2></div>
   <div class="md-stats" id="mdStats"></div>
-  <div class="md-title" style="padding:8px 0"><h2 style="font-size:1rem">Report queue</h2><button class="md-btn" onclick="loadQueue()" style="margin-left:auto">Refresh</button></div>
+
+  <div class="md-title" style="padding:8px 0"><h2 style="font-size:1rem">Report queue</h2><button class="md-btn" onclick="loadAll()" style="margin-left:auto">Refresh</button></div>
   <div id="mdQueue"><div class="md-empty">Loading…</div></div>
+
+  <div class="md-title" style="padding:16px 0 8px"><h2 style="font-size:1rem">Poster approvals</h2></div>
+  <div id="mdPosters"><div class="md-empty">Loading…</div></div>
 </div></div>
+
+<div class="sp-modal" id="actModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeAct()">
+  <div style="background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--rx);max-width:460px;width:100%;padding:24px">
+    <div id="actTitle" style="font:600 1rem var(--fh);color:var(--w);margin-bottom:6px"></div>
+    <div id="actState" class="md-meta" style="margin-bottom:12px"></div>
+    <textarea id="actReason" class="pp-in" placeholder="Reason (required — recorded in the audit log)" style="width:100%;min-height:70px;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:8px;color:var(--w9);font:.9rem var(--f);padding:10px 12px"></textarea>
+    <div id="actButtons" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"></div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -46,13 +59,14 @@ const TYPE_LABEL={question:'Q&A question',poster_comment:'Poster comment'};
 async function loadStats(){
   try{const s=await api('/api/moderation/stats');
     document.getElementById('mdStats').innerHTML=
-      '<div class="md-stat"><div class="v" style="color:var(--red)">'+s.open+'</div><div class="l">Open</div></div>'+
+      '<div class="md-stat"><div class="v" style="color:var(--red)">'+s.open+'</div><div class="l">Open reports</div></div>'+
+      '<div class="md-stat"><div class="v" style="color:var(--gold)">'+(s.pending_posters||0)+'</div><div class="l">Pending posters</div></div>'+
       '<div class="md-stat"><div class="v">'+s.resolved+'</div><div class="l">Removed</div></div>'+
       '<div class="md-stat"><div class="v">'+s.dismissed+'</div><div class="l">Dismissed</div></div>';
   }catch(e){}
 }
+function loadAll(){loadStats();loadQueue();loadPosters();}
 async function loadQueue(){
-  loadStats();
   try{const d=await api('/api/moderation/reports');const c=document.getElementById('mdQueue');
     if(!d.reports.length){c.innerHTML='<div class="md-empty">🎉 Nothing in the queue — all clear.</div>';return;}
     c.innerHTML=d.reports.map(card).join('');
@@ -60,22 +74,82 @@ async function loadQueue(){
 }
 function card(r){
   const reasons=r.reasons.length?'<ul class="md-reasons">'+r.reasons.map(x=>'<li>“'+esc(x)+'”</li>').join('')+'</ul>':'<div class="md-reasons" style="color:var(--w3)">No reason given.</div>';
+  const auto=r.auto_flagged?'<span class="md-count" style="background:rgba(245,158,11,.14);color:var(--gold);border-color:rgba(245,158,11,.3)">⚑ auto-flagged</span>':'';
+  const authorBtn=r.content_author_id?'<button class="md-btn" onclick="openAct('+r.content_author_id+',\''+esc(r.content_author||'user').replace(/\x27/g,"")+'\')">Action author…</button>':'';
   return '<div class="md-card"><div class="md-head"><span class="md-tag">'+esc(TYPE_LABEL[r.content_type]||r.content_type)+'</span>'+
-    '<span class="md-count">'+r.report_count+' report'+(r.report_count===1?'':'s')+'</span>'+
+    '<span class="md-count">'+r.report_count+' report'+(r.report_count===1?'':'s')+'</span>'+auto+
     '<span class="md-meta" style="margin-left:auto">'+esc(r.content_context||'')+'</span></div>'+
     '<div class="md-body">'+esc(r.content_preview||'(empty)')+'</div>'+
     '<div class="md-meta">by '+esc(r.content_author||'—')+' · first reported '+new Date(r.first_reported_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+
     reasons+
-    '<div style="display:flex;gap:8px;margin-top:10px"><button class="md-btn danger" onclick="resolve('+r.id+',\'remove\')">Remove content</button>'+
-    '<button class="md-btn" onclick="resolve('+r.id+',\'dismiss\')">Dismiss reports</button></div></div>';
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="md-btn danger" onclick="resolve('+r.id+',\'remove\')">Remove content</button>'+
+    '<button class="md-btn" onclick="resolve('+r.id+',\'dismiss\')">Dismiss reports</button>'+authorBtn+'</div></div>';
 }
 async function resolve(id,action){
-  if(action==='remove'&&!await confirmDialog({title:'Remove content',message:'Permanently remove this content? All reports on it are closed.',confirmText:'Remove',danger:true}))return;
-  try{const r=await api('/api/moderation/reports/'+id+'/resolve','POST',{action});
-    showToast(action==='remove'?'Content removed':'Reports dismissed','success');loadQueue();
+  let reason=null;
+  if(action==='remove'){
+    reason=await promptDialog({title:'Remove content',message:'Permanently remove this content? All reports on it are closed.',placeholder:'Reason (optional, logged)',textarea:true,confirmText:'Remove'});
+    if(reason===null)return;
+  }
+  try{await api('/api/moderation/reports/'+id+'/resolve','POST',{action,reason:reason||null});
+    showToast(action==='remove'?'Content removed':'Reports dismissed','success');loadAll();
     if(typeof refreshModBadge==='function')refreshModBadge();}
   catch(e){showToast(e.message,'error');}
 }
-document.addEventListener('DOMContentLoaded',loadQueue);
+
+// ── Poster approvals ───────────────────────────────────────
+async function loadPosters(){
+  try{const rows=await api('/api/moderation/posters');const c=document.getElementById('mdPosters');
+    if(!rows.length){c.innerHTML='<div class="md-empty">No posters awaiting approval.</div>';return;}
+    c.innerHTML=rows.map(p=>'<div class="md-card"><div class="md-head"><span class="md-tag">Poster</span>'+
+      '<span class="md-meta" style="margin-left:auto">'+esc(p.category||'')+(p.has_image?' · 🖼 image':'')+'</span></div>'+
+      '<div class="md-body" style="border-left-color:var(--blue)"><strong>'+esc(p.title)+'</strong>\n'+esc(p.abstract||'(no abstract)')+'</div>'+
+      '<div class="md-meta">by '+esc(p.presenter_name||p.authors||'—')+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px"><button class="md-btn" style="color:#2ecc71;border-color:rgba(46,204,113,.3)" onclick="approvePoster('+p.id+',true)">Approve</button>'+
+      '<button class="md-btn danger" onclick="approvePoster('+p.id+',false)">Reject</button></div></div>').join('');
+  }catch(e){showToast(e.message,'error');}
+}
+async function approvePoster(id,ok){
+  let reason=null;
+  if(!ok){reason=await promptDialog({title:'Reject poster',message:'Tell the author why (they are notified).',placeholder:'Reason',textarea:true,confirmText:'Reject'});if(reason===null)return;}
+  try{await api('/api/moderation/posters/'+id+(ok?'/approve':'/reject'),'POST',{reason:reason||null});
+    showToast(ok?'Poster approved':'Poster rejected','success');loadAll();}
+  catch(e){showToast(e.message,'error');}
+}
+
+// ── User escalation (warn → mute → suspend) ────────────────
+let _actUser=null;
+async function openAct(uid,name){
+  _actUser=uid;
+  document.getElementById('actTitle').textContent='Moderate '+name;
+  document.getElementById('actReason').value='';
+  document.getElementById('actModal').style.display='flex';
+  try{const s=await api('/api/moderation/users/'+uid+'/moderation');renderAct(s);}
+  catch(e){document.getElementById('actState').textContent=e.message;}
+}
+function renderAct(s){
+  const state=s.is_active?(s.muted?'🔇 muted until '+new Date(s.muted_until).toLocaleString('en-GB'):'active'):'⛔ suspended';
+  document.getElementById('actState').innerHTML='Status: <strong>'+esc(state)+'</strong>'+
+    (s.history.length?' · '+s.history.length+' prior action'+(s.history.length===1?'':'s'):'');
+  const next=s.next_step?'<button class="md-btn" style="background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600" onclick="doAct(\'escalate\')">Escalate → '+s.next_step+'</button>':'';
+  const btns=[next,
+    '<button class="md-btn" onclick="doAct(\'warn\')">Warn</button>',
+    '<button class="md-btn" onclick="doAct(\'mute\')">Mute 24h</button>',
+    '<button class="md-btn danger" onclick="doAct(\'suspend\')">Suspend</button>'];
+  if(s.muted)btns.push('<button class="md-btn" onclick="doAct(\'unmute\')">Unmute</button>');
+  if(!s.is_active)btns.push('<button class="md-btn" onclick="doAct(\'unsuspend\')">Reinstate</button>');
+  document.getElementById('actButtons').innerHTML=btns.join('');
+}
+async function doAct(action){
+  const reason=document.getElementById('actReason').value.trim();
+  if(!reason){showToast('A reason is required','error');return;}
+  const url='/api/moderation/users/'+_actUser+'/'+(action==='escalate'?'escalate':'action');
+  const body=action==='escalate'?{reason}:{action,reason};
+  try{const s=await api(url,'POST',body);showToast('Applied: '+(s.applied||action),'success');renderAct(s);
+    if(typeof refreshModBadge==='function')refreshModBadge();}
+  catch(e){showToast(e.message,'error');}
+}
+function closeAct(){document.getElementById('actModal').style.display='none';_actUser=null;}
+document.addEventListener('DOMContentLoaded',loadAll);
 </script>
 {% endblock %}

@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     # Poster gallery scavenger hunt: number of distinct posters an attendee must
     # visit (check in to) before the hunt is marked complete.
     POSTER_HUNT_GOAL: int = 5
+    # When true, posters uploaded by non-organizers require moderator approval
+    # before appearing in the public gallery (upload-approval workflow).
+    POSTER_APPROVAL_REQUIRED: bool = False
+    # Mute duration for the MOD-04 escalation ladder (warn → mute → suspend).
+    MUTE_HOURS: int = 24
 
     # Certificates. Attendance is recorded by scanning a session QR; each
     # attended session earns CME_CREDITS_PER_SESSION credits.

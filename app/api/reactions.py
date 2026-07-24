@@ -47,6 +47,8 @@ async def react(
     user: User = Depends(get_current_user),
 ):
     _require_session(db, session_id)
+    from app.core.moderation_service import ensure_can_post
+    ensure_can_post(user)
 
     raw = (body or {}).get("counts") or {}
     if not isinstance(raw, dict):

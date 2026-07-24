@@ -19,8 +19,10 @@ class ContentReport(Base):
     id = Column(Integer, primary_key=True, index=True)
     content_type = Column(String(32), nullable=False, index=True)  # question / poster_comment
     content_id = Column(Integer, nullable=False, index=True)
+    # Null reporter = system auto-flag (source="auto"); otherwise the reporting user.
     reporter_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
+                         nullable=True, index=True)
+    source = Column(String(10), nullable=False, default="user")   # user | auto
     reason = Column(Text, nullable=True)
     status = Column(String(16), nullable=False, default="open", index=True)
     action_taken = Column(String(32), nullable=True)   # removed / dismissed

@@ -48,7 +48,13 @@ async def get_current_user_optional(request: Request, db: Session = Depends(get_
     user_id = payload.get("sub")
     if not user_id:
         return None
-    return db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    # Suspended accounts are treated as logged out everywhere — pages redirect
+    # to /login and API calls get 401, so a suspend takes effect immediately
+    # instead of lingering until the token expires.
+    if user and not user.is_active:
+        return None
+    return user
 
 
 async def get_current_user(request: Request, db: Session = Depends(get_db)):
