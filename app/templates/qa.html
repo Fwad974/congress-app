@@ -263,7 +263,7 @@ async function setStatus(id,status){
   catch(e){showToast(e.message,'error');}
 }
 async function delQ(id){
-  if(!confirm('Delete this question?'))return;
+  if(!await confirmDialog({title:'Delete question',message:'Delete this question?',confirmText:'Delete',danger:true}))return;
   try{await api('/api/questions/'+id,'DELETE');}
   catch(e){showToast(e.message,'error');}
 }
@@ -379,7 +379,7 @@ async function createPoll(){
   catch(e){showToast(e.message,'error');}
 }
 async function pollStatus(id,status){try{await api('/api/polls/'+id+'/status','PUT',{status});loadPolls();}catch(e){showToast(e.message,'error');}}
-async function delPoll(id){if(!confirm('Delete this poll?'))return;try{await api('/api/polls/'+id,'DELETE');loadPolls();}catch(e){showToast(e.message,'error');}}
+async function delPoll(id){if(!await confirmDialog({title:'Delete poll',message:'Delete this poll and its responses?',confirmText:'Delete',danger:true}))return;try{await api('/api/polls/'+id,'DELETE');loadPolls();}catch(e){showToast(e.message,'error');}}
 
 let _pes=null;
 function connectPolls(){

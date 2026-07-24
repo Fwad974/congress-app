@@ -60,7 +60,7 @@ textarea.pp-in{resize:vertical;min-height:90px}
       <input class="pp-in" id="acSearch" placeholder="Search accepted papers…" style="flex:1" oninput="renderAccepted()">
       <select class="pp-in" id="acCat" style="width:auto" onchange="renderAccepted()"><option value="">All tracks</option></select>
     </div>
-    <div id="acceptedList"><div class="pp-empty">Loading…</div></div>
+    <div id="acceptedList"><div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div></div><div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w40"></div></div></div>
   </div>
 
   <div class="pp-panel" id="pt-submit">
@@ -213,7 +213,7 @@ async function onPickFile(id,el){
   catch(e){showToast(e.message,'error');}
 }
 async function removeFile(id){
-  if(!confirm('Remove the attached manuscript?'))return;
+  if(!await confirmDialog({title:'Remove manuscript',message:'Remove the attached manuscript file?',confirmText:'Remove',danger:true}))return;
   try{await api('/api/papers/'+id+'/file','DELETE');showToast('File removed','success');loadMine();}
   catch(e){showToast(e.message,'error');}
 }
@@ -265,7 +265,11 @@ function revCard(p){
 async function respond(id,action){
   let reason=null;
   if(action==='decline'||action==='recuse'){
-    reason=prompt(action==='recuse'?'Reason for recusal (optional):':'Reason for declining (optional):')||'';
+    reason=await promptDialog({
+      title:action==='recuse'?'Recuse from this paper':'Decline this assignment',
+      message:'Add a note for the review chairs (optional).',
+      placeholder:'Reason (optional)',textarea:true,
+      confirmText:action==='recuse'?'Recuse':'Decline'});
     if(reason===null)return;   // cancelled
   }
   try{await api('/api/papers/'+id+'/respond','POST',{action,reason:reason||null});
@@ -320,7 +324,7 @@ function togPick(pid,rid,el){const s=_pick[pid]||(_pick[pid]=new Set());if(s.has
 async function doAssign(pid){const ids=[...(_pick[pid]||[])];if(!ids.length){showToast('Pick at least one reviewer','error');return;}
   try{await api('/api/papers/'+pid+'/assign','POST',{reviewer_ids:ids,override_coi:document.getElementById('ov_'+pid).checked});showToast('Reviewers assigned','success');loadManage();}
   catch(e){showToast(e.message,'error');}}
-async function decide(pid,decision){if(decision==='reject'&&!confirm('Reject this submission?'))return;
+async function decide(pid,decision){if(decision==='reject'&&!await confirmDialog({title:'Reject submission',message:'Reject this submission? The author is notified of the decision.',confirmText:'Reject',danger:true}))return;
   try{await api('/api/papers/'+pid+'/decision','POST',{decision,comment:document.getElementById('dc_'+pid).value.trim()||null});showToast('Decision recorded','success');loadManage();}
   catch(e){showToast(e.message,'error');}}
 

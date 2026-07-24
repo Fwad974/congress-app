@@ -47,7 +47,10 @@
     <input class="cn-in" id="cnSearch" placeholder="Search by name, institution…" style="flex:1;min-width:180px" oninput="debouncedLoad()">
   </div>
 
-  <div class="cn-grid" id="cnGrid"><div class="cn-empty">Loading…</div></div>
+  <div class="cn-grid" id="cnGrid">
+    <div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w60"></div><div class="skeleton sk-line w80"></div></div>
+    <div class="sk-card"><div class="skeleton sk-line title"></div><div class="skeleton sk-line w60"></div><div class="skeleton sk-line w40"></div></div>
+  </div>
 </div></div>
 {% endblock %}
 

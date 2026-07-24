@@ -4,6 +4,9 @@ function showToast(message, type = 'success') {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} show`;
+  // Screen readers announce it; errors are assertive, the rest polite.
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
   // Build with textContent, not innerHTML — `message` can carry user-controlled
   // text (notification titles/bodies), so interpolating it into HTML would be
   // a stored-XSS sink.
@@ -17,6 +20,88 @@ function showToast(message, type = 'success') {
     toast.style.transition = 'all 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+/* ── Styled dialogs (replace native confirm/prompt) ──────────────
+   confirmDialog(opts|string) → Promise<bool>
+   promptDialog(opts|string)  → Promise<string|null>  (null = cancelled)
+   opts: {title, message, confirmText, cancelText, danger,
+          placeholder, value, textarea} */
+function _uiDialog(opts) {
+  return new Promise((resolve) => {
+    const prev = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.className = 'ui-dialog-overlay';
+    const box = document.createElement('div');
+    box.className = 'ui-dialog';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+
+    if (opts.title) {
+      const h = document.createElement('h3');
+      h.className = 'ui-dialog-title'; h.textContent = opts.title;
+      box.setAttribute('aria-label', opts.title); box.appendChild(h);
+    }
+    if (opts.message) {
+      const p = document.createElement('p');
+      p.className = 'ui-dialog-msg'; p.textContent = opts.message; box.appendChild(p);
+    }
+    let field = null;
+    if (opts.input) {
+      field = document.createElement(opts.textarea ? 'textarea' : 'input');
+      field.className = 'ui-dialog-input';
+      if (opts.placeholder) field.placeholder = opts.placeholder;
+      if (opts.value) field.value = opts.value;
+      if (opts.textarea) field.rows = 3;
+      box.appendChild(field);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'ui-dialog-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.className = 'ui-dialog-btn';
+    cancel.textContent = opts.cancelText || 'Cancel';
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'ui-dialog-btn primary' + (opts.danger ? ' danger' : '');
+    ok.textContent = opts.confirmText || 'Confirm';
+    actions.appendChild(cancel); actions.appendChild(ok); box.appendChild(actions);
+    overlay.appendChild(box); document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+    (field || ok).focus();
+
+    function close(val) {
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 180);
+      document.removeEventListener('keydown', onKey);
+      if (prev && prev.focus) prev.focus();
+      resolve(val);
+    }
+    const doOk = () => close(opts.input ? field.value : true);
+    const doCancel = () => close(opts.input ? null : false);
+    ok.onclick = doOk; cancel.onclick = doCancel;
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) doCancel(); });
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); doCancel(); }
+      else if (e.key === 'Enter' && (!opts.textarea || e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); doOk();
+      } else if (e.key === 'Tab') {
+        // Simple focus trap between the two buttons + field.
+        const f = [field, cancel, ok].filter(Boolean);
+        const i = f.indexOf(document.activeElement);
+        e.preventDefault();
+        f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+  });
+}
+function confirmDialog(opts) {
+  if (typeof opts === 'string') opts = { message: opts };
+  return _uiDialog(opts);
+}
+function promptDialog(opts) {
+  if (typeof opts === 'string') opts = { message: opts };
+  return _uiDialog(Object.assign({ input: true }, opts));
 }
 
 async function api(url, data) {

@@ -183,7 +183,7 @@ async function saveEdit(id){
 }
 
 async function delNote(id){
-  if(!confirm('Delete this note? This cannot be undone.'))return;
+  if(!await confirmDialog({title:'Delete note',message:'Delete this note? This cannot be undone.',confirmText:'Delete',danger:true}))return;
   try{
     await api('/api/notes/'+id,'DELETE');
     showToast('Note deleted','success');

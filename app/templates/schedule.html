@@ -576,7 +576,7 @@ async function submitSched(){
 
 async function confirmDelete(id){
   const i=_items[id];if(!i)return;
-  if(!confirm('Delete "'+i.title+'"? This cannot be undone.'))return;
+  if(!await confirmDialog({title:'Delete session',message:'Delete "'+i.title+'"? This cannot be undone.',confirmText:'Delete',danger:true}))return;
   try{
     await api('/api/schedule/'+id,'DELETE');
     showToast('Schedule item deleted','success');
