@@ -64,6 +64,19 @@ class Settings(BaseSettings):
     # Mute duration for the MOD-04 escalation ladder (warn → mute → suspend).
     MUTE_HOURS: int = 24
 
+    # Session recordings. Publishing a recording opens an availability window
+    # this many days long (REC-04: "available 30 days post-event"); organizers
+    # can override per recording.
+    RECORDING_RETENTION_DAYS: int = 30
+
+    # AI Congress Companion. The companion always answers from live congress
+    # data with its built-in rules; when an Anthropic API key is present it
+    # also handles free-form questions in natural language. Leave the key blank
+    # to run entirely offline.
+    ANTHROPIC_API_KEY: str = ""
+    COMPANION_MODEL: str = "claude-opus-5"
+    COMPANION_MAX_TOKENS: int = 900
+
     # Certificates. Attendance is recorded by scanning a session QR; each
     # attended session earns CME_CREDITS_PER_SESSION credits.
     CERT_MIN_SESSIONS: int = 3      # sessions for the attendance certificate

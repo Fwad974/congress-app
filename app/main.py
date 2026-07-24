@@ -27,6 +27,9 @@ from app.models.certificate import IssuedCertificate  # noqa – registers model
 from app.models.sponsor import Sponsor, SponsorLead, SponsorVisit  # noqa – registers model
 from app.models.feedback import SessionRating, SurveyResponse  # noqa – registers model
 from app.models.venue import VenueRoom, VenueSetting  # noqa – registers model
+from app.models.recording import (  # noqa – registers model
+    SessionRecording, TranscriptSegment, SlideMarker,
+)
 from app.models.report import ContentReport  # noqa – registers model
 from app.models.moderation import ModerationAction  # noqa – registers model
 from app.core.realtime import broadcaster
@@ -48,6 +51,9 @@ from app.api import moderation as moderation_api
 from app.api import sponsors as sponsors_api
 from app.api import feedback as feedback_api
 from app.api import venue as venue_api
+from app.api import recordings as recordings_api
+from app.api import knowledge as knowledge_api
+from app.api import companion as companion_api
 from app.core import feature_flags
 
 settings = get_settings()
@@ -397,3 +403,9 @@ app.include_router(feedback_api.router, prefix="/api", tags=["feedback"],
                    dependencies=[Depends(feature_flags.require_feature("feedback"))])
 app.include_router(venue_api.router, prefix="/api/venue", tags=["venue"],
                    dependencies=[Depends(feature_flags.require_feature("venue"))])
+app.include_router(recordings_api.router, prefix="/api/recordings", tags=["recordings"],
+                   dependencies=[Depends(feature_flags.require_feature("recordings"))])
+app.include_router(knowledge_api.router, prefix="/api/knowledge", tags=["knowledge"],
+                   dependencies=[Depends(feature_flags.require_feature("knowledge"))])
+app.include_router(companion_api.router, prefix="/api/companion", tags=["companion"],
+                   dependencies=[Depends(feature_flags.require_feature("companion"))])

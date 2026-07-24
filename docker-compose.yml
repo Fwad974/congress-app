@@ -85,6 +85,13 @@ services:
       CERT_ATTENDANCE_PCT: ${CERT_ATTENDANCE_PCT:-0}
       CME_MIN_CREDITS: ${CME_MIN_CREDITS:-5}
       CME_CREDITS_PER_SESSION: ${CME_CREDITS_PER_SESSION:-1}
+      # Session recordings: how long a published recording stays watchable.
+      RECORDING_RETENTION_DAYS: ${RECORDING_RETENTION_DAYS:-30}
+      # AI Congress Companion. Blank key = rule-based answers only (still
+      # fully functional); set it to also answer free-form questions.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COMPANION_MODEL: ${COMPANION_MODEL:-claude-opus-5}
+      COMPANION_MAX_TOKENS: ${COMPANION_MAX_TOKENS:-900}
     volumes:
       # Persists auto-generated VAPID keys and uploaded manuscripts so they're
       # stable across restarts (otherwise browser subscriptions / files break).

@@ -33,6 +33,14 @@ FEATURES: Dict[str, tuple] = {
                  "Session star ratings, the post-event survey, and organizer sentiment."),
     "venue": ("Venue & Dubai Info",
               "Floor plan with live sessions, navigation, WiFi, and local info."),
+    "recordings": ("Session Recordings",
+                   "Consent-gated session video with searchable transcripts "
+                   "and slide-sync playback."),
+    "knowledge": ("Knowledge Graph",
+                  "Topic map linking talks, posters, papers and researchers."),
+    "companion": ("AI Congress Companion",
+                  "Natural-language congress assistant, nudges, and "
+                  "serendipity suggestions."),
 }
 DEFAULT_ENABLED = True
 _ADMIN_ROLES = {UserRole.admin, UserRole.super_admin}

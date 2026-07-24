@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Session Recordings — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.rc-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
+.rc-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.rc-title h2{font:600 1.4rem var(--fh);color:var(--w)}.rc-title h2 span{color:var(--gold)}
+.rc-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.rc-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.rc-tab:hover{color:var(--w7)}.rc-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.rc-panel{display:none}.rc-panel.active{display:block}
+.rc-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px}
+.rc-card h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:4px}
+.rc-meta{font:.76rem var(--f);color:var(--w5);display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.rc-in{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+textarea.rc-in{resize:vertical;min-height:90px;font-family:var(--m,monospace);font-size:.8rem}
+.rc-btn{padding:8px 15px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .8rem var(--f);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.rc-btn:hover{border-color:var(--gold);color:var(--gold)}
+.rc-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.rc-btn.danger:hover{border-color:#e74c3c;color:#e74c3c}
+.rc-label{font:600 .7rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:10px 0 4px;display:block}
+.rc-pill{display:inline-block;padding:2px 9px;border-radius:50px;font:600 .66rem var(--f);letter-spacing:.03em;text-transform:uppercase}
+.rc-pill.live{background:rgba(46,204,113,.14);color:#63d297}
+.rc-pill.wait{background:rgba(201,169,98,.14);color:var(--gold)}
+.rc-pill.off{background:rgba(231,76,60,.12);color:#e88}
+.rc-empty{text-align:center;padding:38px 22px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.rc-player{width:100%;max-height:52vh;background:#000;border-radius:var(--r);margin-bottom:10px}
+.rc-split{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+@media(max-width:820px){.rc-split{grid-template-columns:1fr}}
+.rc-seg{padding:7px 9px;border-radius:8px;cursor:pointer;display:flex;gap:10px;font:.83rem/1.5 var(--f);color:var(--w7)}
+.rc-seg:hover{background:rgba(201,169,98,.07)}
+.rc-seg.on{background:rgba(201,169,98,.13);color:var(--w)}
+.rc-seg .ts{color:var(--gold);font:.74rem var(--m,monospace);flex:0 0 auto;padding-top:2px}
+.rc-scroll{max-height:46vh;overflow-y:auto;padding-right:4px}
+.rc-slide{display:flex;gap:10px;align-items:center;padding:7px 9px;border-radius:8px;cursor:pointer;font:.83rem var(--f);color:var(--w7)}
+.rc-slide:hover{background:rgba(201,169,98,.07)}
+.rc-slide.on{background:rgba(201,169,98,.13);color:var(--w)}
+.rc-slide .n{width:26px;height:26px;flex:0 0 auto;border-radius:6px;background:rgba(201,169,98,.15);color:var(--gold);display:flex;align-items:center;justify-content:center;font:700 .72rem var(--f)}
+.rc-hit{border-left:3px solid var(--gold);background:rgba(0,0,0,.18);border-radius:6px;padding:8px 11px;margin:6px 0;cursor:pointer}
+.rc-hit .t{font:600 .82rem var(--f);color:var(--w)}
+.rc-hit .b{font:.8rem/1.5 var(--f);color:var(--w7);margin-top:2px}
+.rc-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="rc-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="rc-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Session <span>Recordings</span></h2></div>
+  <div class="rc-tabs animate-up">
+    <button class="rc-tab active" data-t="watch" onclick="rcTab('watch')">Watch</button>
+    <button class="rc-tab" data-t="search" onclick="rcTab('search')">Search transcripts</button>
+    {% if is_speaker %}<button class="rc-tab" data-t="mine" onclick="rcTab('mine')">My talks &amp; consent</button>{% endif %}
+    {% if is_organizer %}<button class="rc-tab" data-t="manage" onclick="rcTab('manage')">Manage</button>{% endif %}
+  </div>
+
+  <div class="rc-panel active" id="rc-watch">
+    <div id="playerBox"></div>
+    <div id="rcList"><div class="rc-empty">Loading…</div></div>
+  </div>
+
+  <div class="rc-panel" id="rc-search">
+    <div class="rc-card">
+      <span class="rc-label">Search every transcript</span>
+      <div class="rc-row">
+        <input class="rc-in" id="qBox" style="flex:1;min-width:200px" placeholder="e.g. organoid, CRISPR, clinical trial" onkeydown="if(event.key==='Enter')runSearch()">
+        <button class="rc-btn primary" onclick="runSearch()">Search</button>
+      </div>
+      <div class="rc-meta">Results link straight to the moment the phrase was said.</div>
+    </div>
+    <div id="hits"></div>
+  </div>
+
+  {% if is_speaker %}
+  <div class="rc-panel" id="rc-mine"><div id="mineBox"><div class="rc-empty">Loading…</div></div></div>
+  {% endif %}
+
+  {% if is_organizer %}
+  <div class="rc-panel" id="rc-manage">
+    <div class="rc-card">
+      <h3>Add a recording</h3>
+      <span class="rc-label">Session</span>
+      <select class="rc-in" id="mSession"></select>
+      <span class="rc-label">Video link (direct .mp4 plays inline)</span>
+      <input class="rc-in" id="mVideo" placeholder="https://…/keynote.mp4">
+      <span class="rc-label">Slide deck link (optional)</span>
+      <input class="rc-in" id="mSlides" placeholder="https://…/slides.pdf">
+      <span class="rc-label">Duration in seconds (optional)</span>
+      <input class="rc-in" id="mDur" type="number" min="0" placeholder="2700">
+      <div class="rc-row"><button class="rc-btn primary" onclick="createRec()">Create</button></div>
+      <div class="rc-meta">The presenting speaker is notified to give consent. Nothing publishes without it.</div>
+    </div>
+    <div id="manageList"></div>
+  </div>
+  {% endif %}
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const IS_ORG={{ 'true' if is_organizer else 'false' }};
+const RETENTION={{ retention_days }};
+let RECS=[],CURRENT=null,SEGS=[],SLIDES=[];
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function ts(sec){sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):m+':'+String(s).padStart(2,'0');}
+function rcTab(t){document.querySelectorAll('.rc-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.rc-panel').forEach(p=>p.classList.toggle('active',p.id==='rc-'+t));if(t==='mine')loadMine();if(t==='manage')loadManage();}
+async function api(url,opts){const r=await fetch(url,Object.assign({credentials:'same-origin',headers:{'Content-Type':'application/json'}},opts||{}));if(!r.ok){let m='Request failed';try{const d=await r.json();m=d.detail||m;}catch(e){}throw new Error(m);}return r.status===204?null:r.json();}
+
+// ── Catalogue ───────────────────────────────────────────────
+function pill(r){
+  if(r.available)return '<span class="rc-pill live">Available'+(r.days_left!=null?' · '+r.days_left+'d left':'')+'</span>';
+  if(r.expired)return '<span class="rc-pill off">Window closed</span>';
+  if(r.consent_state==='denied')return '<span class="rc-pill off">Consent denied</span>';
+  if(r.consent_state==='pending')return '<span class="rc-pill wait">Awaiting speaker consent</span>';
+  return '<span class="rc-pill wait">Not published</span>';
+}
+function card(r){
+  return '<div class="rc-card"><h3>'+esc(r.session_title)+'</h3>'+
+    '<div class="rc-meta">'+pill(r)+
+    (r.speaker_name?'<span>'+esc(r.speaker_name)+'</span>':'')+
+    (r.duration_seconds?'<span>'+ts(r.duration_seconds)+'</span>':'')+
+    '<span>'+r.segment_count+' transcript segments</span>'+
+    (r.slide_count?'<span>'+r.slide_count+' slides</span>':'')+
+    (IS_ORG?'<span>'+r.views+' views</span>':'')+'</div>'+
+    (r.available?'<div class="rc-row"><button class="rc-btn primary" onclick="openRec('+r.id+')">Watch</button></div>':'')+
+    '</div>';
+}
+async function loadList(){
+  try{RECS=await api('/api/recordings');}catch(e){RECS=[];}
+  const box=document.getElementById('rcList');
+  const live=RECS.filter(r=>r.available);
+  box.innerHTML=live.length?live.map(card).join(''):
+    '<div class="rc-empty">No recordings are available yet. Talks appear here once the speaker consents and organizers publish them — for '+RETENTION+' days after publication.</div>';
+}
+
+// ── Player with transcript + slide sync ─────────────────────
+async function openRec(id){
+  let d;try{d=await api('/api/recordings/'+id);}catch(e){alert(e.message);return;}
+  CURRENT=d;SEGS=d.transcript||[];SLIDES=d.slides||[];
+  try{api('/api/recordings/'+id+'/view',{method:'POST'});}catch(e){}
+  const direct=/\.(mp4|webm|ogg|m4v|mov)(\?|$)/i.test(d.video_url||'');
+  const media=direct
+    ?'<video id="rcVideo" class="rc-player" controls preload="metadata" src="'+esc(d.video_url)+'"></video>'
+    :'<div class="rc-card"><a class="rc-btn primary" target="_blank" rel="noopener noreferrer" href="'+esc(d.video_url||'#')+'">Open the recording ↗</a><div class="rc-meta">Hosted off-app; the transcript below is still searchable.</div></div>';
+  document.getElementById('playerBox').innerHTML=
+    '<div class="rc-card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">'+
+    '<h3>'+esc(d.session_title)+'</h3><button class="rc-btn" onclick="closeRec()">Close</button></div>'+
+    '<div class="rc-meta">'+pill(d)+(d.speaker_name?'<span>'+esc(d.speaker_name)+'</span>':'')+
+    (d.slides_url?'<a class="rc-btn" style="padding:2px 10px" target="_blank" rel="noopener noreferrer" href="'+esc(d.slides_url)+'">Slide deck ↗</a>':'')+'</div>'+
+    media+
+    '<div class="rc-split">'+
+      '<div><span class="rc-label">Transcript</span>'+
+        '<input class="rc-in" id="tFilter" placeholder="Filter this transcript…" oninput="renderSegs(this.value)" style="margin-bottom:8px">'+
+        '<div class="rc-scroll" id="segBox"></div></div>'+
+      '<div><span class="rc-label">Slides</span><div class="rc-scroll" id="slideBox"></div></div>'+
+    '</div></div>';
+  renderSegs('');renderSlides();
+  const v=document.getElementById('rcVideo');
+  if(v)v.addEventListener('timeupdate',()=>syncTo(v.currentTime));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeRec(){document.getElementById('playerBox').innerHTML='';CURRENT=null;}
+function renderSegs(filter){
+  const f=(filter||'').toLowerCase();
+  const rows=SEGS.filter(s=>!f||s.text.toLowerCase().includes(f));
+  document.getElementById('segBox').innerHTML=rows.length?rows.map(s=>
+    '<div class="rc-seg" data-at="'+s.start_seconds+'" onclick="seek('+s.start_seconds+')">'+
+    '<span class="ts">'+ts(s.start_seconds)+'</span><span>'+
+    (s.speaker_label?'<strong style="color:var(--gold)">'+esc(s.speaker_label)+':</strong> ':'')+esc(s.text)+'</span></div>'
+  ).join(''):'<div class="rc-meta">No transcript lines'+(f?' match that filter':' yet')+'.</div>';
+}
+function renderSlides(){
+  document.getElementById('slideBox').innerHTML=SLIDES.length?SLIDES.map(s=>
+    '<div class="rc-slide" data-at="'+s.at_seconds+'" onclick="seek('+s.at_seconds+')">'+
+    '<span class="n">'+s.slide_number+'</span><span>'+esc(s.title||('Slide '+s.slide_number))+
+    '<span style="color:var(--gold);font-size:.74rem"> · '+ts(s.at_seconds)+'</span></span></div>'
+  ).join(''):'<div class="rc-meta">No slide markers for this talk.</div>';
+}
+function seek(sec){const v=document.getElementById('rcVideo');if(v){v.currentTime=sec;v.play().catch(()=>{});}syncTo(sec);}
+function syncTo(t){
+  let seg=null,sl=null;
+  SEGS.forEach(s=>{if(s.start_seconds<=t+0.5)seg=s;});
+  SLIDES.forEach(s=>{if(s.at_seconds<=t+0.5)sl=s;});
+  document.querySelectorAll('#segBox .rc-seg').forEach(e=>e.classList.toggle('on',seg&&+e.dataset.at===seg.start_seconds));
+  document.querySelectorAll('#slideBox .rc-slide').forEach(e=>e.classList.toggle('on',sl&&+e.dataset.at===sl.at_seconds));
+}
+
+// ── Cross-recording transcript search ───────────────────────
+async function runSearch(){
+  const q=document.getElementById('qBox').value.trim();
+  const box=document.getElementById('hits');
+  if(q.length<2){box.innerHTML='<div class="rc-empty">Type at least two characters.</div>';return;}
+  let d;try{d=await api('/api/recordings/search?q='+encodeURIComponent(q));}catch(e){box.innerHTML='<div class="rc-empty">'+esc(e.message)+'</div>';return;}
+  box.innerHTML=d.hits.length?'<div class="rc-meta" style="margin-bottom:8px">'+d.total+' match'+(d.total===1?'':'es')+'</div>'+
+    d.hits.map(h=>'<div class="rc-hit" onclick="jump('+h.recording_id+','+h.start_seconds+')">'+
+      '<div class="t">'+esc(h.session_title)+' · <span style="color:var(--gold)">'+ts(h.start_seconds)+'</span></div>'+
+      '<div class="b">'+(h.speaker_label?'<strong>'+esc(h.speaker_label)+':</strong> ':'')+esc(h.text)+'</div></div>').join('')
+    :'<div class="rc-empty">Nothing said about “'+esc(q)+'” in the available recordings.</div>';
+}
+async function jump(id,sec){rcTab('watch');await openRec(id);setTimeout(()=>seek(sec),350);}
+
+// ── Speaker: consent ────────────────────────────────────────
+async function loadMine(){
+  const box=document.getElementById('mineBox');if(!box)return;
+  let list;try{list=await api('/api/recordings?mine=true');}catch(e){box.innerHTML='<div class="rc-empty">'+esc(e.message)+'</div>';return;}
+  box.innerHTML=list.length?list.map(r=>
+    '<div class="rc-card"><h3>'+esc(r.session_title)+'</h3><div class="rc-meta">'+pill(r)+'</div>'+
+    (r.consent_note?'<div class="rc-meta">Note: '+esc(r.consent_note)+'</div>':'')+
+    '<span class="rc-label">Recording consent</span>'+
+    '<input class="rc-in" id="note'+r.id+'" placeholder="Optional note (e.g. mute Q&amp;A after 40:00)">'+
+    '<div class="rc-row"><button class="rc-btn primary" onclick="consent('+r.id+',\'granted\')">Grant consent</button>'+
+    '<button class="rc-btn danger" onclick="consent('+r.id+',\'denied\')">Deny</button></div></div>'
+  ).join(''):'<div class="rc-empty">None of your sessions have been recorded yet.</div>';
+}
+async function consent(id,decision){
+  const el=document.getElementById('note'+id);
+  try{await api('/api/recordings/'+id+'/consent',{method:'POST',body:JSON.stringify({decision:decision,note:el?el.value:null})});}
+  catch(e){alert(e.message);return;}
+  loadMine();loadList();
+}
+
+// ── Organizer: manage ───────────────────────────────────────
+async function loadManage(){
+  const box=document.getElementById('manageList');if(!box)return;
+  let list=[],sessions=[];
+  try{list=await api('/api/recordings?include_hidden=true');}catch(e){}
+  try{sessions=await api('/api/schedule');}catch(e){}
+  const sel=document.getElementById('mSession');
+  const taken=new Set(list.map(r=>r.schedule_item_id));
+  const free=(sessions||[]).filter(s=>!taken.has(s.id));
+  sel.innerHTML=free.length?free.map(s=>'<option value="'+s.id+'">'+esc(s.title)+'</option>').join('')
+    :'<option value="">Every session already has a recording</option>';
+  box.innerHTML=list.length?list.map(r=>
+    '<div class="rc-card"><h3>'+esc(r.session_title)+'</h3><div class="rc-meta">'+pill(r)+
+    '<span>'+r.segment_count+' segments</span><span>'+r.slide_count+' slides</span><span>'+r.views+' views</span></div>'+
+    '<span class="rc-label">Video link</span><input class="rc-in" id="v'+r.id+'" value="'+esc(r.video_url||'')+'">'+
+    '<span class="rc-label">Transcript (WebVTT / SRT — paste and save)</span>'+
+    '<textarea class="rc-in" id="t'+r.id+'" placeholder="WEBVTT&#10;&#10;00:00:00.000 --> 00:00:08.000&#10;Welcome to the keynote."></textarea>'+
+    '<span class="rc-label">Slides — one per line: seconds | number | title</span>'+
+    '<textarea class="rc-in" id="s'+r.id+'" placeholder="0 | 1 | Title slide&#10;95 | 2 | Methods"></textarea>'+
+    '<div class="rc-row">'+
+      '<button class="rc-btn" onclick="saveRec('+r.id+')">Save link</button>'+
+      '<button class="rc-btn" onclick="saveTranscript('+r.id+')">Save transcript</button>'+
+      '<button class="rc-btn" onclick="saveSlides('+r.id+')">Save slides</button>'+
+      (r.status==='published'?'<button class="rc-btn" onclick="withhold('+r.id+')">Withhold</button>'
+        :'<button class="rc-btn primary" onclick="publish('+r.id+')">Publish ('+RETENTION+"d)"+'</button>')+
+      '<button class="rc-btn danger" onclick="delRec('+r.id+')">Delete</button>'+
+    '</div></div>'
+  ).join(''):'<div class="rc-empty">No recordings yet.</div>';
+}
+async function createRec(){
+  const sid=document.getElementById('mSession').value;
+  if(!sid){alert('Pick a session first');return;}
+  const dur=parseInt(document.getElementById('mDur').value,10);
+  try{await api('/api/recordings',{method:'POST',body:JSON.stringify({schedule_item_id:+sid,
+    video_url:document.getElementById('mVideo').value||null,
+    slides_url:document.getElementById('mSlides').value||null,
+    duration_seconds:isNaN(dur)?null:dur})});}
+  catch(e){alert(e.message);return;}
+  document.getElementById('mVideo').value='';document.getElementById('mSlides').value='';document.getElementById('mDur').value='';
+  loadManage();loadList();
+}
+async function saveRec(id){
+  try{await api('/api/recordings/'+id,{method:'PUT',body:JSON.stringify({video_url:document.getElementById('v'+id).value||null})});}
+  catch(e){alert(e.message);return;}
+  loadManage();
+}
+async function saveTranscript(id){
+  const vtt=document.getElementById('t'+id).value.trim();
+  if(!vtt){alert('Paste a WebVTT or SRT transcript first');return;}
+  try{await api('/api/recordings/'+id+'/transcript',{method:'POST',body:JSON.stringify({vtt:vtt})});}
+  catch(e){alert(e.message);return;}
+  loadManage();
+}
+async function saveSlides(id){
+  const lines=document.getElementById('s'+id).value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const slides=lines.map(l=>{const p=l.split('|').map(x=>x.trim());
+    return {at_seconds:parseInt(p[0]||'0',10)||0,slide_number:parseInt(p[1]||'1',10)||1,title:p[2]||null};});
+  if(!slides.length){alert('Add at least one slide line');return;}
+  try{await api('/api/recordings/'+id+'/slides',{method:'POST',body:JSON.stringify({slides:slides})});}
+  catch(e){alert(e.message);return;}
+  loadManage();
+}
+async function publish(id){try{await api('/api/recordings/'+id+'/publish',{method:'POST'});}catch(e){alert(e.message);return;}loadManage();loadList();}
+async function withhold(id){try{await api('/api/recordings/'+id+'/withhold',{method:'POST'});}catch(e){alert(e.message);return;}loadManage();loadList();}
+async function delRec(id){if(!confirm('Delete this recording, its transcript and slide markers?'))return;
+  try{await api('/api/recordings/'+id,{method:'DELETE'});}catch(e){alert(e.message);return;}loadManage();loadList();}
+
+loadList();
+</script>
+{% endblock %}

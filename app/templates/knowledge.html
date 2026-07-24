@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Map — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.kg-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
+.kg-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.kg-title h2{font:600 1.4rem var(--fh);color:var(--w)}.kg-title h2 span{color:var(--gold)}
+.kg-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.kg-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.kg-tab:hover{color:var(--w7)}.kg-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.kg-panel{display:none}.kg-panel.active{display:block}
+.kg-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px}
+.kg-card h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:4px}
+.kg-meta{font:.76rem var(--f);color:var(--w5);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.kg-btn{padding:8px 15px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .8rem var(--f);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.kg-btn:hover{border-color:var(--gold);color:var(--gold)}
+.kg-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.kg-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:50px;border:1px solid rgba(201,169,98,.2);background:rgba(10,61,46,.3);color:var(--w7);font:.78rem var(--f);cursor:pointer;margin:0 6px 6px 0}
+.kg-chip:hover,.kg-chip.on{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.1)}
+.kg-chip b{color:var(--gold);font-weight:600}
+.kg-map{width:100%;height:min(62vh,540px);background:rgba(0,0,0,.22);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);touch-action:none}
+.kg-map text{font:10px var(--f);fill:var(--w7);pointer-events:none}
+.kg-map text.t{font:600 11px var(--f);fill:var(--gold)}
+.kg-map circle{cursor:pointer}
+.kg-empty{text-align:center;padding:38px 22px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.kg-item{border-left:3px solid var(--gold);background:rgba(0,0,0,.18);border-radius:6px;padding:9px 12px;margin:6px 0}
+.kg-item .t{font:600 .86rem var(--f);color:var(--w)}
+.kg-item .r{font:.76rem var(--f);color:var(--gold);margin-top:2px}
+.kg-item .m{font:.74rem var(--f);color:var(--w5);margin-top:2px}
+.kg-day{font:600 .74rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 4px}
+.kg-legend{display:flex;gap:14px;flex-wrap:wrap;font:.72rem var(--f);color:var(--w5);margin-top:8px}
+.kg-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="kg-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="kg-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Knowledge <span>Map</span></h2></div>
+  <div class="kg-tabs animate-up">
+    <button class="kg-tab active" data-t="map" onclick="kgTab('map')">Map</button>
+    <button class="kg-tab" data-t="trending" onclick="kgTab('trending')">Trending</button>
+    <button class="kg-tab" data-t="thread" onclick="kgTab('thread')">Research thread</button>
+    <button class="kg-tab" data-t="mine" onclick="kgTab('mine')">My map</button>
+  </div>
+
+  <div class="kg-panel active" id="kg-map">
+    <div class="kg-card">
+      <div id="focusBar" class="kg-meta" style="margin-bottom:8px"></div>
+      <svg class="kg-map" id="mapSvg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="kg-legend">
+        <span><i style="background:var(--gold)"></i>Topic</span>
+        <span><i style="background:#63d297"></i>Session</span>
+        <span><i style="background:#6cb2f0"></i>Poster</span>
+        <span><i style="background:#c9a0dc"></i>Paper</span>
+        <span><i style="background:#e8b96c"></i>Researcher</span>
+      </div>
+      <div class="kg-meta" id="mapStats"></div>
+    </div>
+    <div class="kg-card" id="nodeBox" style="display:none"></div>
+  </div>
+
+  <div class="kg-panel" id="kg-trending">
+    <div class="kg-card"><h3>Trending topics</h3><div class="kg-meta">Ranked by live Q&amp;A and poster discussion, then by how much of the program touches them.</div></div>
+    <div id="trendBox"><div class="kg-empty">Loading…</div></div>
+  </div>
+
+  <div class="kg-panel" id="kg-thread">
+    <div class="kg-card"><h3>Follow a topic across the days</h3><div id="threadChips" class="kg-meta"></div></div>
+    <div id="threadBox"><div class="kg-empty">Pick a topic above.</div></div>
+  </div>
+
+  <div class="kg-panel" id="kg-mine">
+    <div class="kg-card">
+      <h3>Your knowledge map</h3>
+      <div class="kg-meta">Built from your bookmarks, the sessions you attended, and your profile's research interests.</div>
+      <div style="margin-top:10px"><a class="kg-btn primary" href="/api/knowledge/my-map.pdf">Export as PDF</a></div>
+    </div>
+    <div id="mineBox"><div class="kg-empty">Loading…</div></div>
+  </div>
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+let GRAPH=null,TOPICS=[],FOCUS=null;
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+const KIND_COLOR={topic:'#c9a962',session:'#63d297',poster:'#6cb2f0',paper:'#c9a0dc',person:'#e8b96c'};
+function kgTab(t){document.querySelectorAll('.kg-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.kg-panel').forEach(p=>p.classList.toggle('active',p.id==='kg-'+t));
+  if(t==='trending')loadTrending();if(t==='thread')loadThreadChips();if(t==='mine')loadMine();}
+async function api(url){const r=await fetch(url,{credentials:'same-origin'});if(!r.ok){let m='Request failed';try{const d=await r.json();m=d.detail||m;}catch(e){}throw new Error(m);}return r.json();}
+function when(v){if(!v)return'';const d=new Date(v);return isNaN(d)?'':d.toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+
+// ── Map: deterministic radial layout (topics on a ring, items around them) ──
+async function loadGraph(focus){
+  let d;try{d=await api('/api/knowledge/graph'+(focus?'?topic='+encodeURIComponent(focus):''));}
+  catch(e){document.getElementById('mapStats').textContent=e.message;return;}
+  GRAPH=d;FOCUS=d.focus||null;
+  document.getElementById('mapStats').textContent=d.topic_count+' topics · '+d.entity_count+' items in the program';
+  document.getElementById('focusBar').innerHTML=FOCUS
+    ? 'Focused on <b style="color:var(--gold)">'+esc(FOCUS)+'</b> &nbsp;<button class="kg-chip" onclick="loadGraph(null)">Show everything</button>'
+    : 'Tap a topic to focus it, or any item to see what else connects.';
+  drawMap();
+}
+function drawMap(){
+  const svg=document.getElementById('mapSvg');
+  const topics=GRAPH.nodes.filter(n=>n.kind==='topic');
+  const items=GRAPH.nodes.filter(n=>n.kind!=='topic');
+  if(!topics.length){svg.innerHTML='<text x="500" y="300" text-anchor="middle">Not enough program data yet to draw a map.</text>';return;}
+  const cx=500,cy=310,R=Math.min(230,90+topics.length*9);
+  const pos={};
+  topics.forEach((n,i)=>{const a=(i/topics.length)*Math.PI*2-Math.PI/2;pos[n.id]={x:cx+R*Math.cos(a),y:cy+R*Math.sin(a),n:n};});
+  // Items orbit the mean position of the topics they belong to.
+  const linksByItem={};
+  GRAPH.edges.forEach(e=>{if(e.kind!=='topic-link'){(linksByItem[e.source]=linksByItem[e.source]||[]).push(e.target);}});
+  items.forEach((n,i)=>{
+    const ts=(linksByItem[n.id]||[]).filter(t=>pos[t]);
+    if(!ts.length)return;
+    let x=0,y=0;ts.forEach(t=>{x+=pos[t].x;y+=pos[t].y;});x/=ts.length;y/=ts.length;
+    const a=(i*2.39996),r=ts.length>1?26:64;   // golden-angle spread
+    pos[n.id]={x:x+r*Math.cos(a)*(0.6+0.4*Math.random()*0),y:y+r*Math.sin(a),n:n};
+  });
+  let out='';
+  GRAPH.edges.forEach(e=>{const a=pos[e.source],b=pos[e.target];if(!a||!b)return;
+    const topicLink=e.kind==='topic-link';
+    out+='<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+b.x.toFixed(1)+'" y2="'+b.y.toFixed(1)+
+      '" stroke="'+(topicLink?'#c9a962':'#3c5c50')+'" stroke-opacity="'+(topicLink?0.35:0.22)+'" stroke-width="'+(topicLink?Math.min(3,e.weight/2):1)+'"/>';});
+  Object.values(pos).forEach(p=>{
+    const n=p.n,isT=n.kind==='topic';
+    const r=isT?Math.min(26,9+n.weight*1.6):5.5;
+    out+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r+'" fill="'+KIND_COLOR[n.kind]+
+      '" fill-opacity="'+(isT?0.85:0.75)+'" stroke="rgba(0,0,0,.35)" onclick="pickNode(\''+n.id.replace(/'/g,"")+'\')"><title>'+esc(n.label)+'</title></circle>';
+    if(isT)out+='<text class="t" x="'+p.x.toFixed(1)+'" y="'+(p.y+r+12).toFixed(1)+'" text-anchor="middle">'+esc(n.label)+'</text>';
+  });
+  svg.innerHTML=out;
+}
+async function pickNode(id){
+  const node=GRAPH.nodes.find(n=>n.id===id);if(!node)return;
+  const box=document.getElementById('nodeBox');box.style.display='block';
+  if(node.kind==='topic'){box.innerHTML='<h3>'+esc(node.label)+'</h3><div class="kg-meta">'+node.weight+' items · '+node.discussion+' questions &amp; comments</div>'+
+    '<div style="margin-top:10px"><button class="kg-btn" onclick="loadGraph(\''+esc(node.topic)+'\')">Focus this topic</button> '+
+    '<button class="kg-btn" onclick="openThread(\''+esc(node.topic)+'\')">Follow across the days</button></div>';
+    return;}
+  const [kind,eid]=id.split(':');
+  box.innerHTML='<h3>'+esc(node.label)+'</h3><div class="kg-meta">Loading connections…</div>';
+  let d;try{d=await api('/api/knowledge/related/'+kind+'/'+eid);}catch(e){box.innerHTML='<div class="kg-empty">'+esc(e.message)+'</div>';return;}
+  box.innerHTML='<h3>'+esc(d.source.title)+'</h3>'+
+    '<div class="kg-meta">'+esc(d.source.subtitle||'')+(d.source.when?' · '+when(d.source.when):'')+'</div>'+
+    '<div class="kg-meta">'+(d.source.topics||[]).map(t=>'<span class="kg-chip" onclick="loadGraph(\''+esc(t)+'\')">'+esc(t)+'</span>').join('')+'</div>'+
+    '<h3 style="margin-top:12px;font-size:.9rem">Because you liked this</h3>'+
+    (d.related.length?d.related.map(r=>'<div class="kg-item"><div class="t"><a href="'+esc(r.url)+'" style="color:inherit;text-decoration:none">'+esc(r.title)+'</a></div>'+
+      '<div class="r">'+esc(r.reason)+'</div><div class="m">'+esc(r.kind)+(r.when?' · '+when(r.when):'')+(r.subtitle?' · '+esc(r.subtitle):'')+'</div></div>').join('')
+     :'<div class="kg-meta">No strong connections yet.</div>');
+}
+
+// ── Trending ────────────────────────────────────────────────
+async function loadTrending(){
+  const box=document.getElementById('trendBox');
+  let d;try{d=await api('/api/knowledge/topics');}catch(e){box.innerHTML='<div class="kg-empty">'+esc(e.message)+'</div>';return;}
+  TOPICS=d.topics;
+  box.innerHTML=d.topics.length?d.topics.map((t,i)=>
+    '<div class="kg-card" style="padding:12px 16px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">'+
+    '<h3 style="margin:0">'+(i<3?'🔥 ':'')+esc(t.label)+'</h3>'+
+    '<div><button class="kg-btn" onclick="openThread(\''+esc(t.topic)+'\')">Thread</button></div></div>'+
+    '<div class="kg-meta"><span>'+t.count+' items</span><span>'+(t.kinds.session||0)+' sessions</span>'+
+    '<span>'+(t.kinds.poster||0)+' posters</span><span>'+(t.kinds.paper||0)+' papers</span>'+
+    '<span style="color:var(--gold)">'+t.discussion+' questions &amp; comments</span></div></div>').join('')
+    :'<div class="kg-empty">The map fills in as sessions, posters and papers are added.</div>';
+}
+
+// ── Research thread ─────────────────────────────────────────
+async function loadThreadChips(){
+  if(!TOPICS.length){try{TOPICS=(await api('/api/knowledge/topics')).topics;}catch(e){}}
+  document.getElementById('threadChips').innerHTML=TOPICS.slice(0,24).map(t=>
+    '<span class="kg-chip" onclick="openThread(\''+esc(t.topic)+'\')">'+esc(t.label)+' <b>'+t.count+'</b></span>').join('')
+    ||'No topics yet.';
+}
+async function openThread(topic){
+  kgTab('thread');
+  const box=document.getElementById('threadBox');box.innerHTML='<div class="kg-empty">Loading…</div>';
+  let d;try{d=await api('/api/knowledge/thread/'+encodeURIComponent(topic));}catch(e){box.innerHTML='<div class="kg-empty">'+esc(e.message)+'</div>';return;}
+  let html='<div class="kg-card"><h3>'+esc(d.label)+'</h3><div class="kg-meta">'+d.discussion+' questions &amp; comments on this thread</div></div>';
+  (d.days||[]).forEach(day=>{html+='<div class="kg-day">'+esc(day.day)+'</div>';
+    day.items.forEach(it=>{html+='<div class="kg-item"><div class="t"><a href="'+esc(it.url)+'" style="color:inherit;text-decoration:none">'+esc(it.title)+'</a></div>'+
+      '<div class="m">'+when(it.when)+(it.location?' · '+esc(it.location):'')+(it.subtitle?' · '+esc(it.subtitle):'')+'</div></div>';});});
+  if(d.posters.length){html+='<div class="kg-day">Posters</div>'+d.posters.map(p=>'<div class="kg-item"><div class="t">'+esc(p.title)+'</div><div class="m">'+esc(p.subtitle||'')+'</div></div>').join('');}
+  if(d.papers.length){html+='<div class="kg-day">Papers</div>'+d.papers.map(p=>'<div class="kg-item"><div class="t">'+esc(p.title)+'</div><div class="m">'+esc(p.subtitle||'')+'</div></div>').join('');}
+  if(d.people.length){html+='<div class="kg-day">Researchers</div>'+d.people.map(p=>'<div class="kg-item"><div class="t">'+esc(p.title)+'</div><div class="m">'+esc(p.subtitle||'')+'</div></div>').join('');}
+  if(!d.days.length&&!d.posters.length&&!d.papers.length)html+='<div class="kg-empty">Nothing scheduled on this topic yet.</div>';
+  box.innerHTML=html;
+}
+
+// ── My map ──────────────────────────────────────────────────
+async function loadMine(){
+  const box=document.getElementById('mineBox');
+  let d;try{d=await api('/api/knowledge/my-map');}catch(e){box.innerHTML='<div class="kg-empty">'+esc(e.message)+'</div>';return;}
+  let html='';
+  if(d.topics.length){
+    html+=d.topics.map(t=>'<div class="kg-card"><h3>'+esc(t.label)+'</h3><div class="kg-meta">'+t.count+' items in the program</div>'+
+      t.items.map(it=>'<div class="kg-item"><div class="t"><a href="'+esc(it.url)+'" style="color:inherit;text-decoration:none">'+esc(it.title)+'</a></div>'+
+        '<div class="m">'+esc(it.kind)+(it.when?' · '+when(it.when):'')+(it.location?' · '+esc(it.location):'')+'</div></div>').join('')+'</div>').join('');
+  }else{
+    html+='<div class="kg-empty">Bookmark a few sessions or add research interests to your profile — your map builds itself from there.</div>';
+  }
+  if(d.cross_pollination.length){
+    html+='<div class="kg-card"><h3>Cross-pollination</h3><div class="kg-meta">Adjacent to what you follow — worth one detour.</div>'+
+      d.cross_pollination.map(s=>'<div class="kg-item"><div class="t">'+esc(s.label)+'</div><div class="r">'+esc(s.because)+'</div>'+
+        s.items.map(it=>'<div class="m">· '+esc(it.title)+'</div>').join('')+'</div>').join('')+'</div>';
+  }
+  box.innerHTML=html;
+}
+
+loadGraph(null);
+</script>
+{% endblock %}

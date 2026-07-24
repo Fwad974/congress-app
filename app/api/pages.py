@@ -277,6 +277,46 @@ async def venue_page(request: Request, user=Depends(get_current_user_optional)):
     })
 
 
+@router.get("/knowledge", response_class=HTMLResponse)
+async def knowledge_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "knowledge"):
+        return RedirectResponse(url="/home", status_code=302)
+    return templates.TemplateResponse("knowledge.html", {
+        "request": request, "user": user,
+    })
+
+
+@router.get("/companion", response_class=HTMLResponse)
+async def companion_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "companion"):
+        return RedirectResponse(url="/home", status_code=302)
+    from app.core.companion import llm_available
+    return templates.TemplateResponse("companion.html", {
+        "request": request, "user": user,
+        "is_speaker": user.role in (UserRole.speaker, UserRole.session_chair),
+        "llm_on": llm_available(),
+    })
+
+
+@router.get("/recordings", response_class=HTMLResponse)
+async def recordings_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "recordings"):
+        return RedirectResponse(url="/home", status_code=302)
+    from app.core.config import get_settings
+    is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
+    return templates.TemplateResponse("recordings.html", {
+        "request": request, "user": user, "is_organizer": is_organizer,
+        "is_speaker": user.role in (UserRole.speaker, UserRole.session_chair),
+        "retention_days": get_settings().RECORDING_RETENTION_DAYS,
+    })
+
+
 @router.get("/feedback", response_class=HTMLResponse)
 async def feedback_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:

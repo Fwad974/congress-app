@@ -17,3 +17,7 @@ httpx==0.27.2
 itsdangerous==2.2.0
 segno==1.6.1
 reportlab==4.2.2
+# Optional: the AI Congress Companion answers from live congress data without
+# it. Install the Anthropic SDK (`pip install anthropic`) and set
+# ANTHROPIC_API_KEY to also handle free-form questions in natural language.
+

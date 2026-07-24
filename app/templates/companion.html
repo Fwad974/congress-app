@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}AI Companion — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.cp-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.05),transparent 50%),var(--bg)}
+.cp-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.cp-title h2{font:600 1.4rem var(--fh);color:var(--w)}.cp-title h2 span{color:var(--gold)}
+.cp-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.cp-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.cp-tab:hover{color:var(--w7)}.cp-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.cp-panel{display:none}.cp-panel.active{display:block}
+.cp-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px}
+.cp-card h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:4px}
+.cp-meta{font:.76rem var(--f);color:var(--w5);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.cp-chat{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow-y:auto;padding:4px 2px 8px}
+.cp-msg{max-width:88%;padding:11px 14px;border-radius:14px;font:.88rem/1.6 var(--f);white-space:pre-wrap}
+.cp-msg.me{align-self:flex-end;background:rgba(201,169,98,.16);border:1px solid rgba(201,169,98,.25);color:var(--w9);border-bottom-right-radius:4px}
+.cp-msg.ai{align-self:flex-start;background:rgba(10,61,46,.45);border:1px solid rgba(201,169,98,.12);color:var(--w9);border-bottom-left-radius:4px}
+.cp-msg b{color:var(--gold);font-weight:600}
+.cp-msg em{color:var(--w5);font-style:italic}
+.cp-via{font:.66rem var(--f);color:var(--w3);margin-top:6px;letter-spacing:.03em;text-transform:uppercase}
+.cp-ask{display:flex;gap:8px;margin-top:12px}
+.cp-in{flex:1;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:50px;color:var(--w9);font:.9rem var(--f);padding:12px 18px;outline:none}
+.cp-in:focus{border-color:var(--gold)}
+.cp-btn{padding:9px 17px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .8rem var(--f);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.cp-btn:hover{border-color:var(--gold);color:var(--gold)}
+.cp-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.cp-chip{display:inline-block;padding:6px 13px;border-radius:50px;border:1px solid rgba(201,169,98,.2);background:rgba(10,61,46,.3);color:var(--w7);font:.78rem var(--f);cursor:pointer;margin:0 6px 6px 0}
+.cp-chip:hover{border-color:var(--gold);color:var(--gold)}
+.cp-nudge{display:flex;gap:12px;align-items:flex-start;border-left:3px solid var(--gold);background:rgba(0,0,0,.18);border-radius:8px;padding:10px 13px;margin:7px 0}
+.cp-nudge.high{border-left-color:#e8a15c}
+.cp-nudge .t{font:600 .86rem var(--f);color:var(--w)}
+.cp-nudge .b{font:.8rem/1.5 var(--f);color:var(--w5);margin-top:2px}
+.cp-item{border-left:3px solid rgba(201,169,98,.4);background:rgba(0,0,0,.15);border-radius:6px;padding:8px 11px;margin:5px 0;font:.82rem var(--f);color:var(--w7)}
+.cp-item a{color:var(--w9);text-decoration:none;font-weight:600}
+.cp-empty{text-align:center;padding:34px 20px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+.cp-stat{display:inline-block;background:rgba(10,61,46,.35);border:1px solid rgba(201,169,98,.12);border-radius:var(--r);padding:10px 15px;margin:0 8px 8px 0}
+.cp-stat .v{font:700 1.3rem var(--fh);color:var(--w)}
+.cp-stat .l{font:.63rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--w5)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="cp-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="cp-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>AI Congress <span>Companion</span></h2></div>
+  <div class="cp-tabs animate-up">
+    <button class="cp-tab active" data-t="ask" onclick="cpTab('ask')">Ask</button>
+    <button class="cp-tab" data-t="today" onclick="cpTab('today')">My day</button>
+    <button class="cp-tab" data-t="surprise" onclick="cpTab('surprise')">Serendipity</button>
+    {% if is_speaker %}<button class="cp-tab" data-t="prep" onclick="cpTab('prep')">Speaker prep</button>{% endif %}
+  </div>
+
+  <div class="cp-panel active" id="cp-ask">
+    <div class="cp-card">
+      <div class="cp-chat" id="chat"></div>
+      <div class="cp-ask">
+        <input class="cp-in" id="q" placeholder="Ask about the program, the venue, Dubai…" onkeydown="if(event.key==='Enter')send()">
+        <button class="cp-btn primary" onclick="send()">Ask</button>
+      </div>
+      <div class="cp-meta" style="margin-top:10px" id="chips"></div>
+      <div class="cp-meta">{% if llm_on %}Grounded in live congress data, with Claude for free-form questions.{% else %}Answers come straight from live congress data — always available, no network needed.{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="cp-panel" id="cp-today"><div id="todayBox"><div class="cp-empty">Loading…</div></div></div>
+  <div class="cp-panel" id="cp-surprise"><div id="surpriseBox"><div class="cp-empty">Loading…</div></div></div>
+  {% if is_speaker %}<div class="cp-panel" id="cp-prep"><div id="prepBox"><div class="cp-empty">Loading…</div></div></div>{% endif %}
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<em>$1</em>');}
+function when(v){if(!v)return'';const d=new Date(v);return isNaN(d)?'':d.toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function cpTab(t){document.querySelectorAll('.cp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.cp-panel').forEach(p=>p.classList.toggle('active',p.id==='cp-'+t));
+  if(t==='today')loadToday();if(t==='surprise')loadSurprise();if(t==='prep')loadPrep();}
+async function api(url,opts){const r=await fetch(url,Object.assign({credentials:'same-origin',headers:{'Content-Type':'application/json'}},opts||{}));if(!r.ok){let m='Request failed';try{const d=await r.json();m=d.detail||m;}catch(e){}throw new Error(m);}return r.json();}
+
+const CHIPS=["What's on right now?","What should I see next?","Where is the keynote?","What's the WiFi?","How am I doing on CME credits?","Who works on organoids?","I'm exhausted","Surprise me","What's trending?"];
+document.getElementById('chips').innerHTML=CHIPS.map(c=>'<span class="cp-chip" onclick="askChip(this)">'+esc(c)+'</span>').join('');
+function askChip(el){document.getElementById('q').value=el.textContent;send();}
+
+function bubble(cls,html,via){
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');div.className='cp-msg '+cls;div.innerHTML=html+(via?'<div class="cp-via">'+esc(via)+'</div>':'');
+  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;return div;
+}
+async function send(){
+  const box=document.getElementById('q');const q=box.value.trim();if(!q)return;
+  box.value='';bubble('me',esc(q));
+  const thinking=bubble('ai','<em>Checking the program…</em>');
+  let d;try{d=await api('/api/companion/ask',{method:'POST',body:JSON.stringify({question:q})});}
+  catch(e){thinking.innerHTML=esc(e.message);return;}
+  let html=md(d.answer);
+  if(d.items&&d.items.length)html+='<div style="margin-top:8px">'+d.items.slice(0,4).map(i=>
+    '<div class="cp-item"><a href="'+esc(i.url||'#')+'">'+esc(i.title)+'</a>'+
+    (i.when?' <span style="color:var(--w5)">· '+when(i.when)+'</span>':'')+
+    (i.location?' <span style="color:var(--w5)">· '+esc(i.location)+'</span>':'')+'</div>').join('')+'</div>';
+  if(d.links&&d.links.length)html+='<div style="margin-top:8px">'+d.links.map(l=>'<a class="cp-chip" href="'+esc(l.url)+'">'+esc(l.label)+' →</a>').join('')+'</div>';
+  thinking.innerHTML=html+'<div class="cp-via">'+(d.via==='claude'?'Claude · grounded in congress data':'From live congress data')+'</div>';
+}
+
+// ── My day ─────────────────────────────────────────────────
+async function loadToday(){
+  const box=document.getElementById('todayBox');
+  let d;try{d=await api('/api/companion/briefing');}catch(e){box.innerHTML='<div class="cp-empty">'+esc(e.message)+'</div>';return;}
+  let html='<div class="cp-card"><h3>'+esc(d.greeting)+'</h3><div class="cp-meta">'+esc(d.date)+'</div>'+
+    '<div style="margin-top:10px">'+
+    '<span class="cp-stat"><div class="v">'+d.sessions_today+'</div><div class="l">sessions today</div></span>'+
+    '<span class="cp-stat"><div class="v">'+d.attended+'</div><div class="l">you attended</div></span>'+
+    '<span class="cp-stat"><div class="v">'+(d.my_bookmarks||[]).length+'</div><div class="l">bookmarked ahead</div></span></div>'+
+    '<div class="cp-nudge"><div><div class="t">Pacing</div><div class="b">'+esc(d.energy.text)+'</div></div></div></div>';
+  if(d.live.length)html+='<div class="cp-card"><h3>On right now</h3>'+d.live.map(i=>item(i)).join('')+'</div>';
+  if(d.next.length)html+='<div class="cp-card"><h3>Coming up</h3>'+d.next.map(i=>item(i)).join('')+'</div>';
+  if(d.presenting.length)html+='<div class="cp-card"><h3>You are presenting</h3>'+d.presenting.map(i=>item(i)).join('')+'</div>';
+  html+='<div class="cp-card"><h3>Nudges</h3><div id="nudgeBox">'+
+    ((d.nudges||[]).length?d.nudges.map(n=>
+      '<div class="cp-nudge '+esc(n.urgency)+'"><div><div class="t">'+esc(n.title)+'</div><div class="b">'+esc(n.body)+
+      '</div><a class="cp-chip" style="margin-top:6px" href="'+esc(n.link)+'">Open →</a></div></div>').join('')
+     :'<div class="cp-meta">Nothing needs you right now.</div>')+'</div></div>';
+  box.innerHTML=html;
+}
+function item(i){return '<div class="cp-item"><a href="'+esc(i.url||'#')+'">'+esc(i.title)+'</a>'+
+  (i.when?' <span style="color:var(--w5)">· '+when(i.when)+'</span>':'')+
+  (i.location?' <span style="color:var(--w5)">· '+esc(i.location)+'</span>':'')+'</div>';}
+
+// ── Serendipity ────────────────────────────────────────────
+async function loadSurprise(){
+  const box=document.getElementById('surpriseBox');
+  let d;try{d=await api('/api/companion/serendipity');}catch(e){box.innerHTML='<div class="cp-empty">'+esc(e.message)+'</div>';return;}
+  box.innerHTML='<div class="cp-card"><h3>One room over</h3><div class="cp-meta">'+
+    (d.my_topics.length?'Your topics: '+d.my_topics.map(esc).join(', '):'Add research interests or bookmark sessions to sharpen these picks.')+'</div></div>'+
+    (d.picks.length?d.picks.map(p=>'<div class="cp-card"><h3>'+esc(p.title)+'</h3>'+
+      '<div class="cp-meta">'+esc(p.kind)+(p.when?' · '+when(p.when):'')+(p.location?' · '+esc(p.location):'')+'</div>'+
+      '<div class="cp-nudge"><div><div class="t">'+esc(p.topic||'Worth a detour')+'</div><div class="b">'+esc(p.because)+'</div></div></div>'+
+      '<a class="cp-btn" href="'+esc(p.url||'#')+'">Take a look →</a></div>').join('')
+     :'<div class="cp-empty">Not enough of the program is in yet for a surprise.</div>')+
+    '<div style="text-align:center"><button class="cp-btn" onclick="loadSurprise()">Another</button></div>';
+}
+
+// ── Speaker prep ───────────────────────────────────────────
+async function loadPrep(){
+  const box=document.getElementById('prepBox');if(!box)return;
+  let b;try{b=await api('/api/companion/briefing');}catch(e){box.innerHTML='<div class="cp-empty">'+esc(e.message)+'</div>';return;}
+  if(!b.presenting.length){box.innerHTML='<div class="cp-empty">You are not listed as the presenter of any session yet.</div>';return;}
+  let html='';
+  for(const s of b.presenting){
+    let d;try{d=await api('/api/companion/prep/'+s.id);}catch(e){continue;}
+    html+='<div class="cp-card"><h3>'+esc(d.session.title)+'</h3>'+
+      '<div class="cp-meta">'+when(d.session.when)+(d.room?' · '+esc(d.room.name)+(d.room.floor!=null?' (floor '+d.room.floor+')':''):'')+
+      (d.starts_in_minutes>0?' · starts in '+d.starts_in_minutes+' min':'')+'</div>'+
+      '<div style="margin-top:8px">'+
+      '<span class="cp-stat"><div class="v">'+d.audience.bookmarked+'</div><div class="l">bookmarked</div></span>'+
+      '<span class="cp-stat"><div class="v">'+d.audience.checked_in+'</div><div class="l">checked in</div></span>'+
+      '<span class="cp-stat"><div class="v">'+(d.ratings.average!=null?d.ratings.average:'—')+'</div><div class="l">rating</div></span></div>'+
+      '<h3 style="margin-top:12px;font-size:.9rem">Before you walk on</h3>'+
+      d.checklist.map(c=>'<div class="cp-item">☐ '+esc(c)+'</div>').join('')+
+      (d.top_questions.length?'<h3 style="margin-top:12px;font-size:.9rem">Questions already waiting</h3>'+
+        d.top_questions.map(q=>'<div class="cp-item">'+esc(q.text)+' <span style="color:var(--gold)">▲'+q.upvotes+'</span></div>').join(''):'')+
+      (d.related.length?'<h3 style="margin-top:12px;font-size:.9rem">Related in the program</h3>'+
+        d.related.map(r=>'<div class="cp-item"><a href="'+esc(r.url)+'">'+esc(r.title)+'</a> <span style="color:var(--w5)">· '+esc(r.reason)+'</span></div>').join(''):'')+
+      '</div>';
+  }
+  box.innerHTML=html||'<div class="cp-empty">Nothing to prepare yet.</div>';
+}
+
+bubble('ai',md("Hello. I'm your congress companion — I answer from the live program, so times, rooms and numbers are always current. Tap a suggestion below or ask me anything."));
+</script>
+{% endblock %}

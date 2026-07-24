@@ -102,6 +102,15 @@ pytest -q
 | GET | `/api/feedback/sentiment` · `/survey/export` | Sentiment dashboard · survey CSV | Organizer |
 | GET | `/api/venue` · `/wifi-qr` · `/route` | Venue info + live floor plan · WiFi QR · navigation | Any user |
 | PUT/POST | `/api/venue/settings` · `/api/venue/rooms` | Manage venue content & rooms | Organizer |
+| GET | `/api/recordings` · `/{id}` · `/search?q=` | Recording catalogue · detail + transcript · transcript search | Any user |
+| POST | `/api/recordings/{id}/consent` | Grant / deny recording consent | Speaker |
+| POST | `/api/recordings` · `/{id}/publish` · `/{id}/transcript` | Create · publish (30-day window) · upload transcript | Organizer |
+| GET | `/api/knowledge/graph` · `/topics` · `/thread/{topic}` | Topic map · trending · research thread | Any user |
+| GET | `/api/knowledge/related/{kind}/{id}` · `/cross-pollination` | "Relevant because…" · adjacent topics | Any user |
+| GET | `/api/knowledge/my-map` · `/my-map.pdf` | Personal knowledge map · PDF export | Any user |
+| POST | `/api/companion/ask` | Natural-language question about the congress | Any user |
+| GET | `/api/companion/briefing` · `/nudges` · `/serendipity` | Day briefing · proactive nudges · serendipity picks | Any user |
+| GET | `/api/companion/prep/{id}` · `/summary/{id}` · `/guide` | Speaker prep · session summary · Dubai guide | Speaker+ · Any user |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
@@ -448,6 +457,65 @@ A **Sponsor & Exhibitor Portal** at `/sponsors` (feature flag `sponsors`). See
 - Sponsor **logos surface across the app**: a rail on the home page and a
   "Sponsored by" band on the presenter/venue screen, driven by the public
   `GET /api/sponsors` list.
+
+## Session Recordings
+
+Consent-gated session video with searchable transcripts and slide-sync
+playback at `/recordings` (feature flag `recordings`). See
+[`docs/RECORDINGS.md`](docs/RECORDINGS.md).
+
+- **Speaker consent gates everything** — the presenting speaker grants or
+  denies; publishing without a grant is refused, and denying consent pulls a
+  published recording immediately. Every decision is audit-logged.
+- **Searchable transcripts with timestamps** — paste the platform's WebVTT/SRT
+  export (voice tags and `Speaker:` prefixes become speaker labels); searching
+  returns the exact second, and the player seeks straight there.
+- **Slide-sync playback** — slide markers highlight the current slide as the
+  video plays; tapping a slide or transcript line jumps the video.
+- **Available 30 days post-event** (`RECORDING_RETENTION_DAYS`) — after that
+  attendees no longer see it; organizers can extend the window.
+
+## Knowledge Graph
+
+A visual topic map linking talks, posters, papers and researchers at
+`/knowledge` (feature flag `knowledge`), computed live from existing program
+data — no extra data entry. See
+[`docs/KNOWLEDGE_GRAPH.md`](docs/KNOWLEDGE_GRAPH.md).
+
+- **Topic map** built from curated categories/interests, a domain phrase list
+  (so "iPSC" and "induced pluripotent stem cells" are one node), and corpus
+  keywords that appear in at least two items.
+- **"If you liked A, B is relevant because…"** — related items each carry a
+  plain-English reason and the shared topics.
+- **Research threads** follow one topic across the days; **cross-pollination**
+  surfaces adjacent topics you haven't engaged with and explains the link.
+- **Trending topics** ranked by live Q&A and poster-comment volume.
+- **Export your personal map as a PDF** (audit-logged).
+- Privacy: only public program data — people appear if they present a session
+  or opted into the directory (DATA-06); unaccepted papers and unapproved
+  posters are excluded.
+
+## AI Congress Companion
+
+A congress assistant at `/companion` (feature flag `companion`) that answers in
+natural language, nudges at the right moment, and suggests what to do next. See
+[`docs/COMPANION.md`](docs/COMPANION.md).
+
+- **Grounded, always available** — every answer is built from live congress
+  data by a deterministic intent router: what's on now, what to see next, where
+  a room is, the WiFi, CME progress, who works on a topic, food/pharmacy/ATM/
+  transport, emergency numbers, recordings, posters, reviews.
+- **Optional Claude integration** — free-form questions the router can't
+  classify go to Claude (`COMPANION_MODEL`, default `claude-opus-5`) with the
+  same facts as context and instructions never to invent program details. With
+  no `ANTHROPIC_API_KEY` the companion runs fully offline; a failed call falls
+  back to a rule-based answer rather than an error.
+- **Proactive nudges** — bookmarked session starting soon (with its room), your
+  talk in under two hours, a certificate one step away, unrated sessions,
+  reviews owed, recording consent waiting, the post-event survey.
+- **Energy-aware suggestions**, **serendipity mode** (a good thing outside your
+  usual topics, with the connection explained), **speaker prep** (audience size,
+  the questions already waiting, room and checklist) and **smart summaries**.
 
 ## Emoji Reactions
 
