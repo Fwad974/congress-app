@@ -170,6 +170,14 @@ def _migrate_papers_table(connection):
         connection.execute(text(
             "ALTER TABLE papers ADD COLUMN review_deadline DATE"
         ))
+    if "decision_score" not in cols:
+        connection.execute(text(
+            "ALTER TABLE papers ADD COLUMN decision_score INTEGER"
+        ))
+    if "decision_score_reason" not in cols:
+        connection.execute(text(
+            "ALTER TABLE papers ADD COLUMN decision_score_reason TEXT"
+        ))
 
 
 def _migrate_broadcasts_table(connection):
@@ -207,6 +215,10 @@ def _migrate_reviews_table(connection):
     if "response_reason" not in cols:
         connection.execute(text(
             "ALTER TABLE reviews ADD COLUMN response_reason TEXT"
+        ))
+    if "rubric" not in cols:
+        connection.execute(text(
+            "ALTER TABLE reviews ADD COLUMN rubric JSONB"
         ))
 
 

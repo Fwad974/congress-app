@@ -10,11 +10,23 @@ import enum
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Date, Boolean, Enum as SAEnum,
-    ForeignKey, UniqueConstraint, Index,
+    ForeignKey, UniqueConstraint, Index, JSON,
 )
 from app.core.database import Base
 
 MAX_REVISION_ROUNDS = 2  # REV-05
+
+# Structured scoring rubric. Reviewers score each criterion 1–5; the paper's
+# overall score is the rounded mean of the criteria they rated. Editing this
+# list changes the review form and how new reviews aggregate (old reviews keep
+# whatever they stored). Keep keys stable — they are persisted in Review.rubric.
+RUBRIC_CRITERIA = [
+    {"key": "originality", "label": "Originality"},
+    {"key": "significance", "label": "Significance / Impact"},
+    {"key": "methodology", "label": "Methodology & Rigor"},
+    {"key": "clarity", "label": "Clarity & Presentation"},
+]
+RUBRIC_KEYS = {c["key"] for c in RUBRIC_CRITERIA}
 
 
 class PaperStatus(str, enum.Enum):
@@ -47,6 +59,10 @@ class Paper(Base):
     author_response = Column(Text, nullable=True)               # rebuttal on resubmit
     decision_comment = Column(Text, nullable=True)              # chair's note to author
     review_deadline = Column(Date, nullable=True)               # chair-set review due date
+    # Chair's optional override of the reviewers' aggregate score (1–5). Must
+    # carry a written justification (decision_score_reason) — audit-logged.
+    decision_score = Column(Integer, nullable=True)
+    decision_score_reason = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True),
                         default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True),
@@ -62,7 +78,8 @@ class Review(Base):
                       nullable=False, index=True)
     reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),
                          nullable=False, index=True)
-    score = Column(Integer, nullable=True)          # 1–5
+    score = Column(Integer, nullable=True)          # 1–5 (overall; mean of rubric)
+    rubric = Column(JSON, nullable=True)            # {criterion_key: 1–5}
     comments = Column(Text, nullable=True)          # shared with author on decision
     submitted = Column(Boolean, default=False, nullable=False)
     # Assignment lifecycle: the reviewer responds to an invitation.

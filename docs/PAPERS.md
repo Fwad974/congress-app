@@ -8,8 +8,35 @@ UI at `/papers` with role-based tabs (Submit, My Submissions, To Review, Manage)
 | Who | Can |
 |-----|-----|
 | **Author** — any authenticated user | Submit, track status, respond to reviewers, resubmit revisions, withdraw |
-| **Reviewer** — `reviewer` / `review_chair` | Accept/decline/recuse assignments, then review (score 1–5 + comments) |
-| **Review chair** — `review_chair` / `admin` / `super_admin` | Dashboard overview, list all, assign/unassign reviewers, set review deadlines, decide |
+| **Reviewer** — `reviewer` / `review_chair` | Accept/decline/recuse assignments, then review against a **scoring rubric** (per-criterion 1–5 + comments) |
+| **Review chair** — `review_chair` / `admin` / `super_admin` | Dashboard overview, list all, assign reviewers **manually or auto (COI-aware)**, unassign, set deadlines, decide, and **override the score with a written justification** |
+
+## Scoring rubric
+
+Reviewers score each criterion 1–5; the paper's overall `score` is the rounded
+mean of the criteria they rated (a plain `score` may still be sent for the
+simple form). The criteria live in `RUBRIC_CRITERIA` (`app/models/paper.py`) —
+currently Originality, Significance/Impact, Methodology & Rigor, and Clarity &
+Presentation — and are served at `GET /api/papers/rubric` (and injected into the
+review form). Each review's per-criterion breakdown is visible to the chair
+always, and to the author (anonymized) after a decision. Stored in
+`Review.rubric` (JSON).
+
+## Auto-assign reviewers
+
+`POST /api/papers/{id}/assign/auto` (the **✨ Auto-assign** button) fills the
+paper up to `count` reviewers (default `MIN_REVIEWERS` = 2), preferring the
+**least-loaded** eligible reviewers. It skips the author, the acting chair,
+anyone already assigned, and — unless `override_coi: true` — same-institution
+reviewers (REV-02). It returns 400 if the target is already met or no eligible
+reviewer remains.
+
+## Score override
+
+On a decision the chair may set `override_score` (1–5) with a **required**
+`override_reason`. It's stored on the paper (`decision_score` /
+`decision_score_reason`), shown to the chair and to the author after the
+decision, and audit-logged with the old aggregate → new score.
 
 ### Review-chair dashboard (`GET /api/papers/overview`)
 
@@ -71,11 +98,12 @@ downloadable by any authenticated attendee (the download endpoint special-cases
 - **`Paper`** — author, title, authors (free text), category, abstract,
   `file_url` (optional external link), `file_name`/`stored_file` (uploaded
   manuscript), `status`, `round`, `author_response`, `decision_comment`,
-  `review_deadline` (chair-set review due date).
-- **`Review`** — one per (paper, reviewer): `score` (1–5), `comments`,
-  `submitted`, plus an assignment lifecycle `state`
-  (`invited` → `accepted` / `declined` / `recused`) and `response_reason`.
-  Unique on (paper, reviewer).
+  `review_deadline` (chair-set review due date), and the chair's optional
+  `decision_score` / `decision_score_reason` (score override + justification).
+- **`Review`** — one per (paper, reviewer): `score` (1–5, overall), `rubric`
+  (JSON `{criterion: 1–5}`), `comments`, `submitted`, plus an assignment
+  lifecycle `state` (`invited` → `accepted` / `declined` / `recused`) and
+  `response_reason`. Unique on (paper, reviewer).
 
 ## Rules enforced
 
@@ -110,11 +138,13 @@ downloadable by any authenticated attendee (the download endpoint special-cases
 | `PUT /api/papers/{id}/review` | reviewer | Save/submit a review |
 | `GET /api/papers/overview` | chair | Review dashboard (counts, attention lists, reviewer load) |
 | `GET /api/papers` | chair | All submissions (filter `status`, `category`) |
+| `GET /api/papers/rubric` | any | Scoring-rubric criteria (1–5 each) |
 | `GET /api/papers/reviewers?paper_id=` | chair | Assignable reviewers + COI flags + workload |
 | `POST /api/papers/{id}/assign` | chair | Assign reviewers (`override_coi`, optional `deadline`) |
+| `POST /api/papers/{id}/assign/auto` | chair | Auto-assign least-loaded, COI-free reviewers (`count`, `override_coi`) |
 | `DELETE /api/papers/{id}/assign/{reviewer_id}` | chair | Unassign a reviewer (not yet submitted) |
 | `PUT /api/papers/{id}/deadline` | chair | Set / clear the review deadline |
-| `POST /api/papers/{id}/decision` | chair | `accept` / `reject` / `revision` |
+| `POST /api/papers/{id}/decision` | chair | `accept` / `reject` / `revision` (+ optional `override_score`/`override_reason`) |
 | `GET /api/papers/{id}` | author / assigned reviewer / chair | View one |
 
 Assignments notify the reviewer, and decisions notify the author, via the

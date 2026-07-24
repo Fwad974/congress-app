@@ -333,11 +333,15 @@ A peer-review workflow at `/papers` (role-based tabs). See
 - **Authors** (any signed-in user) submit a paper (title, authors, category,
   abstract, optional full-paper link), track status, and — on a revision
   decision — respond to reviewers and resubmit (bounded to 2 rounds).
-- **Reviewers** score (1–5) and comment on papers assigned to them.
+- **Reviewers** score papers assigned to them against a **structured rubric**
+  (Originality, Significance, Methodology, Clarity — each 1–5; the overall score
+  is the mean) and comment.
 - **Review chairs** (`review_chair`/`admin`/`super_admin`) list all
-  submissions, assign reviewers (with a same-institution **COI guard** that
-  requires an explicit override), and record decisions (accept / reject /
-  request revision) — audit-logged and pushed to the author's notification feed.
+  submissions, assign reviewers **manually or auto** (least-loaded, with a
+  same-institution **COI guard** requiring explicit override), monitor
+  completion/deadlines, record decisions (accept / reject / request revision),
+  and may **override the score with a written justification** — all audit-logged
+  and pushed to the author's notification feed.
 
 Reviews are hidden from the author until a decision; the submitter's identity is
 hidden from reviewers (light double-blind).

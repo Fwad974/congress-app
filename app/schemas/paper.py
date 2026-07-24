@@ -2,7 +2,7 @@
 Paper submission + review schemas.
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, field_validator
 
 VALID_DECISIONS = {"accept", "reject", "revision"}
@@ -70,6 +70,7 @@ class PaperUpdate(BaseModel):
 
 class ReviewUpsert(BaseModel):
     score: Optional[int] = None
+    rubric: Optional[Dict[str, int]] = None   # {criterion_key: 1–5}
     comments: Optional[str] = None
     submitted: bool = False
 
@@ -81,6 +82,21 @@ class ReviewUpsert(BaseModel):
         if not (1 <= int(v) <= 5):
             raise ValueError("Score must be 1–5")
         return int(v)
+
+    @field_validator("rubric")
+    @classmethod
+    def v_rubric(cls, v):
+        if v is None:
+            return v
+        from app.models.paper import RUBRIC_KEYS
+        clean = {}
+        for k, val in v.items():
+            if k not in RUBRIC_KEYS:
+                raise ValueError(f"Unknown rubric criterion: {k}")
+            if not (1 <= int(val) <= 5):
+                raise ValueError("Each rubric score must be 1–5")
+            clean[k] = int(val)
+        return clean
 
 
 VALID_RESPONSES = {"accept", "decline", "recuse"}
@@ -105,6 +121,22 @@ class AssignRequest(BaseModel):
     deadline: Optional[str] = None   # optional review due date (ISO, set on assign)
 
 
+class AutoAssignRequest(BaseModel):
+    """Auto-assign the least-loaded, conflict-free reviewers."""
+    count: Optional[int] = None      # how many to assign (default: MIN_REVIEWERS)
+    override_coi: bool = False        # allow same-institution reviewers if needed
+    deadline: Optional[str] = None
+
+    @field_validator("count")
+    @classmethod
+    def v_count(cls, v):
+        if v is None:
+            return v
+        if not (1 <= int(v) <= 10):
+            raise ValueError("Count must be between 1 and 10")
+        return int(v)
+
+
 class DeadlineRequest(BaseModel):
     deadline: Optional[str] = None   # ISO date "YYYY-MM-DD"; null clears it
 
@@ -112,6 +144,8 @@ class DeadlineRequest(BaseModel):
 class DecisionRequest(BaseModel):
     decision: str
     comment: Optional[str] = None
+    override_score: Optional[int] = None    # chair's final score, overriding the mean
+    override_reason: Optional[str] = None   # written justification (required if set)
 
     @field_validator("decision")
     @classmethod
@@ -120,12 +154,22 @@ class DecisionRequest(BaseModel):
             raise ValueError("Decision must be accept, reject, or revision")
         return v
 
+    @field_validator("override_score")
+    @classmethod
+    def v_override_score(cls, v):
+        if v is None:
+            return v
+        if not (1 <= int(v) <= 5):
+            raise ValueError("Override score must be 1–5")
+        return int(v)
+
 
 class ReviewResponse(BaseModel):
     id: int
     reviewer_label: str            # "You", real name (chair), or "Reviewer 2" (author)
     reviewer_id: Optional[int] = None   # only exposed to chairs
     score: Optional[int] = None
+    rubric: Optional[Dict[str, int]] = None   # {criterion_key: 1–5}
     comments: Optional[str] = None
     submitted: bool
     state: str = "invited"         # invited / accepted / declined / recused
@@ -152,6 +196,8 @@ class PaperResponse(BaseModel):
     review_count: int = 0
     submitted_review_count: int = 0
     avg_score: Optional[float] = None
+    decision_score: Optional[int] = None         # chair's override score, if set
+    decision_score_reason: Optional[str] = None  # justification for the override
     review_deadline: Optional[str] = None        # ISO date, if the chair set one
     is_overdue: bool = False                     # under review past its deadline
     my_review: Optional[ReviewResponse] = None   # for an assigned reviewer

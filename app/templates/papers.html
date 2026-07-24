@@ -99,6 +99,7 @@ textarea.pp-in{resize:vertical;min-height:90px}
 {% block scripts %}
 <script>
 const IS_CHAIR = {{ 'true' if is_chair else 'false' }};
+const RUBRIC = {{ rubric_json | safe }};
 function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function stPill(s){return '<span class="pp-status st-'+s+'">'+s.replace('_',' ')+'</span>';}
@@ -174,9 +175,15 @@ function fileBlock(p){
     : '';
 }
 
+function rubricBreakdown(r){
+  if(!r.rubric||!Object.keys(r.rubric).length)return'';
+  const byKey={};RUBRIC.forEach(c=>byKey[c.key]=c.label);
+  const chips=Object.keys(r.rubric).map(k=>'<span style="font:.68rem var(--f);color:var(--w5);background:rgba(201,169,98,.08);border:1px solid rgba(201,169,98,.12);border-radius:50px;padding:2px 8px">'+esc(byKey[k]||k)+' '+r.rubric[k]+'/5</span>').join(' ');
+  return '<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 2px">'+chips+'</div>';
+}
 function reviewsBlock(p){
   if(!p.reviews||!p.reviews.length)return'';
-  return p.reviews.map(r=>'<div class="pp-review"><div class="rh">'+esc(r.reviewer_label)+(r.score?' · score '+r.score+'/5':'')+'</div>'+(r.comments?'<div class="pp-abs" style="margin:0">'+esc(r.comments)+'</div>':'<span style="color:var(--w3);font-size:.8rem">No comments</span>')+'</div>').join('');
+  return p.reviews.map(r=>'<div class="pp-review"><div class="rh">'+esc(r.reviewer_label)+(r.score?' · score '+r.score+'/5':'')+'</div>'+rubricBreakdown(r)+(r.comments?'<div class="pp-abs" style="margin:0">'+esc(r.comments)+'</div>':'<span style="color:var(--w3);font-size:.8rem">No comments</span>')+'</div>').join('');
 }
 
 async function loadMine(){
@@ -261,12 +268,24 @@ function revCard(p){
       '<button class="pp-btn sm" onclick="respond('+p.id+',\'decline\')">Decline</button>'+
       '<button class="pp-btn sm" onclick="respond('+p.id+',\'recuse\')">Recuse (COI)</button></div>'
     : '<div class="pp-row" style="margin-bottom:8px"><button class="pp-btn sm" onclick="respond('+p.id+',\'recuse\')">Recuse (COI)</button></div>';
+  const rub=mr.rubric||{};
+  const rubricRows=RUBRIC.map(c=>
+    '<div class="pp-row" style="justify-content:space-between;gap:8px"><label style="color:var(--w7);font:.8rem var(--f);text-transform:none;letter-spacing:0">'+esc(c.label)+'</label>'+
+    '<select class="pp-in rubric-in" data-pid="'+p.id+'" data-key="'+c.key+'" style="width:auto"><option value="">—</option>'+
+    [1,2,3,4,5].map(n=>'<option value="'+n+'"'+(rub[c.key]===n?' selected':'')+'>'+n+'</option>').join('')+'</select></div>').join('');
   return head+
-    '<div class="pp-sub">'+respondRow+'<div class="pp-row"><label style="color:var(--gold)">Score</label>'+
-      '<select class="pp-in" id="rs_'+p.id+'" style="width:auto"><option value=""'+(mr.score?'':' selected')+'>— score —</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(mr.score===n?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
+    '<div class="pp-sub">'+respondRow+
+      '<label style="color:var(--gold)">Scoring rubric <span style="color:var(--w5);font-weight:400;text-transform:none">(1 = poor · 5 = excellent; overall = average)</span></label>'+
+      rubricRows+
+      '<div class="pp-row" style="justify-content:space-between"><span style="color:var(--w5);font-size:.78rem">Overall: <strong id="ov_score_'+p.id+'" style="color:var(--gold)">'+(mr.score?mr.score+'/5':'—')+'</strong></span>'+
       '<span style="color:var(--w5);font-size:.78rem">'+(mr.submitted?'✓ submitted':'draft')+'</span></div>'+
       '<textarea class="pp-in" id="rc_'+p.id+'" rows="3" placeholder="Comments to the author">'+esc(mr.comments||'')+'</textarea>'+
       '<div style="text-align:right"><button class="pp-btn sm" onclick="saveReview('+p.id+',false)">Save draft</button> <button class="pp-btn primary sm" onclick="saveReview('+p.id+',true)">Submit review</button></div></div></div>';
+}
+function collectRubric(pid){
+  const out={};
+  document.querySelectorAll('.rubric-in[data-pid="'+pid+'"]').forEach(el=>{if(el.value)out[el.dataset.key]=parseInt(el.value,10);});
+  return out;
 }
 async function respond(id,action){
   let reason=null;
@@ -283,12 +302,20 @@ async function respond(id,action){
   catch(e){showToast(e.message,'error');}
 }
 async function saveReview(id,submit){
-  const sv=document.getElementById('rs_'+id).value;
+  const rubric=collectRubric(id);
   const comments=document.getElementById('rc_'+id).value.trim();
-  if(submit && !sv){showToast('Please give a score before submitting','error');return;}
-  try{await api('/api/papers/'+id+'/review','PUT',{score:sv?parseInt(sv,10):null,comments,submitted:submit});showToast(submit?'Review submitted':'Draft saved','success');loadReview();}
+  if(submit && !Object.keys(rubric).length){showToast('Please rate at least one rubric criterion before submitting','error');return;}
+  try{await api('/api/papers/'+id+'/review','PUT',{rubric,comments,submitted:submit});showToast(submit?'Review submitted':'Draft saved','success');loadReview();}
   catch(e){showToast(e.message,'error');}
 }
+// Live overall = mean of the rubric selects for a paper.
+document.addEventListener('change',e=>{
+  if(!e.target.classList||!e.target.classList.contains('rubric-in'))return;
+  const pid=e.target.dataset.pid;const vals=[];
+  document.querySelectorAll('.rubric-in[data-pid="'+pid+'"]').forEach(el=>{if(el.value)vals.push(parseInt(el.value,10));});
+  const el=document.getElementById('ov_score_'+pid);
+  if(el)el.textContent=vals.length?(Math.round(vals.reduce((a,b)=>a+b,0)/vals.length))+'/5':'—';
+});
 
 async function loadManage(){
   loadOverview();
@@ -340,24 +367,33 @@ const TERMINAL=['accepted','rejected','withdrawn'];
 function mgCard(p){
   const avg=p.avg_score!=null?p.avg_score+'/5':'—';
   const links='<div class="pp-row" style="margin:8px 0">'+fileBlock(p)+(p.file_url?'<a class="pp-btn sm" href="'+esc(p.file_url)+'" target="_blank" rel="noopener">Open link ↗</a>':'')+'</div>';
+  const overrideBadge=p.decision_score!=null
+    ? '<span style="font:600 .62rem var(--f);padding:3px 9px;border-radius:50px;border:1px solid var(--gold);color:var(--gold)" title="'+esc(p.decision_score_reason||'')+'">chair score '+p.decision_score+'/5</span>'
+    : '';
   let controls;
   if(TERMINAL.includes(p.status)){
     controls='<div class="pp-meta" style="margin-top:10px">Final decision: '+stPill(p.status)+
-      (p.decision_comment?' <span style="color:var(--w7)">'+esc(p.decision_comment)+'</span>':'')+'</div>';
+      (p.decision_comment?' <span style="color:var(--w7)">'+esc(p.decision_comment)+'</span>':'')+'</div>'+
+      (p.decision_score!=null?'<div class="pp-meta" style="margin-top:4px"><strong style="color:var(--gold)">Score override:</strong> '+p.decision_score+'/5 — '+esc(p.decision_score_reason||'')+'</div>':'');
   }else{
     const hint=p.review_count<2?'<div style="font:.74rem var(--f);color:var(--gold);margin-top:6px">⚠ Assign at least 2 reviewers (REV-01).</div>':'';
     const reviseBtn=p.round>=2?'':'<button class="pp-btn sm" style="color:var(--gold)" onclick="decide('+p.id+',\'revision\')">Revise</button>';
     const dl='<div class="pp-row" style="margin-top:8px;align-items:center"><label style="color:var(--w5);font:.76rem var(--f)">Review deadline</label>'+
       '<input type="date" class="pp-in" style="width:auto" value="'+(p.review_deadline||'')+'" onchange="setDeadline('+p.id+',this.value)">'+
       (p.is_overdue?'<span style="color:var(--red);font:600 .72rem var(--f)">⏰ Overdue</span>':'')+'</div>';
-    controls='<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+hint+dl+
+    // Score override (with mandatory justification), applied on the next decision.
+    const override='<div class="pp-row" style="margin-top:6px;align-items:center"><label style="color:var(--w5);font:.76rem var(--f)">Override score</label>'+
+      '<select class="pp-in" id="os_'+p.id+'" style="width:auto"><option value="">— none —</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'"'+(p.decision_score===n?' selected':'')+'>'+n+'/5</option>').join('')+'</select>'+
+      '<input class="pp-in" id="or_'+p.id+'" placeholder="Justification (required if overriding)" style="flex:1" value="'+esc(p.decision_score_reason||'')+'"></div>';
+    controls='<div class="pp-sub"><label style="color:var(--gold)">Assign reviewers</label><div class="pp-rev-pick" id="rev_'+p.id+'">…</div>'+hint+
       '<div class="pp-row"><button class="pp-btn sm" onclick="doAssign('+p.id+')">Assign selected</button>'+
-      '<label style="font:.76rem var(--f);color:var(--w5);display:flex;align-items:center;gap:5px"><input type="checkbox" id="ov_'+p.id+'"> override COI</label></div>'+
+      '<button class="pp-btn sm" onclick="autoAssign('+p.id+')" title="Auto-pick the least-loaded, conflict-free reviewers">✨ Auto-assign</button>'+
+      '<label style="font:.76rem var(--f);color:var(--w5);display:flex;align-items:center;gap:5px"><input type="checkbox" id="ov_'+p.id+'"> override COI</label></div>'+dl+override+
       '<div class="pp-row" style="margin-top:6px"><input class="pp-in" id="dc_'+p.id+'" placeholder="Decision note to author (optional)" style="flex:1">'+
       '<button class="pp-btn sm" style="color:#2ecc71;border-color:rgba(46,204,113,.3)" onclick="decide('+p.id+',\'accept\')">Accept</button>'+reviseBtn+
       '<button class="pp-btn sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="decide('+p.id+',\'reject\')">Reject</button></div></div>';
   }
-  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span></div>'+
+  return '<div class="pp-card"><div class="pp-meta">'+stPill(p.status)+'<span>'+esc(p.category||'—')+'</span><span>by '+esc(p.author_name||'—')+'</span><span>Round '+p.round+'</span><span>'+p.submitted_review_count+'/'+p.review_count+' reviews · avg '+avg+'</span>'+overrideBadge+'</div>'+
     '<h3>'+esc(p.title)+'</h3><div class="pp-abs">'+esc(p.abstract)+'</div>'+links+reviewsBlock(p)+controls+'</div>';
 }
 async function loadReviewers(pid){
@@ -377,8 +413,15 @@ function togPick(pid,rid,el){const s=_pick[pid]||(_pick[pid]=new Set());if(s.has
 async function doAssign(pid){const ids=[...(_pick[pid]||[])];if(!ids.length){showToast('Pick at least one reviewer','error');return;}
   try{await api('/api/papers/'+pid+'/assign','POST',{reviewer_ids:ids,override_coi:document.getElementById('ov_'+pid).checked});showToast('Reviewers assigned','success');loadManage();}
   catch(e){showToast(e.message,'error');}}
+async function autoAssign(pid){
+  try{await api('/api/papers/'+pid+'/assign/auto','POST',{override_coi:document.getElementById('ov_'+pid).checked});showToast('Reviewers auto-assigned','success');loadManage();}
+  catch(e){showToast(e.message,'error');}}
 async function decide(pid,decision){if(decision==='reject'&&!await confirmDialog({title:'Reject submission',message:'Reject this submission? The author is notified of the decision.',confirmText:'Reject',danger:true}))return;
-  try{await api('/api/papers/'+pid+'/decision','POST',{decision,comment:document.getElementById('dc_'+pid).value.trim()||null});showToast('Decision recorded','success');loadManage();}
+  const os=document.getElementById('os_'+pid),orr=document.getElementById('or_'+pid);
+  const override_score=os&&os.value?parseInt(os.value,10):null;
+  const override_reason=orr?orr.value.trim():'';
+  if(override_score&&!override_reason){showToast('Add a written justification for the score override','error');return;}
+  try{await api('/api/papers/'+pid+'/decision','POST',{decision,comment:document.getElementById('dc_'+pid).value.trim()||null,override_score,override_reason:override_reason||null});showToast('Decision recorded','success');loadManage();}
   catch(e){showToast(e.message,'error');}}
 
 document.addEventListener('DOMContentLoaded',()=>{ppTab('accepted');});

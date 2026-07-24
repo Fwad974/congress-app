@@ -29,12 +29,25 @@ from app.core.audit_service import log_action
 from app.models.user import User
 from app.models.audit_log import AuditAction
 from app.models.notification import UserNotification
-from app.models.paper import Paper, Review, PaperStatus, MAX_REVISION_ROUNDS
+from app.models.paper import (
+    Paper, Review, PaperStatus, MAX_REVISION_ROUNDS, RUBRIC_CRITERIA,
+)
 from app.schemas.paper import (
     PaperCreate, PaperUpdate, ReviewUpsert, ReviewRespond, AssignRequest,
-    DecisionRequest, DeadlineRequest, PaperResponse, PaperListResponse,
-    ReviewResponse, ReviewerInfo, ReviewerLoad, AttentionPaper, ReviewChairOverview,
+    AutoAssignRequest, DecisionRequest, DeadlineRequest, PaperResponse,
+    PaperListResponse, ReviewResponse, ReviewerInfo, ReviewerLoad,
+    AttentionPaper, ReviewChairOverview,
 )
+
+
+def _rubric_mean(rubric) -> Optional[int]:
+    """Overall score = rounded mean of the rubric criteria the reviewer rated."""
+    if not rubric:
+        return None
+    vals = [v for v in rubric.values() if isinstance(v, int)]
+    if not vals:
+        return None
+    return round(sum(vals) / len(vals))
 
 router = APIRouter()
 
@@ -104,22 +117,23 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
             User.id.in_([r.reviewer_id for r in reviews] or [0])).all()}
         review_out = [ReviewResponse(
             id=r.id, reviewer_label=names.get(r.reviewer_id, "Reviewer"),
-            reviewer_id=r.reviewer_id, score=r.score, comments=r.comments,
-            submitted=r.submitted, state=r.state, response_reason=r.response_reason,
-            updated_at=r.updated_at,
+            reviewer_id=r.reviewer_id, score=r.score, rubric=r.rubric,
+            comments=r.comments, submitted=r.submitted, state=r.state,
+            response_reason=r.response_reason, updated_at=r.updated_at,
         ) for r in reviews]
     elif is_mine and paper.status in _DECIDED:
         # Author sees anonymized, submitted reviews only, after a decision.
         review_out = [ReviewResponse(
             id=r.id, reviewer_label=f"Reviewer {i + 1}", score=r.score,
-            comments=r.comments, submitted=True, updated_at=r.updated_at,
+            rubric=r.rubric, comments=r.comments, submitted=True,
+            updated_at=r.updated_at,
         ) for i, r in enumerate(submitted)]
     else:
         mine = next((r for r in reviews if r.reviewer_id == viewer.id), None)
         if mine:
             my_review = ReviewResponse(
                 id=mine.id, reviewer_label="You", score=mine.score,
-                comments=mine.comments, submitted=mine.submitted,
+                rubric=mine.rubric, comments=mine.comments, submitted=mine.submitted,
                 state=mine.state, response_reason=mine.response_reason,
                 updated_at=mine.updated_at,
             )
@@ -144,6 +158,8 @@ def _serialize(db: Session, paper: Paper, viewer: User) -> PaperResponse:
         review_count=len(reviews) if show_aggregates else 0,
         submitted_review_count=len(submitted) if show_aggregates else 0,
         avg_score=avg if show_aggregates else None,
+        decision_score=paper.decision_score if show_aggregates else None,
+        decision_score_reason=paper.decision_score_reason if show_aggregates else None,
         review_deadline=paper.review_deadline.isoformat() if paper.review_deadline else None,
         is_overdue=_is_overdue(paper),
         my_review=my_review, reviews=review_out,
@@ -263,6 +279,12 @@ def assignable_reviewers(
             completed_load=completed_load.get(r.id, 0),
         ))
     return out
+
+
+@router.get("/rubric")
+def review_rubric(user: User = Depends(get_current_user)):
+    """The scoring rubric criteria used by the review form (1–5 each)."""
+    return {"criteria": RUBRIC_CRITERIA, "scale": {"min": 1, "max": 5}}
 
 
 def _reviewer_loads(db: Session):
@@ -506,10 +528,21 @@ def upsert_review(paper_id: int, req: ReviewUpsert, db: Session = Depends(get_db
         raise HTTPException(
             status_code=400,
             detail=f"You {review.state} this assignment — you can't review it.")
+    if req.rubric is not None:
+        review.rubric = req.rubric
+        # Overall score derives from the rubric mean unless the reviewer also
+        # sent an explicit score (kept for the simple score-only form).
+        if req.score is None:
+            derived = _rubric_mean(req.rubric)
+            if derived is not None:
+                review.score = derived
     if req.score is not None:
         review.score = req.score
     if req.comments is not None:
         review.comments = req.comments
+    if req.submitted and review.score is None:
+        raise HTTPException(status_code=400,
+                            detail="Give a score (or rubric) before submitting")
     review.submitted = req.submitted
     if review.state == "invited":
         review.state = "accepted"   # engaging with the review implies acceptance
@@ -552,6 +585,42 @@ def respond_to_assignment(paper_id: int, req: ReviewRespond,
 
 
 # ─── Review chair: assign + decide ───────────────────────────────
+def _author_inst(db: Session, paper: Paper) -> str:
+    author = db.query(User).filter(User.id == paper.author_id).first()
+    return (author.institution or "").strip().lower() if author else ""
+
+
+def _assign_core(db: Session, paper: Paper, reviewers: List[User],
+                 deadline: Optional[str], user: User, request: Request,
+                 how: str) -> None:
+    """Create review assignments for a resolved reviewer list + housekeeping.
+
+    Shared by manual and auto assignment: skips already-assigned reviewers,
+    notifies each new one, flips the paper to under_review, applies an optional
+    deadline, and audit-logs. COI is resolved by the caller.
+    """
+    existing = {r.reviewer_id for r in db.query(Review.reviewer_id).filter(
+        Review.paper_id == paper.id).all()}
+    new_ids = []
+    for r in reviewers:
+        if r.id in existing:
+            continue
+        db.add(Review(paper_id=paper.id, reviewer_id=r.id))
+        new_ids.append(r.id)
+        _notify(db, r.id, "New paper to review",
+                f"You've been assigned to review a submission ({paper.category or 'paper'}).")
+
+    if paper.status == PaperStatus.submitted:
+        paper.status = PaperStatus.under_review
+    if deadline is not None:
+        paper.review_deadline = _parse_date(deadline)
+    paper.updated_at = datetime.now(timezone.utc)
+    log_action(db, user, AuditAction.paper_decision,
+               f"Assigned {len(new_ids)} reviewer(s) to paper #{paper.id} ({how})",
+               request=request, target_type="paper", target_id=paper.id)
+    db.refresh(paper)
+
+
 @router.post("/{paper_id}/assign", response_model=PaperResponse)
 def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
                      db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -564,8 +633,7 @@ def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
         raise HTTPException(status_code=400,
                             detail="This paper is closed — you can't assign reviewers")
 
-    author = db.query(User).filter(User.id == paper.author_id).first()
-    author_inst = (author.institution or "").strip().lower() if author else ""
+    author_inst = _author_inst(db, paper)
 
     reviewers = db.query(User).filter(User.id.in_(req.reviewer_ids or [])).all()
     reviewers = [r for r in reviewers if is_assignable_reviewer(r) and r.id != paper.author_id]
@@ -582,26 +650,65 @@ def assign_reviewers(paper_id: int, req: AssignRequest, request: Request,
                 detail=f"Conflict of interest (same institution): {', '.join(conflicts)}. "
                        "Re-submit with override to assign anyway.")
 
-    existing = {r.reviewer_id for r in db.query(Review.reviewer_id).filter(
-        Review.paper_id == paper_id).all()}
-    new_ids = []
-    for r in reviewers:
-        if r.id in existing:
-            continue
-        db.add(Review(paper_id=paper_id, reviewer_id=r.id))
-        new_ids.append(r.id)
-        _notify(db, r.id, "New paper to review",
-                f"You've been assigned to review a submission ({paper.category or 'paper'}).")
+    _assign_core(db, paper, reviewers, req.deadline, user, request, "manual")
+    return _serialize(db, paper, user)
 
-    if paper.status == PaperStatus.submitted:
-        paper.status = PaperStatus.under_review
-    if req.deadline is not None:
-        paper.review_deadline = _parse_date(req.deadline)
-    paper.updated_at = datetime.now(timezone.utc)
-    log_action(db, user, AuditAction.paper_decision,
-               f"Assigned {len(new_ids)} reviewer(s) to paper #{paper.id}",
-               request=request, target_type="paper", target_id=paper.id)
-    db.refresh(paper)
+
+@router.post("/{paper_id}/assign/auto", response_model=PaperResponse)
+def auto_assign_reviewers(paper_id: int, req: AutoAssignRequest, request: Request,
+                          db: Session = Depends(get_db),
+                          user: User = Depends(get_current_user)):
+    """Auto-pick the least-loaded, conflict-free reviewers and assign them.
+
+    Skips the author, anyone already assigned, and — unless override_coi is set
+    — same-institution reviewers (REV-02). Fills up to the requested count
+    (default MIN_REVIEWERS), preferring reviewers with the lightest active load.
+    """
+    if not is_review_chair(user):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    paper = db.query(Paper).filter(Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    if paper.status in _TERMINAL:
+        raise HTTPException(status_code=400,
+                            detail="This paper is closed — you can't assign reviewers")
+
+    author_inst = _author_inst(db, paper)
+    existing = {r.reviewer_id for r in db.query(Review.reviewer_id).filter(
+        Review.paper_id == paper.id,
+        Review.state.notin_(("declined", "recused"))).all()}
+    want = req.count or MIN_REVIEWERS
+    need = want - len(existing)
+    if need <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Already has {len(existing)} active reviewer(s) (target {want}).")
+
+    from app.core.admin_security import ASSIGNABLE_REVIEWER_ROLES
+    active_load, _ = _reviewer_loads(db)
+    candidates = db.query(User).filter(
+        User.role.in_(ASSIGNABLE_REVIEWER_ROLES), User.is_active == True  # noqa: E712
+    ).all()
+    pool = []
+    for r in candidates:
+        # Skip the author, anyone already assigned, and the acting chair
+        # (auto-assign shouldn't assign the paper to whoever is running it).
+        if r.id == paper.author_id or r.id in existing or r.id == user.id:
+            continue
+        coi = bool(author_inst and (r.institution or "").strip().lower() == author_inst)
+        if coi and not req.override_coi:
+            continue
+        # Prefer no-COI, then lightest active load, then most experienced idle.
+        pool.append((coi, active_load.get(r.id, 0), r))
+    if not pool:
+        raise HTTPException(
+            status_code=400,
+            detail="No eligible reviewers available"
+                   + ("" if req.override_coi else " (all remaining are conflicts — try override)."))
+    pool.sort(key=lambda t: (t[0], t[1]))
+    chosen = [r for _, _, r in pool[:need]]
+
+    _assign_core(db, paper, chosen, req.deadline, user, request, "auto")
     return _serialize(db, paper, user)
 
 
@@ -674,6 +781,26 @@ def decide_paper(paper_id: int, req: DecisionRequest, request: Request,
         raise HTTPException(
             status_code=400,
             detail=f"Max {MAX_REVISION_ROUNDS} revision rounds reached — accept or reject.")
+
+    # Optional score override — the chair sets a final score that supersedes
+    # the reviewers' mean, and must justify it in writing (REV: override with
+    # written justification). Audit-logged with the old/new value.
+    if req.override_score is not None:
+        reason = (req.override_reason or "").strip()
+        if not reason:
+            raise HTTPException(
+                status_code=400,
+                detail="A written justification is required to override the score")
+        old_scores = [r.score for r in db.query(Review.score).filter(
+            Review.paper_id == paper.id, Review.submitted == True,  # noqa: E712
+            Review.score.isnot(None)).all()]
+        old_avg = round(sum(old_scores) / len(old_scores), 2) if old_scores else None
+        paper.decision_score = req.override_score
+        paper.decision_score_reason = reason
+        log_action(db, user, AuditAction.paper_decision,
+                   f"Score override on paper #{paper.id}: {req.override_score}/5 — {reason}",
+                   request=request, target_type="paper", target_id=paper.id,
+                   old_value=str(old_avg), new_value=str(req.override_score))
 
     new_status = {
         "accept": PaperStatus.accepted,

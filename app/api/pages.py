@@ -138,10 +138,13 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
     is_chair = user.role in (UserRole.review_chair, UserRole.admin, UserRole.super_admin)
     is_reviewer = user.role in (UserRole.reviewer, UserRole.review_chair)
     from app.core.config import get_settings
+    from app.models.paper import RUBRIC_CRITERIA
+    import json as _json
     return templates.TemplateResponse("papers.html", {
         "request": request, "user": user,
         "is_chair": is_chair, "is_reviewer": is_reviewer,
         "max_upload_mb": get_settings().MAX_UPLOAD_MB,
+        "rubric_json": _json.dumps(RUBRIC_CRITERIA),
     })
 
 
