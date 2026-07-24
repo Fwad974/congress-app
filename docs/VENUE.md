@@ -27,8 +27,11 @@ that are served only until an admin saves their own version from the page's
   joins the network when scanned. Payload special characters are escaped; open
   (`nopass`) networks supported.
 - **Dubai local info** — admin-managed places grouped by category
-  (hotel / restaurant / pharmacy / atm / other) with distance and optional map
-  link.
+  (hotel / restaurant / pharmacy / atm / other) with distance and a **Google
+  Maps link on every entry**: the admin's explicit `map_url` wins, otherwise
+  the app auto-generates a Maps search link from the place name. The venue
+  itself gets a "Venue & address" card with an **Open in Google Maps** button
+  (`general.map_url`, defaulting to the DWTC Maps link).
 - **Transportation** — admin-managed entries (metro / taxi / parking / airport)
   with icons.
 - **Emergency contacts** — admin-managed list (security / medical / general)

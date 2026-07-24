@@ -204,6 +204,28 @@ class TestWifiQR:
             "WIFI:T:nopass;S:Free;;"
 
 
+class TestMapLinks:
+    def test_default_venue_map_url_is_google_maps(self, client, db):
+        att = make_user(db, email="vm1@t.com", role=UserRole.attendee)
+        d = client.get("/api/venue", cookies=auth_cookie(att)).json()
+        assert "maps.google.com" in d["general"]["map_url"]
+
+    def test_place_map_url_roundtrip(self, client, db):
+        admin = make_user(db, email="vm2@t.com", role=UserRole.admin)
+        r = client.put("/api/venue/settings", json={"places": [
+            {"category": "hotel", "name": "Test Hotel",
+             "map_url": "https://maps.google.com/?q=Test+Hotel"}]},
+            cookies=auth_cookie(admin))
+        assert r.status_code == 200
+        assert r.json()["places"][0]["map_url"] == "https://maps.google.com/?q=Test+Hotel"
+
+    def test_page_has_venue_map_button_and_fallback(self, client, db):
+        att = make_user(db, email="vm3@t.com", role=UserRole.attendee)
+        html = client.get("/venue", cookies=auth_cookie(att)).text
+        assert "venueMapBtn" in html          # venue "Open in Google Maps" card
+        assert "function gmaps" in html       # auto-generated Maps search fallback
+
+
 class TestGatingAndPage:
     def test_page_renders_with_lang_toggle(self, client, db):
         att = make_user(db, email="vp1@t.com", role=UserRole.attendee)

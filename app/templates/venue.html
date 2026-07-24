@@ -88,6 +88,7 @@ textarea.vn-in{resize:vertical;min-height:70px;font-family:var(--m);font-size:.8
   </div>
 
   <div class="vn-panel" id="vn-info">
+    <div class="vn-card"><h3>📍 <span id="hVenue">Venue &amp; address</span></h3><div id="venueBox"></div></div>
     <div class="vn-card"><h3>📶 <span id="hWifi">WiFi</span></h3><div class="vn-wifi" id="wifiBox"></div></div>
     <div class="vn-grid2">
       <div class="vn-card"><h3>🚇 <span id="hTrans">Getting here</span></h3><div id="transBox"></div></div>
@@ -134,11 +135,11 @@ textarea.vn-in{resize:vertical;min-height:70px;font-family:var(--m);font-size:.8
     </div>
     <div class="vn-card"><h3>📋 Lists</h3>
       <div style="font:.76rem var(--f);color:var(--w5);margin-bottom:6px">One entry per line, fields separated by <code>|</code>. Arabic columns are optional.</div>
-      <span class="vn-label">Transport — mode | title | details | title_ar | details_ar</span>
+      <span class="vn-label">Transport — mode | title | details | title_ar | details_ar | link</span>
       <textarea class="vn-in" id="t_transport" rows="4"></textarea>
       <span class="vn-label">Emergency — kind | label | phone | label_ar &nbsp; (kind: security / medical / general)</span>
       <textarea class="vn-in" id="t_emergency" rows="4"></textarea>
-      <span class="vn-label">Places — category | name | distance | details | name_ar | details_ar &nbsp; (category: hotel / restaurant / pharmacy / atm / other)</span>
+      <span class="vn-label">Places — category | name | distance | details | name_ar | details_ar | map_url &nbsp; (category: hotel / restaurant / pharmacy / atm / other; empty map_url = auto Google&nbsp;Maps search)</span>
       <textarea class="vn-in" id="t_places" rows="5"></textarea>
       <div style="text-align:right;margin-top:10px"><button class="vn-btn primary sm" onclick="saveLists()">Save lists</button></div>
     </div>
@@ -154,9 +155,9 @@ async function api(url,method='GET',body=null){const o={method,headers:{'Content
 
 // ── i18n ───────────────────────────────────────────────────
 const L={
- en:{title:'Venue & <span>Dubai Info</span>',tabMap:'Map & Navigate',tabInfo:'WiFi & Local Info',map:'Floor plan',mapHint:'tap a room',nav:'Turn-by-turn navigation',from:'From',to:'To',go:'Get directions',wifi:'WiFi',network:'Network',password:'Password',copy:'Copy',copied:'Copied ✓',scan:'Scan to connect',trans:'Getting here',emer:'Emergency contacts',places:'Nearby in Dubai',now:'Now',next:'Next',freeNow:'Free now',floor:'Floor',call:'Call',map_open:'Open map',noRooms:'No rooms configured yet — the organizers are setting up the floor plan.',dist:'total ≈ {n} m',pick:'Pick two different rooms',
+ en:{title:'Venue & <span>Dubai Info</span>',tabMap:'Map & Navigate',tabInfo:'WiFi & Local Info',map:'Floor plan',mapHint:'tap a room',nav:'Turn-by-turn navigation',from:'From',to:'To',go:'Get directions',wifi:'WiFi',network:'Network',password:'Password',copy:'Copy',copied:'Copied ✓',scan:'Scan to connect',trans:'Getting here',emer:'Emergency contacts',places:'Nearby in Dubai',now:'Now',next:'Next',freeNow:'Free now',floor:'Floor',call:'Call',map_open:'Open map',venue:'Venue & address',gmaps:'Open in Google Maps',noRooms:'No rooms configured yet — the organizers are setting up the floor plan.',dist:'total ≈ {n} m',pick:'Pick two different rooms',
   cat:{hotel:'Hotels',restaurant:'Food & drink',pharmacy:'Pharmacies',atm:'ATMs',other:'Other'}},
- ar:{title:'المكان و<span>معلومات دبي</span>',tabMap:'الخريطة والتنقل',tabInfo:'واي فاي ومعلومات',map:'مخطط الطوابق',mapHint:'اضغط على غرفة',nav:'التنقل خطوة بخطوة',from:'من',to:'إلى',go:'احصل على الاتجاهات',wifi:'واي فاي',network:'الشبكة',password:'كلمة المرور',copy:'نسخ',copied:'تم النسخ ✓',scan:'امسح للاتصال',trans:'الوصول إلى المكان',emer:'أرقام الطوارئ',places:'أماكن قريبة في دبي',now:'الآن',next:'التالي',freeNow:'متاحة الآن',floor:'الطابق',call:'اتصال',map_open:'افتح الخريطة',noRooms:'لم يتم إعداد مخطط الطوابق بعد.',dist:'المسافة ≈ {n} م',pick:'اختر غرفتين مختلفتين',
+ ar:{title:'المكان و<span>معلومات دبي</span>',tabMap:'الخريطة والتنقل',tabInfo:'واي فاي ومعلومات',map:'مخطط الطوابق',mapHint:'اضغط على غرفة',nav:'التنقل خطوة بخطوة',from:'من',to:'إلى',go:'احصل على الاتجاهات',wifi:'واي فاي',network:'الشبكة',password:'كلمة المرور',copy:'نسخ',copied:'تم النسخ ✓',scan:'امسح للاتصال',trans:'الوصول إلى المكان',emer:'أرقام الطوارئ',places:'أماكن قريبة في دبي',now:'الآن',next:'التالي',freeNow:'متاحة الآن',floor:'الطابق',call:'اتصال',map_open:'افتح الخريطة',venue:'المكان والعنوان',gmaps:'افتح في خرائط جوجل',noRooms:'لم يتم إعداد مخطط الطوابق بعد.',dist:'المسافة ≈ {n} م',pick:'اختر غرفتين مختلفتين',
   cat:{hotel:'فنادق',restaurant:'مطاعم ومقاهي',pharmacy:'صيدليات',atm:'صراف آلي',other:'أخرى'}}};
 let LANG=localStorage.getItem('venueLang')||'en';
 function T(k){return L[LANG][k];}
@@ -175,8 +176,11 @@ function applyLang(){
   document.getElementById('goBtn').textContent=T('go');
   document.getElementById('hWifi').textContent=T('wifi');document.getElementById('hTrans').textContent=T('trans');
   document.getElementById('hEmer').textContent=T('emer');document.getElementById('hPlaces').textContent=T('places');
+  document.getElementById('hVenue').textContent=T('venue');
   renderAll();
 }
+// Google Maps link — explicit admin URL wins, else a Maps search for the name.
+function gmaps(q){return 'https://maps.google.com/?q='+encodeURIComponent(q+', Dubai');}
 
 // ── data ───────────────────────────────────────────────────
 let _v=null,_floor=null,_sel=null,_route=null;
@@ -187,7 +191,15 @@ async function loadVenue(){
     if(IS_ORG)fillManage();
   }catch(e){showToast(e.message,'error');}
 }
-function renderAll(){if(!_v)return;renderMap();renderNavSelects();renderRoute();renderWifi();renderTrans();renderEmer();renderPlaces();renderRoomDetail();}
+function renderAll(){if(!_v)return;renderMap();renderNavSelects();renderRoute();renderVenue();renderWifi();renderTrans();renderEmer();renderPlaces();renderRoomDetail();}
+function renderVenue(){
+  const g=_v.general;
+  const url=g.map_url||gmaps(g.venue_name||'Dubai World Trade Centre');
+  document.getElementById('venueBox').innerHTML=
+    '<div class="vn-row"><span class="ico">🏛️</span><div style="flex:1"><div class="t">'+esc(loc(g,'venue_name')||'')+'</div>'+
+    '<div class="d">'+esc(loc(g,'address')||'')+'</div></div></div>'+
+    '<div style="margin-top:8px"><a class="vn-btn" id="venueMapBtn" href="'+esc(url)+'" target="_blank" rel="noopener">🗺️ '+T('gmaps')+' ↗</a></div>';
+}
 
 // ── floor plan ─────────────────────────────────────────────
 function renderMap(){
@@ -272,7 +284,13 @@ function renderPlaces(){
   _v.places.forEach(p=>{(groups[p.category||'other']=groups[p.category||'other']||[]).push(p);});
   document.getElementById('placesBox').innerHTML=Object.keys(groups).map(cat=>
     '<div class="vn-label">'+(PICO[cat]||'📍')+' '+esc(T('cat')[cat]||cat)+'</div>'+
-    groups[cat].map(p=>'<div class="vn-row"><div style="flex:1"><div class="t">'+esc(loc(p,'name'))+(p.map_url?' <a href="'+esc(p.map_url)+'" target="_blank" rel="noopener" style="color:var(--gold);font-size:.78rem">'+T('map_open')+' ↗</a>':'')+'</div><div class="d">'+esc(loc(p,'details')||'')+'</div></div>'+(p.distance?'<span class="dist">'+esc(p.distance)+'</span>':'')+'</div>').join('')
+    groups[cat].map(p=>{
+      const url=p.map_url||gmaps(p.name);   // every place gets a Maps link
+      return '<div class="vn-row"><div style="flex:1"><div class="t">'+esc(loc(p,'name'))+
+        ' <a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:var(--gold);font-size:.78rem;white-space:nowrap">🗺️ '+T('map_open')+' ↗</a></div>'+
+        '<div class="d">'+esc(loc(p,'details')||'')+'</div></div>'+
+        (p.distance?'<span class="dist">'+esc(p.distance)+'</span>':'')+'</div>';
+    }).join('')
   ).join('')||'<div class="vn-empty">—</div>';
 }
 
@@ -285,9 +303,9 @@ function fillManage(){
   document.getElementById('g_map').value=g.map_url||'';
   document.getElementById('w_ssid').value=w.ssid||'';document.getElementById('w_pass').value=w.password||'';
   document.getElementById('w_sec').value=w.security||'WPA';document.getElementById('w_note').value=w.note||'';
-  document.getElementById('t_transport').value=_v.transport.map(t=>[t.mode,t.title,t.details||'',t.title_ar||'',t.details_ar||''].join(' | ')).join('\n');
+  document.getElementById('t_transport').value=_v.transport.map(t=>[t.mode,t.title,t.details||'',t.title_ar||'',t.details_ar||'',t.link||''].join(' | ')).join('\n');
   document.getElementById('t_emergency').value=_v.emergency.map(e=>[e.kind,e.label,e.phone||'',e.label_ar||''].join(' | ')).join('\n');
-  document.getElementById('t_places').value=_v.places.map(p=>[p.category,p.name,p.distance||'',p.details||'',p.name_ar||'',p.details_ar||''].join(' | ')).join('\n');
+  document.getElementById('t_places').value=_v.places.map(p=>[p.category,p.name,p.distance||'',p.details||'',p.name_ar||'',p.details_ar||'',p.map_url||''].join(' | ')).join('\n');
   renderRoomList();
 }
 function renderRoomList(){
@@ -344,9 +362,9 @@ async function saveGeneralWifi(){
 function v(id){return document.getElementById(id).value.trim();}
 function lines(id){return document.getElementById(id).value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim()));}
 async function saveLists(){
-  const transport=lines('t_transport').map(p=>({mode:p[0]||'other',title:p[1]||'',details:p[2]||'',title_ar:p[3]||'',details_ar:p[4]||''})).filter(t=>t.title);
+  const transport=lines('t_transport').map(p=>({mode:p[0]||'other',title:p[1]||'',details:p[2]||'',title_ar:p[3]||'',details_ar:p[4]||'',link:p[5]||''})).filter(t=>t.title);
   const emergency=lines('t_emergency').map(p=>({kind:p[0]||'general',label:p[1]||'',phone:p[2]||'',label_ar:p[3]||''})).filter(e=>e.label);
-  const places=lines('t_places').map(p=>({category:p[0]||'other',name:p[1]||'',distance:p[2]||'',details:p[3]||'',name_ar:p[4]||'',details_ar:p[5]||'',map_url:''})).filter(p=>p.name);
+  const places=lines('t_places').map(p=>({category:p[0]||'other',name:p[1]||'',distance:p[2]||'',details:p[3]||'',name_ar:p[4]||'',details_ar:p[5]||'',map_url:p[6]||''})).filter(p=>p.name);
   try{_v=await api('/api/venue/settings','PUT',{transport,emergency,places});showToast('Saved','success');renderAll();}
   catch(e){showToast(e.message,'error');}
 }
