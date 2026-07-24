@@ -40,6 +40,10 @@ class AuditAction(str, enum.Enum):
     broadcast_send = "broadcast_send"
     # Papers
     paper_decision = "paper_decision"
+    # Sponsors & exhibitors
+    sponsor_create = "sponsor_create"
+    sponsor_update = "sponsor_update"
+    sponsor_delete = "sponsor_delete"
     # System
     feature_toggle = "feature_toggle"
     settings_change = "settings_change"

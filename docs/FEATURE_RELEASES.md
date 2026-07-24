@@ -41,9 +41,10 @@ Unknown keys fail open (never accidentally hidden).
   cards are wrapped in `{% if feature_enabled('…') %}`. The schedule page also
   hides its per-session Q&A / Notes buttons when those flags are off.
 - **Pages** — `pages._feature_blocked(user, key)` redirects non-admins to `/home`
-  (`/papers`, `/posters`, `/notes`, `/qa/{id}`).
+  (`/papers`, `/posters`, `/notes`, `/qa/{id}`, `/connect`, `/sponsors`).
 - **APIs** — `feature_flags.require_feature(key)` is a router dependency on the
-  papers, posters, notes, qa, and polls routers (403 for non-admins when off).
+  papers, posters, notes, qa, polls, connect, and sponsors routers (403 for
+  non-admins when off).
 
 ## Files
 

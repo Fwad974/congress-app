@@ -265,6 +265,21 @@ async def poster_qr_print(request: Request, poster_id: int,
     })
 
 
+@router.get("/sponsors", response_class=HTMLResponse)
+async def sponsors_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "sponsors"):
+        return RedirectResponse(url="/home", status_code=302)
+    from app.models.sponsor import SPONSOR_TIERS
+    import json as _json
+    is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
+    return templates.TemplateResponse("sponsors.html", {
+        "request": request, "user": user, "is_organizer": is_organizer,
+        "tiers_json": _json.dumps(SPONSOR_TIERS),
+    })
+
+
 @router.get("/posters", response_class=HTMLResponse)
 async def posters_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:

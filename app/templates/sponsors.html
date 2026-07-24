@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Sponsors & Exhibitors — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.sp-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
+.sp-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.sp-title h2{font:600 1.4rem var(--fh);color:var(--w)}.sp-title h2 span{color:var(--gold)}
+.sp-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.sp-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.sp-tab:hover{color:var(--w7)}.sp-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sp-panel{display:none}.sp-panel.active{display:block}
+.sp-tiergroup{margin-bottom:30px}
+.sp-tierhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sp-tiername{font:700 .8rem var(--f);letter-spacing:.12em;text-transform:uppercase}
+.tier-platinum{color:#e5e4e2}.tier-gold{color:var(--gold)}.tier-silver{color:#b8c2cc}.tier-bronze{color:#cd7f32}
+.sp-tierline{flex:1;height:1px;background:rgba(201,169,98,.15)}
+.sp-grid{display:grid;gap:14px}
+.sp-grid.platinum{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.sp-grid.gold{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.sp-grid.silver,.sp-grid.bronze{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.sp-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:18px;cursor:pointer;transition:.25s;display:flex;flex-direction:column;gap:8px}
+.sp-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.sp-card.hidden-sponsor{opacity:.55}
+.sp-logo{height:60px;display:flex;align-items:center;justify-content:flex-start}
+.sp-logo img{max-height:60px;max-width:100%;object-fit:contain}
+.sp-logo .ph{width:52px;height:52px;border-radius:12px;background:var(--ga2);display:flex;align-items:center;justify-content:center;font:700 1.2rem var(--fh);color:var(--gold)}
+.sp-name{font:600 1rem var(--fh);color:var(--w)}
+.sp-tag{font:.82rem/1.45 var(--f);color:var(--w5)}
+.sp-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;align-items:center}
+.sp-tierbadge{font:600 .58rem var(--f);letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:50px;border:1px solid currentColor}
+.sp-booth{font:.66rem var(--m);color:var(--w3)}
+.sp-in{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+.sp-in:focus{border-color:var(--gold)}
+textarea.sp-in{resize:vertical;min-height:70px}
+.sp-btn{padding:9px 16px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .82rem var(--f);cursor:pointer;transition:.2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.sp-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sp-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.sp-btn.sm{padding:6px 12px;font-size:.76rem}
+.sp-empty{text-align:center;padding:48px 24px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+/* Booth modal */
+.sp-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.sp-modal.open{display:flex}
+.sp-sheet{background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--rx);max-width:680px;width:100%;padding:26px 28px;position:relative}
+.sp-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--w5);font-size:1.4rem;cursor:pointer}
+.sp-boothhead{display:flex;gap:16px;align-items:center;margin-bottom:14px}
+.sp-boothhead img{max-height:64px;max-width:160px;object-fit:contain}
+.sp-team{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}
+.sp-member{background:var(--ga2);border:1px solid var(--ga2);border-radius:var(--r);padding:10px 12px}
+.sp-member .mn{font:600 .86rem var(--f);color:var(--w)}
+.sp-member .mt{font:.74rem var(--f);color:var(--gold)}
+.sp-member .mb{font:.76rem/1.45 var(--f);color:var(--w5);margin-top:4px}
+.sp-section{font:600 .7rem var(--f);letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px}
+.sp-lead{background:rgba(201,169,98,.05);border:1px solid rgba(201,169,98,.18);border-radius:var(--rl);padding:14px 16px;margin-top:16px}
+.sp-consent{display:flex;gap:9px;align-items:flex-start;font:.82rem/1.4 var(--f);color:var(--w7);margin:8px 0;cursor:pointer}
+.sp-consent input{margin-top:2px;flex-shrink:0}
+.sp-form{display:flex;flex-direction:column;gap:12px;max-width:620px}
+.sp-form label{font:600 .72rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold)}
+.sp-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.sp-stat{background:rgba(10,61,46,.35);border:1px solid rgba(201,169,98,.12);border-radius:var(--r);padding:12px 16px;min-width:96px}
+.sp-stat .v{font:700 1.3rem var(--fh);color:var(--w)}
+.sp-stat .l{font:.66rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--w5);margin-top:2px}
+.sp-table{width:100%;border-collapse:collapse;font:.82rem var(--f)}
+.sp-table th{text-align:left;color:var(--w5);font-weight:600;padding:8px 10px;border-bottom:1px solid rgba(201,169,98,.15);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.sp-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--w7)}
+.sp-teamrow{display:flex;gap:8px;margin-bottom:6px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="sp-page">
+{% include "nav.html" %}
+<div class="container">
+  <div class="sp-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Sponsors &amp; <span>Exhibitors</span></h2></div>
+  <div class="sp-tabs animate-up">
+    <button class="sp-tab active" data-t="directory" onclick="spTab('directory')">Directory</button>
+    {% if is_organizer %}<button class="sp-tab" data-t="manage" onclick="spTab('manage')">Manage</button>
+    <button class="sp-tab" data-t="analytics" onclick="spTab('analytics')">Analytics</button>{% endif %}
+  </div>
+
+  <div class="sp-panel active" id="sp-directory"><div id="dirList"><div class="sp-empty">Loading…</div></div></div>
+
+  {% if is_organizer %}
+  <div class="sp-panel" id="sp-manage">
+    <div class="sp-form" style="margin-bottom:22px">
+      <div style="font:600 1rem var(--fh);color:var(--w)">Add a sponsor</div>
+      <div class="sp-teamrow"><input class="sp-in" id="f_name" placeholder="Company name">
+        <select class="sp-in" id="f_tier" style="width:auto"></select></div>
+      <input class="sp-in" id="f_tagline" placeholder="Tagline (one line)">
+      <div class="sp-teamrow"><input class="sp-in" id="f_website" placeholder="Website https://…">
+        <input class="sp-in" id="f_booth" placeholder="Booth # (optional)" style="max-width:160px"></div>
+      <textarea class="sp-in" id="f_about" placeholder="Booth description / about"></textarea>
+      <div class="sp-teamrow"><input class="sp-in" id="f_video" placeholder="Promo video URL (optional)">
+        <input class="sp-in" id="f_brochure" placeholder="Brochure URL (optional)"></div>
+      <div style="text-align:right"><button class="sp-btn primary" onclick="createSponsor()">Add sponsor</button></div>
+    </div>
+    <div id="manageList"></div>
+  </div>
+
+  <div class="sp-panel" id="sp-analytics"><div id="analyticsBox"><div class="sp-empty">Loading…</div></div></div>
+  {% endif %}
+</div></div>
+
+<div class="sp-modal" id="boothModal" onclick="if(event.target===this)closeBooth()"><div class="sp-sheet" id="boothSheet"></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const IS_ORG = {{ 'true' if is_organizer else 'false' }};
+const TIERS = {{ tiers_json | safe }};
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+function spTab(t){document.querySelectorAll('.sp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.sp-panel').forEach(p=>p.classList.toggle('active',p.id==='sp-'+t));if(t==='directory')loadDirectory();if(t==='manage')loadManage();if(t==='analytics')loadAnalytics();}
+function tierClass(t){return 'tier-'+t;}
+function logoHtml(s,big){const h=big?64:60;return s.has_logo?'<img src="/api/sponsors/'+s.id+'/logo" alt="'+esc(s.name)+'" style="max-height:'+h+'px">':'<div class="ph">'+esc((s.name||'?')[0])+'</div>';}
+
+// ── Directory ──────────────────────────────────────────────
+async function loadDirectory(){
+  try{const d=await api('/api/sponsors'+(IS_ORG?'?include_inactive=true':''));
+    const c=document.getElementById('dirList');
+    if(!d.sponsors.length){c.innerHTML='<div class="sp-empty">No sponsors yet'+(IS_ORG?' — add one from the Manage tab.':'.')+'</div>';return;}
+    const byTier={};d.sponsors.forEach(s=>{(byTier[s.tier]=byTier[s.tier]||[]).push(s);});
+    c.innerHTML=TIERS.filter(t=>byTier[t]).map(t=>
+      '<div class="sp-tiergroup"><div class="sp-tierhead"><span class="sp-tiername '+tierClass(t)+'">'+t+'</span><span class="sp-tierline"></span></div>'+
+      '<div class="sp-grid '+t+'">'+byTier[t].map(sponsorCard).join('')+'</div></div>').join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function sponsorCard(s){
+  return '<div class="sp-card'+(s.is_active?'':' hidden-sponsor')+'" onclick="openBooth('+s.id+')">'+
+    '<div class="sp-logo">'+logoHtml(s)+'</div>'+
+    '<div class="sp-name">'+esc(s.name)+(s.is_active?'':' <span style="font:.62rem var(--f);color:var(--w3)">(hidden)</span>')+'</div>'+
+    (s.tagline?'<div class="sp-tag">'+esc(s.tagline)+'</div>':'')+
+    '<div class="sp-badges"><span class="sp-tierbadge '+tierClass(s.tier)+'">'+s.tier+'</span>'+
+    (s.booth_number?'<span class="sp-booth">Booth '+esc(s.booth_number)+'</span>':'')+
+    (s.lead_submitted?'<span class="sp-booth" style="color:#2ecc71">✓ contacted</span>':'')+'</div></div>';
+}
+
+// ── Booth modal ────────────────────────────────────────────
+function embedVideo(url){
+  if(!url)return'';
+  let id=null;
+  const yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+  if(yt)id='https://www.youtube.com/embed/'+yt[1];
+  const vm=url.match(/vimeo\.com\/(\d+)/);
+  if(vm)id='https://player.vimeo.com/video/'+vm[1];
+  if(id)return '<div style="position:relative;padding-top:56.25%;margin-top:6px;border-radius:12px;overflow:hidden"><iframe src="'+id+'" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe></div>';
+  return '<a class="sp-btn sm" href="'+esc(url)+'" target="_blank" rel="noopener">▶ Watch promo video ↗</a>';
+}
+async function openBooth(id){
+  const m=document.getElementById('boothModal'),sh=document.getElementById('boothSheet');
+  sh.innerHTML='<button class="sp-close" onclick="closeBooth()">✕</button><div class="sp-empty">Loading…</div>';
+  m.classList.add('open');
+  try{const s=await api('/api/sponsors/'+id);
+    let media='';
+    if(s.video_url)media+=embedVideo(s.video_url);
+    if(s.brochure_url)media+=' <a class="sp-btn sm" href="'+esc(s.brochure_url)+'" target="_blank" rel="noopener">📄 Brochure ↗</a>';
+    if(s.website_url)media+=' <a class="sp-btn sm" href="'+esc(s.website_url)+'" target="_blank" rel="noopener">🌐 Website ↗</a>';
+    const team=(s.team||[]).length?'<div class="sp-section">Team</div><div class="sp-team">'+s.team.map(mb=>
+      '<div class="sp-member"><div class="mn">'+esc(mb.name)+'</div>'+(mb.title?'<div class="mt">'+esc(mb.title)+'</div>':'')+(mb.bio?'<div class="mb">'+esc(mb.bio)+'</div>':'')+'</div>').join('')+'</div>':'';
+    const lead=s.lead_submitted
+      ? '<div class="sp-lead">✓ You\'ve shared your details with this exhibitor. They\'ll be in touch.</div>'
+      : '<div class="sp-lead"><div class="sp-section" style="margin-top:0">Request information</div>'+
+        '<textarea class="sp-in" id="leadMsg" placeholder="Optional message to the exhibitor"></textarea>'+
+        '<label class="sp-consent"><input type="checkbox" id="leadConsent"><span>I consent to sharing my name, email'+
+        '{{ ", and institution" if user.institution else "" }} with this exhibitor so they can contact me.</span></label>'+
+        '<div style="text-align:right"><button class="sp-btn primary sm" onclick="submitLead('+s.id+')">Share my details</button></div></div>';
+    sh.innerHTML='<button class="sp-close" onclick="closeBooth()">✕</button>'+
+      '<div class="sp-boothhead">'+logoHtml(s,true)+'<div><div class="sp-name" style="font-size:1.2rem">'+esc(s.name)+'</div>'+
+      '<div class="sp-badges"><span class="sp-tierbadge '+tierClass(s.tier)+'">'+s.tier+'</span>'+(s.booth_number?'<span class="sp-booth">Booth '+esc(s.booth_number)+'</span>':'')+'</div></div></div>'+
+      (s.tagline?'<div class="sp-tag">'+esc(s.tagline)+'</div>':'')+
+      (s.about?'<div class="sp-section">About</div><div class="sp-tag" style="white-space:pre-wrap">'+esc(s.about)+'</div>':'')+
+      (media?'<div class="sp-badges" style="margin-top:12px">'+media+'</div>':'')+
+      team+lead;
+  }catch(e){sh.innerHTML='<button class="sp-close" onclick="closeBooth()">✕</button><div class="sp-empty">'+esc(e.message)+'</div>';}
+}
+function closeBooth(){document.getElementById('boothModal').classList.remove('open');}
+async function submitLead(id){
+  const consent=document.getElementById('leadConsent').checked;
+  if(!consent){showToast('Please tick the consent box to share your details','error');return;}
+  const message=document.getElementById('leadMsg').value.trim();
+  try{await api('/api/sponsors/'+id+'/lead','POST',{consent,message:message||null});
+    showToast('Your details were shared with the exhibitor','success');openBooth(id);loadDirectory();}
+  catch(e){showToast(e.message,'error');}
+}
+
+// ── Organizer: manage ──────────────────────────────────────
+async function createSponsor(){
+  const body={name:v('f_name'),tier:document.getElementById('f_tier').value,tagline:v('f_tagline')||null,
+    website_url:v('f_website')||null,booth_number:v('f_booth')||null,about:v('f_about')||null,
+    video_url:v('f_video')||null,brochure_url:v('f_brochure')||null};
+  if(!body.name){showToast('Company name is required','error');return;}
+  try{await api('/api/sponsors','POST',body);showToast('Sponsor added','success');
+    ['f_name','f_tagline','f_website','f_booth','f_about','f_video','f_brochure'].forEach(i=>document.getElementById(i).value='');
+    loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+function v(id){return document.getElementById(id).value.trim();}
+async function loadManage(){
+  try{const d=await api('/api/sponsors?include_inactive=true');const c=document.getElementById('manageList');
+    if(!d.sponsors.length){c.innerHTML='<div class="sp-empty">No sponsors yet.</div>';return;}
+    c.innerHTML=d.sponsors.map(mgCard).join('');
+  }catch(e){showToast(e.message,'error');}
+}
+function mgCard(s){
+  return '<div class="sp-card" style="cursor:default;flex-direction:row;align-items:center;gap:14px;flex-wrap:wrap">'+
+    '<div class="sp-logo" style="height:44px;width:120px">'+logoHtml(s)+'</div>'+
+    '<div style="flex:1;min-width:160px"><div class="sp-name">'+esc(s.name)+'</div>'+
+    '<div class="sp-badges"><span class="sp-tierbadge '+tierClass(s.tier)+'">'+s.tier+'</span>'+
+    '<span class="sp-booth">'+(s.unique_visitors||0)+' visitors · '+(s.lead_count||0)+' leads</span>'+
+    (s.is_active?'':'<span class="sp-booth" style="color:var(--red)">hidden</span>')+'</div></div>'+
+    '<div class="sp-badges">'+
+    '<label class="sp-btn sm" style="cursor:pointer">Logo<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif" style="display:none" onchange="uploadLogo('+s.id+',this)"></label>'+
+    '<button class="sp-btn sm" onclick="editSponsor('+s.id+')">Edit</button>'+
+    '<button class="sp-btn sm" onclick="toggleActive('+s.id+','+(s.is_active?'false':'true')+')">'+(s.is_active?'Hide':'Show')+'</button>'+
+    '<button class="sp-btn sm" onclick="viewLeads('+s.id+',\''+esc(s.name).replace(/'/g,"")+'\')">Leads ('+(s.lead_count||0)+')</button>'+
+    '<a class="sp-btn sm" href="/api/sponsors/'+s.id+'/leads/export">Export</a>'+
+    '<button class="sp-btn sm" style="color:var(--red)" onclick="deleteSponsor('+s.id+',\''+esc(s.name).replace(/'/g,"")+'\')">Delete</button>'+
+    '</div></div>';
+}
+async function uploadLogo(id,el){
+  if(!el.files.length)return;
+  const fd=new FormData();fd.append('file',el.files[0]);
+  try{const r=await fetch('/api/sponsors/'+id+'/logo',{method:'POST',body:fd,credentials:'same-origin'});
+    let d={};try{d=await r.json();}catch(e){}
+    if(!r.ok){let m=d.detail||'Upload failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}
+    showToast('Logo updated','success');loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+async function toggleActive(id,active){
+  try{await api('/api/sponsors/'+id,'PUT',{is_active:active});showToast(active?'Sponsor shown':'Sponsor hidden','success');loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+async function deleteSponsor(id,name){
+  if(!await confirmDialog({title:'Delete sponsor',message:'Delete "'+name+'"? Their leads and analytics are removed too.',confirmText:'Delete',danger:true}))return;
+  try{await api('/api/sponsors/'+id,'DELETE');showToast('Sponsor deleted','success');loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+async function editSponsor(id){
+  try{const s=await api('/api/sponsors/'+id);
+    const teamStr=(s.team||[]).map(m=>[m.name,m.title||'',m.bio||''].join(' | ')).join('\n');
+    const sh=document.getElementById('boothSheet');
+    sh.innerHTML='<button class="sp-close" onclick="closeBooth()">✕</button><div class="sp-form" style="max-width:100%">'+
+      '<div style="font:600 1rem var(--fh);color:var(--w)">Edit '+esc(s.name)+'</div>'+
+      fld('e_name','Name',s.name)+
+      '<div><label>Tier</label><select class="sp-in" id="e_tier">'+TIERS.map(t=>'<option value="'+t+'"'+(t===s.tier?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
+      fld('e_tagline','Tagline',s.tagline||'')+fld('e_website','Website',s.website_url||'')+
+      fld('e_booth','Booth #',s.booth_number||'')+
+      '<div><label>About</label><textarea class="sp-in" id="e_about">'+esc(s.about||'')+'</textarea></div>'+
+      fld('e_video','Video URL',s.video_url||'')+fld('e_brochure','Brochure URL',s.brochure_url||'')+
+      '<div><label>Team (one per line: Name | Title | Bio)</label><textarea class="sp-in" id="e_team">'+esc(teamStr)+'</textarea></div>'+
+      '<div style="text-align:right"><button class="sp-btn primary" onclick="saveSponsor('+id+')">Save</button></div></div>';
+    document.getElementById('boothModal').classList.add('open');
+  }catch(e){showToast(e.message,'error');}
+}
+function fld(id,label,val){return '<div><label>'+label+'</label><input class="sp-in" id="'+id+'" value="'+esc(val)+'"></div>';}
+async function saveSponsor(id){
+  const team=document.getElementById('e_team').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const p=l.split('|').map(x=>x.trim());return{name:p[0],title:p[1]||null,bio:p[2]||null};}).filter(m=>m.name);
+  const body={name:v('e_name'),tier:document.getElementById('e_tier').value,tagline:v('e_tagline')||null,
+    website_url:v('e_website')||null,booth_number:v('e_booth')||null,about:v('e_about')||null,
+    video_url:v('e_video')||null,brochure_url:v('e_brochure')||null,team};
+  try{await api('/api/sponsors/'+id,'PUT',body);showToast('Saved','success');closeBooth();loadManage();}
+  catch(e){showToast(e.message,'error');}
+}
+async function viewLeads(id,name){
+  try{const rows=await api('/api/sponsors/'+id+'/leads');const sh=document.getElementById('boothSheet');
+    const body=rows.length?'<table class="sp-table"><thead><tr><th>Name</th><th>Email</th><th>Institution</th><th>Message</th></tr></thead><tbody>'+
+      rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.email)+'</td><td>'+esc(r.institution||'—')+'</td><td>'+esc(r.message||'—')+'</td></tr>').join('')+'</tbody></table>'
+      :'<div class="sp-empty">No leads yet.</div>';
+    sh.innerHTML='<button class="sp-close" onclick="closeBooth()">✕</button><div class="sp-section" style="margin-top:0">Leads — '+esc(name)+'</div>'+
+      '<div style="margin-bottom:12px"><a class="sp-btn sm" href="/api/sponsors/'+id+'/leads/export">⬇ Export CSV</a></div>'+body;
+    document.getElementById('boothModal').classList.add('open');
+  }catch(e){showToast(e.message,'error');}
+}
+
+// ── Organizer: analytics ───────────────────────────────────
+async function loadAnalytics(){
+  try{const d=await api('/api/sponsors/analytics');const c=document.getElementById('analyticsBox');
+    const t=d.totals;
+    const tiles='<div class="sp-stats">'+
+      '<div class="sp-stat"><div class="v">'+t.sponsors+'</div><div class="l">Sponsors</div></div>'+
+      '<div class="sp-stat"><div class="v">'+t.unique_visitors+'</div><div class="l">Unique visitors</div></div>'+
+      '<div class="sp-stat"><div class="v">'+t.total_visits+'</div><div class="l">Total visits</div></div>'+
+      '<div class="sp-stat"><div class="v">'+t.leads+'</div><div class="l">Leads</div></div></div>';
+    const rows=d.sponsors.length?'<table class="sp-table"><thead><tr><th>Sponsor</th><th>Tier</th><th>Unique</th><th>Visits</th><th>Leads</th><th>Conversion</th></tr></thead><tbody>'+
+      d.sponsors.map(s=>'<tr><td>'+esc(s.name)+'</td><td>'+s.tier+'</td><td>'+s.unique_visitors+'</td><td>'+s.total_visits+'</td><td>'+s.leads+'</td><td>'+Math.round(s.conversion_rate*100)+'%</td></tr>').join('')+'</tbody></table>'
+      :'<div class="sp-empty">No sponsors yet.</div>';
+    c.innerHTML=tiles+rows;
+  }catch(e){showToast(e.message,'error');}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const sel=document.getElementById('f_tier');if(sel)sel.innerHTML=TIERS.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  spTab('directory');
+});
+</script>
+{% endblock %}

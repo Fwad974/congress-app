@@ -90,6 +90,11 @@ pytest -q
 | GET | `/api/certificates/{kind}/download` | Certificate PDF (serial + verification QR) | Any user (unlocked) |
 | GET | `/api/certificates/verify/{serial}` · `/verify/{serial}` | Verify a certificate (JSON · page) | Public |
 | GET | `/api/attendance/report/export` | CSV attendance report for institutions | Any user |
+| GET | `/api/sponsors` · `/api/sponsors/{id}` | Sponsor directory · virtual booth | Any user |
+| POST | `/api/sponsors/{id}/lead` | Submit a lead (requires opt-in consent) | Any user |
+| POST/PUT/DELETE | `/api/sponsors` · `/api/sponsors/{id}` | Manage sponsors | Organizer |
+| GET | `/api/sponsors/{id}/leads` · `/leads/export` | Read / export leads (PII, logged) | Organizer |
+| GET | `/api/sponsors/analytics` | Booth visits, leads, conversion | Organizer |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
@@ -389,6 +394,21 @@ A chrome-free **presenter view** (`/present/{session_id}`, opened via the
 "Present ↗" button) shows the open poll on the big screen — animated bar charts
 for choice polls, a frequency-sized word cloud for word-cloud polls — updating
 live as votes land. Built on the same realtime layer as Q&A.
+
+## Sponsors & Exhibitors
+
+A **Sponsor & Exhibitor Portal** at `/sponsors` (feature flag `sponsors`). See
+[`docs/SPONSORS.md`](docs/SPONSORS.md).
+
+- **Attendees** browse a tiered directory (Platinum / Gold / Silver / Bronze),
+  open a **virtual booth** (about, promo video, brochure, team bios), and — with
+  **explicit opt-in consent (DATA-06)** — share their contact details as a lead.
+- **Organizers** (admin) create/manage sponsors, upload logos, read and export
+  **leads** (PII, audit-logged), and see **analytics** — booth visits, unique
+  visitors, leads, and conversion rate.
+- Sponsor **logos surface across the app**: a rail on the home page and a
+  "Sponsored by" band on the presenter/venue screen, driven by the public
+  `GET /api/sponsors` list.
 
 ## Emoji Reactions
 

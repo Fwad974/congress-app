@@ -36,6 +36,11 @@
 .react-tally{display:flex;gap:18px;align-items:center}
 .react-tally span{font:600 clamp(1rem,1.8vw,1.5rem) var(--f);color:var(--w7);font-variant-numeric:tabular-nums}
 .react-tally .rt-emoji{margin-right:6px}
+/* Sponsor band (venue screen logo placement) */
+.present-sponsors{margin-top:2vh;padding-top:1.6vh;border-top:1px solid rgba(201,169,98,.14);display:flex;align-items:center;gap:2vw;flex-wrap:wrap;justify-content:center}
+.present-sponsors .lbl{font:600 .7rem var(--f);letter-spacing:.14em;text-transform:uppercase;color:var(--w3)}
+.present-sponsors img{max-height:5vh;max-width:12vw;object-fit:contain;opacity:.9}
+.present-sponsors .txt{font:600 1rem var(--fh);color:var(--gold)}
 </style>
 {% endblock %}
 
@@ -55,6 +60,7 @@
     <span id="totalTxt"></span>
     <span id="joinFoot"></span>
   </div>
+  <div class="present-sponsors" id="presentSponsors" style="display:none"></div>
 </div>
 {% endblock %}
 
@@ -79,6 +85,19 @@ async function init(){
     if(open){_poll=open;_closed=open.status==='closed';_results=await api('/api/polls/'+open.id+'/results');}
   }catch(e){}
   render();connect();
+  loadSponsors();
+}
+
+async function loadSponsors(){
+  try{
+    const d=await api('/api/sponsors');
+    if(!d.sponsors||!d.sponsors.length)return;
+    const box=document.getElementById('presentSponsors');
+    box.innerHTML='<span class="lbl">Sponsored by</span>'+d.sponsors.slice(0,8).map(s=>
+      s.has_logo?'<img src="/api/sponsors/'+s.id+'/logo" alt="'+esc(s.name)+'">'
+                :'<span class="txt">'+esc(s.name)+'</span>').join('');
+    box.style.display='flex';
+  }catch(e){}
 }
 
 function render(){

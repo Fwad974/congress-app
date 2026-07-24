@@ -27,6 +27,8 @@ FEATURES: Dict[str, tuple] = {
     "polls":   ("Live Polls", "Live polls and word clouds during sessions."),
     "connect": ("Networking Directory",
                 "Opt-in attendee directory for finding and contacting peers."),
+    "sponsors": ("Sponsors & Exhibitors",
+                 "Sponsor tiers, virtual exhibitor booths, and opt-in lead capture."),
 }
 DEFAULT_ENABLED = True
 _ADMIN_ROLES = {UserRole.admin, UserRole.super_admin}
