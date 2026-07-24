@@ -112,6 +112,80 @@ class TestBroadcast:
         assert any(b["title"] == "Listed" for b in d["broadcasts"])
 
 
+class TestTargetedAudience:
+    def _rejected_author(self, client, db):
+        from app.models.paper import Paper, PaperStatus
+        author = make_user(db, email="rej@test.com", role=UserRole.attendee)
+        db.add(Paper(author_id=author.id, title="T", authors="X", abstract="ab",
+                     status=PaperStatus.rejected))
+        db.commit()
+        return author
+
+    def test_preview_requires_admin(self, client, attendee):
+        assert client.post(BC + "/preview", json={"audience": {}},
+                          cookies=auth_cookie(attendee)).status_code == 403
+
+    def test_preview_counts_and_sample(self, client, admin_user, attendee, db):
+        author = self._rejected_author(client, db)
+        r = client.post(BC + "/preview", json={"audience": {"paper_status": ["rejected"]}},
+                        cookies=auth_cookie(admin_user)).json()
+        assert r["count"] == 1 and r["summary"] == "paper rejected"
+        assert r["sample"][0]["email"] == "rej@test.com"
+
+    def test_send_to_paper_status(self, client, admin_user, attendee, db):
+        author = self._rejected_author(client, db)
+        client.post(BC, json={"title": "Revise", "body": "See reviews",
+                              "audience": {"paper_status": ["rejected"]}},
+                    cookies=auth_cookie(admin_user))
+        assert db.query(UserNotification).filter(
+            UserNotification.user_id == author.id).count() == 1
+        # A plain attendee (no rejected paper) is not notified.
+        assert db.query(UserNotification).filter(
+            UserNotification.user_id == attendee.id).count() == 0
+
+    def test_specific_people_only(self, client, admin_user, db):
+        a = make_user(db, email="p1@test.com", role=UserRole.attendee)
+        b = make_user(db, email="p2@test.com", role=UserRole.attendee)
+        client.post(BC, json={"title": "Hi", "body": "you",
+                              "audience": {"user_ids": [a.id]}},
+                    cookies=auth_cookie(admin_user))
+        assert db.query(UserNotification).filter(UserNotification.user_id == a.id).count() == 1
+        assert db.query(UserNotification).filter(UserNotification.user_id == b.id).count() == 0
+
+    def test_roles_and_people_union(self, client, admin_user, db):
+        spk = make_user(db, email="us1@test.com", role=UserRole.speaker)
+        att = make_user(db, email="us2@test.com", role=UserRole.attendee)
+        client.post(BC, json={"title": "T", "body": "b",
+                              "audience": {"roles": ["speaker"], "user_ids": [att.id]}},
+                    cookies=auth_cookie(admin_user))
+        assert db.query(UserNotification).filter(UserNotification.user_id == spk.id).count() == 1
+        assert db.query(UserNotification).filter(UserNotification.user_id == att.id).count() == 1
+
+    def test_registered_after_filter(self, client, admin_user, db):
+        # Everyone here was just created, so a far-future cutoff yields nobody.
+        r = client.post(BC + "/preview",
+                        json={"audience": {"registered_after": "2999-01-01"}},
+                        cookies=auth_cookie(admin_user)).json()
+        assert r["count"] == 0
+
+    def test_empty_audience_rejected_when_no_match(self, client, admin_user, db):
+        # user_ids referencing nobody real → no recipients → 400.
+        r = client.post(BC, json={"title": "T", "body": "b",
+                                  "audience": {"user_ids": [999999]}},
+                        cookies=auth_cookie(admin_user))
+        assert r.status_code == 400
+
+    def test_history_shows_audience_summary(self, client, admin_user, db):
+        self._rejected_author(client, db)
+        client.post(BC, json={"title": "Seg", "body": "b",
+                              "audience": {"paper_status": ["rejected"]}},
+                    cookies=auth_cookie(admin_user))
+        d = client.get("/api/admin/notifications/broadcasts",
+                       cookies=auth_cookie(admin_user)).json()
+        row = next(b for b in d["broadcasts"] if b["title"] == "Seg")
+        assert row["audience_summary"] == "paper rejected"
+
+
 class TestPushQuietHours:
     def _enable(self, monkeypatch):
         from app.core import push_service

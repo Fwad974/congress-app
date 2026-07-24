@@ -160,6 +160,20 @@ def _migrate_papers_table(connection):
         ))
 
 
+def _migrate_broadcasts_table(connection):
+    """Add the audience_summary column to an existing broadcasts table."""
+    cols = {
+        row[0] for row in connection.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'broadcasts'"
+        ))
+    }
+    if cols and "audience_summary" not in cols:
+        connection.execute(text(
+            "ALTER TABLE broadcasts ADD COLUMN audience_summary VARCHAR(500)"
+        ))
+
+
 def _migrate_reviews_table(connection):
     """Add the reviewer-response columns to an existing reviews table.
 
@@ -220,6 +234,7 @@ async def lifespan(application: FastAPI):
             _migrate_users_table(conn)
             _migrate_papers_table(conn)
             _migrate_reviews_table(conn)
+            _migrate_broadcasts_table(conn)
 
     # Inject congress info into all Jinja2 templates as global variables
     from app.api.pages import templates as page_tpl

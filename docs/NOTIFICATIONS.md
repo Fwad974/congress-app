@@ -167,17 +167,38 @@ Admins (and above) send announcements from the **Broadcast** tab in the admin
 dashboard, or `POST /api/admin/notifications/broadcast`:
 
 ```jsonc
-{ "title": "...", "body": "...", "target_roles": ["speaker"], "emergency": false }
+{ "title": "...", "body": "...", "emergency": false,
+  "audience": {
+    "roles": ["speaker"],                 // by user type
+    "paper_status": ["rejected"],         // authors whose paper is in these states
+    "is_reviewer": true,                  // assigned to review any paper
+    "is_speaker": true,                   // presenter of any session
+    "attended_min": 3,                    // checked in to ≥ N sessions
+    "registered_after": "2026-01-01",     // registration window (ISO date)
+    "registered_before": "2026-06-01",
+    "user_ids": [12, 45]                  // specific named people
+  } }
 ```
 
-- `target_roles` empty = **everyone** (active users); otherwise filtered to those
-  roles. The sending admin is excluded.
+- **Audience targeting:** filters are **ANDed** (a recipient must match all of
+  them); any `user_ids` are **unioned** on top (send to the segment *plus* these
+  named people). No filters and no picks = **everyone**. The legacy
+  `target_roles` field still works and is folded into `audience.roles`. The
+  sending admin is always excluded.
+- **Preview before sending:** `POST /api/admin/notifications/broadcast/preview`
+  with the same `audience` returns `{ count, summary, sample[] }` — the recipient
+  count, a human-readable audience summary, and a few example names. The
+  dashboard's **Preview recipients** button and specific-person typeahead use it.
+- Sending with an audience that matches **nobody** returns HTTP 400.
 - Fan-out creates a `UserNotification` per recipient (`kind` = `"announcement"`
-  or `"emergency"`) and a `Broadcast` history row, then web-pushes (respecting
-  quiet hours unless emergency).
+  or `"emergency"`) and a `Broadcast` history row (with an `audience_summary`),
+  then web-pushes (respecting quiet hours unless emergency).
 - **NOTIF-02:** max **3 non-emergency broadcasts/day** (emergencies exempt) —
   enforced via the `broadcasts` table; over the limit returns HTTP 429.
-- Every broadcast is audit-logged (`broadcast_send`).
+- Every broadcast is audit-logged (`broadcast_send`) with the audience summary.
+
+Audience resolution lives in `notification_service.resolve_audience()` /
+`audience_summary()`.
 
 ### Emergency alerts (NOTIF-01)
 Setting `emergency: true` (Admin+ only):

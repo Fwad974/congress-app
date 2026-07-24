@@ -103,6 +103,8 @@ class Broadcast(Base):
     title = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)
     target_roles = Column(JSON, nullable=False, default=list)  # [] = everyone
+    # Human-readable description of the targeted audience (roles + filters).
+    audience_summary = Column(String(500), nullable=True)
     emergency = Column(Boolean, nullable=False, default=False)
     recipient_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True),

@@ -41,7 +41,12 @@ from app.schemas.admin import (
 from app.schemas.note import AdminNoteResponse, AdminNoteListResponse
 from app.models.notification import Broadcast
 from app.schemas.notification import BroadcastRequest, BroadcastItem, BroadcastListResponse
-from app.core.notification_service import create_broadcast
+from app.core.notification_service import (
+    create_broadcast, resolve_audience, audience_summary,
+)
+from app.schemas.notification import (
+    AudienceSpec, AudiencePreviewRequest, AudiencePreviewResponse, RecipientPreview,
+)
 from app.core.push_service import deliver_push
 
 BROADCAST_DAILY_LIMIT = 3  # NOTIF-02: non-emergency broadcasts per day
@@ -608,6 +613,33 @@ def _broadcasts_today(db: Session) -> int:
     ).scalar() or 0
 
 
+def _merge_audience(audience, target_roles) -> AudienceSpec:
+    """Combine the legacy target_roles field into the richer AudienceSpec."""
+    spec = audience or AudienceSpec()
+    if target_roles:
+        merged = list(dict.fromkeys((spec.roles or []) + list(target_roles)))
+        spec = spec.model_copy(update={"roles": merged})
+    return spec
+
+
+@router.post("/notifications/broadcast/preview", response_model=AudiencePreviewResponse)
+def preview_broadcast(
+    req: AudiencePreviewRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin()),
+):
+    """Resolve an audience without sending — count + a few sample recipients."""
+    spec = _merge_audience(req.audience, req.target_roles)
+    ids = resolve_audience(db, spec, actor_id=admin.id)
+    sample = []
+    if ids:
+        rows = db.query(User.id, User.full_name, User.email).filter(
+            User.id.in_(ids[:8])).all()
+        sample = [RecipientPreview(id=r[0], full_name=r[1], email=r[2]) for r in rows]
+    return AudiencePreviewResponse(
+        count=len(ids), summary=audience_summary(spec), sample=sample)
+
+
 @router.post("/notifications/broadcast")
 def send_broadcast(
     req: BroadcastRequest,
@@ -624,14 +656,19 @@ def send_broadcast(
                    "Emergency alerts are exempt.",
         )
 
+    spec = _merge_audience(req.audience, req.target_roles)
+    recipients = resolve_audience(db, spec, actor_id=admin.id)
+    if not recipients:
+        raise HTTPException(status_code=400, detail="No recipients match that audience")
+    summary = audience_summary(spec)
     bc, recipients = create_broadcast(
-        db, admin, req.title, req.body, req.target_roles, req.emergency,
+        db, admin, req.title, req.body, recipients, req.emergency,
+        target_roles=spec.roles, summary=summary,
     )
-    audience = ", ".join(req.target_roles) if req.target_roles else "everyone"
     log_action(
         db, admin, AuditAction.broadcast_send,
         f"{'EMERGENCY ' if req.emergency else ''}Broadcast '{bc.title}' → "
-        f"{bc.recipient_count} user(s) ({audience})",
+        f"{bc.recipient_count} user(s) ({summary})",
         request=request, target_type="system",
         new_value="emergency" if req.emergency else "announcement",
     )
@@ -653,7 +690,8 @@ def list_broadcasts(
     return BroadcastListResponse(
         broadcasts=[BroadcastItem(
             id=b.id, title=b.title, body=b.body,
-            target_roles=b.target_roles or [], emergency=b.emergency,
+            target_roles=b.target_roles or [], audience_summary=b.audience_summary,
+            emergency=b.emergency,
             recipient_count=b.recipient_count, actor_email=b.actor_email,
             created_at=b.created_at,
         ) for b in rows],

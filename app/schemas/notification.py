@@ -141,10 +141,36 @@ MAX_BROADCAST_TITLE = 140
 MAX_BROADCAST_BODY = 1000
 
 
+class AudienceSpec(BaseModel):
+    """Targeting filters for an announcement. Filters are ANDed together; any
+    explicitly-picked `user_ids` are added on top (union). All empty = everyone."""
+    roles: List[str] = []                       # role values
+    paper_status: List[str] = []                # authored a paper in these statuses
+    is_reviewer: bool = False                   # assigned to review any paper
+    is_speaker: bool = False                    # presenter of any session
+    attended_min: Optional[int] = None          # checked in to ≥ N sessions
+    registered_after: Optional[str] = None      # ISO date/datetime
+    registered_before: Optional[str] = None     # ISO date/datetime
+    user_ids: List[int] = []                    # specific people (by id)
+
+    @field_validator("roles")
+    @classmethod
+    def clean_roles(cls, v):
+        return [r for r in dict.fromkeys(v or []) if r in VALID_ROLES]
+
+    @field_validator("attended_min")
+    @classmethod
+    def clean_attended(cls, v):
+        if v is None:
+            return v
+        return max(1, int(v))
+
+
 class BroadcastRequest(BaseModel):
     title: str
     body: str
-    target_roles: List[str] = []   # empty = everyone
+    target_roles: List[str] = []   # legacy: empty = everyone (folded into audience.roles)
+    audience: Optional[AudienceSpec] = None
     emergency: bool = False
 
     @field_validator("title")
@@ -174,6 +200,7 @@ class BroadcastItem(BaseModel):
     title: str
     body: str
     target_roles: List[str]
+    audience_summary: Optional[str] = None
     emergency: bool
     recipient_count: int
     actor_email: Optional[str] = None
@@ -184,3 +211,20 @@ class BroadcastListResponse(BaseModel):
     broadcasts: List[BroadcastItem]
     sent_today: int
     daily_limit: int
+
+
+class AudiencePreviewRequest(BaseModel):
+    audience: Optional[AudienceSpec] = None
+    target_roles: List[str] = []
+
+
+class RecipientPreview(BaseModel):
+    id: int
+    full_name: str
+    email: str
+
+
+class AudiencePreviewResponse(BaseModel):
+    count: int
+    summary: str
+    sample: List[RecipientPreview] = []   # first few recipients

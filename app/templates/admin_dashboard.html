@@ -105,6 +105,16 @@
 .feat-switch>i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--w5);transition:.2s}
 .feat-switch.on{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:#27ae60}
 .feat-switch.on>i{left:22px;background:#fff}
+.bc-flabel{font:600 .62rem var(--f);letter-spacing:.05em;text-transform:uppercase;color:var(--w5);margin-bottom:6px}
+.bc-chk{display:flex;align-items:center;gap:7px;font:.82rem var(--f);color:var(--w7);cursor:pointer}
+.bc-chk input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold)}
+.bc-uresults{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1px solid var(--ga2);border-radius:10px;z-index:20;max-height:220px;overflow-y:auto;display:none;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.bc-uresults.open{display:block}
+.bc-ur-item{padding:9px 13px;cursor:pointer;font:.83rem var(--f);color:var(--w9);border-bottom:1px solid rgba(255,255,255,.03)}
+.bc-ur-item:hover{background:var(--ga2);color:var(--gold)}
+.bc-ur-item .e{font:.72rem var(--m);color:var(--w3)}
+.bc-person{display:inline-flex;align-items:center;gap:6px;font:.78rem var(--f);padding:4px 6px 4px 11px;border-radius:50px;background:rgba(201,169,98,.14);border:1px solid var(--ga3);color:var(--gold)}
+.bc-person button{background:none;border:none;color:var(--gold);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px}
 </style>
 {% endblock %}
 
@@ -180,15 +190,43 @@
       <div style="font:600 .95rem var(--f);color:var(--w9);margin-bottom:14px;">Compose Announcement</div>
       <input type="text" class="search-box" id="bc_title" placeholder="Title" maxlength="140" style="width:100%;margin-bottom:10px;">
       <textarea class="search-box" id="bc_body" placeholder="Message to attendees…" maxlength="1000" style="width:100%;min-height:96px;resize:vertical;margin-bottom:14px;font:0.88rem var(--f);"></textarea>
-      <div style="font:600 .66rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Audience — none selected = everyone</div>
-      <div id="bc_roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-      <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;margin-bottom:16px;cursor:pointer;">
+      <div style="font:600 .66rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Audience — no filters = everyone</div>
+
+      <div class="bc-flabel">By role</div>
+      <div id="bc_roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+
+      <div class="bc-flabel">By paper status <span style="color:var(--w3);text-transform:none;letter-spacing:0;font-weight:400;">(authors)</span></div>
+      <div id="bc_paper" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;">
+        <label class="bc-chk"><input type="checkbox" id="bc_isrev"> Reviewers</label>
+        <label class="bc-chk"><input type="checkbox" id="bc_isspk"> Speakers</label>
+        <label class="bc-chk" style="gap:6px;">Attended ≥ <input type="number" id="bc_att" min="1" placeholder="—" style="width:56px;padding:5px 8px;background:rgba(10,61,46,.3);border:1px solid var(--ga2);border-radius:8px;color:var(--w9);font:.82rem var(--f);"> sessions</label>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="flex:1;min-width:150px;"><div class="bc-flabel">Registered after</div><input type="date" id="bc_regaf" class="search-box" style="width:100%;padding:8px 10px;"></div>
+        <div style="flex:1;min-width:150px;"><div class="bc-flabel">Registered before</div><input type="date" id="bc_regbf" class="search-box" style="width:100%;padding:8px 10px;"></div>
+      </div>
+
+      <div class="bc-flabel">Specific people</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="text" id="bc_usearch" class="search-box" placeholder="Search a name or email to add…" style="width:100%;padding:8px 10px;" oninput="bcSearchUsers()" autocomplete="off">
+        <div id="bc_uresults" class="bc-uresults"></div>
+      </div>
+      <div id="bc_people" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+
+      <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;margin-bottom:14px;cursor:pointer;">
         <input type="checkbox" id="bc_emergency" style="width:18px;height:18px;accent-color:#ef4444;flex-shrink:0;">
         <div><div style="font:600 .86rem var(--f);color:#ef4444;">Emergency alert</div><div style="font:.74rem var(--f);color:var(--w3);">Bypasses quiet hours &amp; every user's preferences. Exempt from the daily limit.</div></div>
       </label>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div id="bc_preview" style="display:none;font:.82rem var(--f);color:var(--w7);background:var(--ga2);border:1px solid var(--ga2);border-radius:10px;padding:10px 14px;margin-bottom:12px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
         <span id="bc_limit" style="font:.76rem var(--f);color:var(--w5);"></span>
-        <button class="toolbar-btn primary" id="bc_send" onclick="sendBroadcast()">Send</button>
+        <div style="display:flex;gap:8px;">
+          <button class="toolbar-btn" id="bc_preview_btn" onclick="previewBroadcast()">Preview recipients</button>
+          <button class="toolbar-btn primary" id="bc_send" onclick="sendBroadcast()">Send</button>
+        </div>
       </div>
     </div>
     <div class="table-wrap"><div style="padding:16px 18px;border-bottom:1px solid var(--b);font:.65rem var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--w3);">Recent Broadcasts</div>
@@ -347,12 +385,53 @@ async function delNote(id){if(!await confirmDialog({title:'Delete note',message:
 
 // ─── Broadcasts ────────────────────────────────────────────────
 const BC_ROLES=['attendee','speaker','reviewer','session_chair','review_chair','moderator','admin','super_admin'];
-let _bcRoles=new Set();
+const BC_PAPER=['submitted','under_review','revision_requested','accepted','rejected','withdrawn'];
+let _bcRoles=new Set(), _bcPaper=new Set(), _bcPeople=new Map();  // id -> name
 function renderBcRoles(){document.getElementById('bc_roles').innerHTML=BC_ROLES.map(r=>`<span class="role-pill ${r}" style="cursor:pointer;transition:opacity .15s;opacity:${_bcRoles.has(r)?'1':'0.4'}" onclick="toggleBcRole('${r}')">${r.replace('_',' ')}</span>`).join('');}
 function toggleBcRole(r){if(_bcRoles.has(r))_bcRoles.delete(r);else _bcRoles.add(r);renderBcRoles();}
-async function loadBroadcasts(){renderBcRoles();try{const d=await api('/api/admin/notifications/broadcasts');document.getElementById('bc_limit').textContent=d.sent_today+' / '+d.daily_limit+' broadcasts today';const l=document.getElementById('bc_list');l.innerHTML=d.broadcasts.length?d.broadcasts.map(bcRow).join(''):'<div class="empty-state">No broadcasts yet</div>';}catch(e){showToast(e.message,'error');}}
-function bcRow(b){const t=new Date(b.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});const tag=b.emergency?' <span style="color:#ef4444;font-weight:700;font-size:0.7rem;">● EMERGENCY</span>':'';const aud=(b.target_roles&&b.target_roles.length)?b.target_roles.map(r=>r.replace('_',' ')).join(', '):'everyone';return `<div style="padding:11px 6px;border-bottom:1px solid rgba(201,169,98,.06);"><div style="font:600 .88rem var(--f);color:var(--w9);">${esc(b.title)}${tag}</div><div style="font:.8rem var(--f);color:var(--w5);margin:3px 0;line-height:1.4;">${esc(b.body)}</div><div style="font:.7rem var(--m);color:var(--w3);">${b.recipient_count} recipients · ${esc(aud)} · ${t}</div></div>`;}
-async function sendBroadcast(){const title=document.getElementById('bc_title').value.trim(),body=document.getElementById('bc_body').value.trim();if(!title||!body){showToast('Title and message are required','error');return;}const emergency=document.getElementById('bc_emergency').checked;if(emergency&&!await confirmDialog({title:'Send emergency alert',message:'This bypasses quiet hours and every user\'s notification preferences. Send it?',confirmText:'Send alert',danger:true}))return;const btn=document.getElementById('bc_send');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const r=await api('/api/admin/notifications/broadcast','POST',{title,body,target_roles:[..._bcRoles],emergency});showToast('Sent to '+r.recipient_count+' user(s)','success');document.getElementById('bc_title').value='';document.getElementById('bc_body').value='';document.getElementById('bc_emergency').checked=false;_bcRoles.clear();loadBroadcasts();}catch(e){showToast(e.message,'error');}btn.innerHTML='Send';btn.disabled=false;}
+function renderBcPaper(){document.getElementById('bc_paper').innerHTML=BC_PAPER.map(s=>`<span class="role-pill" style="cursor:pointer;transition:.15s;background:var(--ga2);border:1px solid var(--ga2);color:var(--w7);opacity:${_bcPaper.has(s)?'1':'0.4'}" onclick="toggleBcPaper('${s}')">${s.replace(/_/g,' ')}</span>`).join('');}
+function toggleBcPaper(s){if(_bcPaper.has(s))_bcPaper.delete(s);else _bcPaper.add(s);renderBcPaper();}
+
+function renderBcPeople(){document.getElementById('bc_people').innerHTML=[..._bcPeople].map(([id,n])=>`<span class="bc-person">${esc(n)}<button onclick="rmPerson(${id})" title="Remove" aria-label="Remove">×</button></span>`).join('');}
+function rmPerson(id){_bcPeople.delete(id);renderBcPeople();}
+let _bcSearchT;
+function bcSearchUsers(){clearTimeout(_bcSearchT);_bcSearchT=setTimeout(_doBcSearch,250);}
+async function _doBcSearch(){
+  const q=document.getElementById('bc_usearch').value.trim();const box=document.getElementById('bc_uresults');
+  if(q.length<2){box.classList.remove('open');box.innerHTML='';return;}
+  try{const d=await api('/api/admin/users?search='+encodeURIComponent(q)+'&per_page=8');
+    const rows=(d.users||[]).filter(u=>!_bcPeople.has(u.id));
+    box.innerHTML=rows.length?rows.map(u=>`<div class="bc-ur-item" onclick="addPerson(${u.id},'${esc(u.full_name).replace(/'/g,"\\'")}')">${esc(u.full_name)} <span class="e">${esc(u.email)}</span></div>`).join(''):'<div class="bc-ur-item" style="color:var(--w3);cursor:default;">No matches</div>';
+    box.classList.add('open');
+  }catch(e){}
+}
+function addPerson(id,name){_bcPeople.set(id,name);renderBcPeople();document.getElementById('bc_usearch').value='';document.getElementById('bc_uresults').classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('#bc_usearch')&&!e.target.closest('#bc_uresults'))document.getElementById('bc_uresults')?.classList.remove('open');});
+
+function buildAudience(){
+  const a={};
+  if(_bcRoles.size)a.roles=[..._bcRoles];
+  if(_bcPaper.size)a.paper_status=[..._bcPaper];
+  if(document.getElementById('bc_isrev').checked)a.is_reviewer=true;
+  if(document.getElementById('bc_isspk').checked)a.is_speaker=true;
+  const att=parseInt(document.getElementById('bc_att').value,10);if(att>0)a.attended_min=att;
+  const af=document.getElementById('bc_regaf').value;if(af)a.registered_after=af;
+  const bf=document.getElementById('bc_regbf').value;if(bf)a.registered_before=bf;
+  if(_bcPeople.size)a.user_ids=[..._bcPeople.keys()];
+  return a;
+}
+async function previewBroadcast(){
+  const btn=document.getElementById('bc_preview_btn');btn.disabled=true;
+  try{const r=await api('/api/admin/notifications/broadcast/preview','POST',{audience:buildAudience()});
+    const el=document.getElementById('bc_preview');el.style.display='block';
+    const names=r.sample.map(s=>esc(s.full_name)).join(', ');
+    el.innerHTML='<strong style="color:var(--w9)">'+r.count+' recipient'+(r.count===1?'':'s')+'</strong> · '+esc(r.summary)+(names?'<div style="color:var(--w5);margin-top:4px">e.g. '+names+(r.count>r.sample.length?', …':'')+'</div>':'');
+  }catch(e){showToast(e.message,'error');}
+  btn.disabled=false;
+}
+async function loadBroadcasts(){renderBcRoles();renderBcPaper();renderBcPeople();try{const d=await api('/api/admin/notifications/broadcasts');document.getElementById('bc_limit').textContent=d.sent_today+' / '+d.daily_limit+' broadcasts today';const l=document.getElementById('bc_list');l.innerHTML=d.broadcasts.length?d.broadcasts.map(bcRow).join(''):'<div class="empty-state">No broadcasts yet</div>';}catch(e){showToast(e.message,'error');}}
+function bcRow(b){const t=new Date(b.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});const tag=b.emergency?' <span style="color:#ef4444;font-weight:700;font-size:0.7rem;">● EMERGENCY</span>':'';const aud=b.audience_summary||((b.target_roles&&b.target_roles.length)?b.target_roles.map(r=>r.replace('_',' ')).join(', '):'everyone');return `<div style="padding:11px 6px;border-bottom:1px solid rgba(201,169,98,.06);"><div style="font:600 .88rem var(--f);color:var(--w9);">${esc(b.title)}${tag}</div><div style="font:.8rem var(--f);color:var(--w5);margin:3px 0;line-height:1.4;">${esc(b.body)}</div><div style="font:.7rem var(--m);color:var(--w3);">${b.recipient_count} recipients · ${esc(aud)} · ${t}</div></div>`;}
+async function sendBroadcast(){const title=document.getElementById('bc_title').value.trim(),body=document.getElementById('bc_body').value.trim();if(!title||!body){showToast('Title and message are required','error');return;}const emergency=document.getElementById('bc_emergency').checked;if(emergency&&!await confirmDialog({title:'Send emergency alert',message:'This bypasses quiet hours and every user\'s notification preferences. Send it?',confirmText:'Send alert',danger:true}))return;const btn=document.getElementById('bc_send');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';try{const r=await api('/api/admin/notifications/broadcast','POST',{title,body,audience:buildAudience(),emergency});showToast('Sent to '+r.recipient_count+' user(s)','success');document.getElementById('bc_title').value='';document.getElementById('bc_body').value='';document.getElementById('bc_emergency').checked=false;document.getElementById('bc_att').value='';document.getElementById('bc_regaf').value='';document.getElementById('bc_regbf').value='';document.getElementById('bc_isrev').checked=false;document.getElementById('bc_isspk').checked=false;document.getElementById('bc_preview').style.display='none';_bcRoles.clear();_bcPaper.clear();_bcPeople.clear();renderBcRoles();renderBcPaper();renderBcPeople();loadBroadcasts();}catch(e){showToast(e.message,'error');}btn.innerHTML='Send';btn.disabled=false;}
 
 document.addEventListener('DOMContentLoaded',()=>loadStats());
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
