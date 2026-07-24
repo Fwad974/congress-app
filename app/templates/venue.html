@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}Venue & Dubai Info — {{ congress_short }}{% endblock %}
+{% block head %}
+<style>
+.vn-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
+.vn-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
+.vn-title h2{font:600 1.4rem var(--fh);color:var(--w)}.vn-title h2 span{color:var(--gold)}
+.vn-lang{margin-left:auto;padding:8px 18px;border:1px solid rgba(201,169,98,.25);border-radius:50px;background:rgba(201,169,98,.08);color:var(--gold);font:600 .84rem var(--f);cursor:pointer}
+.vn-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
+.vn-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.vn-tab:hover{color:var(--w7)}.vn-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.vn-panel{display:none}.vn-panel.active{display:block}
+.vn-card{background:var(--glass);border:1px solid rgba(201,169,98,.14);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px}
+.vn-card h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.vn-in{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.9rem var(--f);padding:10px 12px;outline:none}
+textarea.vn-in{resize:vertical;min-height:70px;font-family:var(--m);font-size:.8rem}
+.vn-btn{padding:9px 16px;border:1px solid rgba(201,169,98,.15);border-radius:50px;background:rgba(10,61,46,.3);color:var(--w7);font:500 .82rem var(--f);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.vn-btn:hover{border-color:var(--gold);color:var(--gold)}
+.vn-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);border-color:var(--gold);font-weight:600}
+.vn-btn.sm{padding:6px 12px;font-size:.76rem}
+.vn-label{font:600 .7rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:10px 0 4px;display:block}
+.vn-empty{text-align:center;padding:36px 20px;color:var(--w5);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
+/* Floor plan */
+.vn-floors{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.vn-floor-btn{padding:6px 16px;border:1px solid rgba(201,169,98,.2);border-radius:50px;background:none;color:var(--w5);font:600 .78rem var(--f);cursor:pointer}
+.vn-floor-btn.active{background:rgba(201,169,98,.15);color:var(--gold);border-color:var(--gold)}
+.vn-map{background:rgba(6,32,24,.55);border:1px solid rgba(201,169,98,.15);border-radius:var(--rl);overflow:hidden}
+.vn-map svg{width:100%;height:auto;display:block}
+.vn-room-rect{fill:rgba(201,169,98,.1);stroke:rgba(201,169,98,.45);stroke-width:.5;cursor:pointer;transition:.15s}
+.vn-room-rect:hover{fill:rgba(201,169,98,.22)}
+.vn-room-rect.live{fill:rgba(46,204,113,.15);stroke:#2ecc71}
+.vn-room-rect.sel{fill:rgba(201,169,98,.3);stroke:var(--gold);stroke-width:1}
+.vn-room-rect.facility{fill:rgba(96,165,250,.08);stroke:rgba(96,165,250,.4)}
+.vn-room-label{font-size:3px;fill:var(--w9);pointer-events:none;font-family:var(--f)}
+.vn-live-dot{fill:#2ecc71}
+.vn-detail{margin-top:10px}
+.vn-sess{font:.84rem var(--f);color:var(--w7);margin:3px 0}
+.vn-sess .b{color:#2ecc71;font-weight:700}
+.vn-route-step{display:flex;gap:10px;align-items:flex-start;font:.88rem/1.5 var(--f);color:var(--w9);padding:8px 0;border-bottom:1px solid rgba(201,169,98,.08)}
+.vn-route-step .n{width:22px;height:22px;border-radius:50%;background:rgba(201,169,98,.15);color:var(--gold);font:700 .72rem var(--f);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+/* Info lists */
+.vn-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(201,169,98,.08)}
+.vn-row:last-child{border-bottom:none}
+.vn-row .ico{font-size:1.2rem;flex-shrink:0;width:28px;text-align:center}
+.vn-row .t{font:600 .9rem var(--f);color:var(--w)}
+.vn-row .d{font:.8rem/1.5 var(--f);color:var(--w5);margin-top:2px}
+.vn-row .dist{font:600 .66rem var(--f);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);background:rgba(201,169,98,.1);border-radius:50px;padding:3px 10px;white-space:nowrap}
+.vn-wifi{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.vn-wifi .qr{width:150px;height:150px;background:#fff;border-radius:12px;padding:8px;flex-shrink:0}
+.vn-wifi .qr img{width:100%;height:100%}
+.vn-cred{display:flex;align-items:center;gap:8px;margin:6px 0}
+.vn-cred code{background:rgba(0,0,0,.3);border:1px solid rgba(201,169,98,.15);border-radius:8px;padding:6px 12px;font:600 .9rem var(--m);color:var(--w9)}
+.vn-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.vn-grid2{grid-template-columns:1fr}}
+[dir=rtl] .vn-lang{margin-left:0;margin-right:auto}
+</style>
+{% endblock %}
+{% block body %}
+<div class="vn-page">
+{% include "nav.html" %}
+<div class="container" id="vnRoot">
+  <div class="vn-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
+    <h2 id="pageTitle">Venue &amp; <span>Dubai Info</span></h2>
+    <button class="vn-lang" id="langBtn" onclick="toggleLang()">عربي</button>
+  </div>
+  <div class="vn-tabs animate-up">
+    <button class="vn-tab active" data-t="map" onclick="vnTab('map')" id="tabMap">Map &amp; Navigate</button>
+    <button class="vn-tab" data-t="info" onclick="vnTab('info')" id="tabInfo">WiFi &amp; Local Info</button>
+    {% if is_organizer %}<button class="vn-tab" data-t="manage" onclick="vnTab('manage')">Manage</button>{% endif %}
+  </div>
+
+  <div class="vn-panel active" id="vn-map">
+    <div class="vn-card">
+      <h3>🗺 <span id="hMap">Floor plan</span> <span style="font:.72rem var(--f);color:var(--w3);font-weight:400;margin-left:auto" id="mapHint"></span></h3>
+      <div class="vn-floors" id="floorBtns"></div>
+      <div class="vn-map" id="mapBox"><div class="vn-empty" id="mapEmpty">Loading…</div></div>
+      <div class="vn-detail" id="roomDetail"></div>
+    </div>
+    <div class="vn-card">
+      <h3>🧭 <span id="hNav">Turn-by-turn navigation</span></h3>
+      <div class="vn-grid2">
+        <div><span class="vn-label" id="lFrom">From</span><select class="vn-in" id="navFrom"></select></div>
+        <div><span class="vn-label" id="lTo">To</span><select class="vn-in" id="navTo"></select></div>
+      </div>
+      <div style="margin-top:10px"><button class="vn-btn primary" id="goBtn" onclick="getRoute()">Get directions</button></div>
+      <div id="routeBox" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="vn-panel" id="vn-info">
+    <div class="vn-card"><h3>📶 <span id="hWifi">WiFi</span></h3><div class="vn-wifi" id="wifiBox"></div></div>
+    <div class="vn-grid2">
+      <div class="vn-card"><h3>🚇 <span id="hTrans">Getting here</span></h3><div id="transBox"></div></div>
+      <div class="vn-card"><h3>🆘 <span id="hEmer">Emergency contacts</span></h3><div id="emerBox"></div></div>
+    </div>
+    <div class="vn-card"><h3>📍 <span id="hPlaces">Nearby in Dubai</span></h3><div id="placesBox"></div></div>
+  </div>
+
+  {% if is_organizer %}
+  <div class="vn-panel" id="vn-manage">
+    <div class="vn-card"><h3>🚪 Rooms (floor plan)</h3>
+      <div style="font:.76rem var(--f);color:var(--w5);margin-bottom:8px">Grid is 0–100 per floor, 1 unit ≈ 1 m. Room names must match the <em>Location</em> used on schedule items for the live overlay.</div>
+      <div class="vn-grid2">
+        <input class="vn-in" id="r_name" placeholder="Name (e.g. Hall A)">
+        <input class="vn-in" id="r_name_ar" placeholder="الاسم بالعربية (optional)" dir="rtl">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <select class="vn-in" id="r_kind" style="width:auto"><option value="room">room</option><option value="hall">hall</option><option value="facility">facility</option></select>
+        <input class="vn-in" id="r_floor" type="number" value="1" style="width:80px" title="Floor">
+        <input class="vn-in" id="r_x" type="number" value="10" style="width:80px" title="x">
+        <input class="vn-in" id="r_y" type="number" value="10" style="width:80px" title="y">
+        <input class="vn-in" id="r_w" type="number" value="20" style="width:80px" title="width">
+        <input class="vn-in" id="r_h" type="number" value="15" style="width:80px" title="height">
+      </div>
+      <input class="vn-in" id="r_hint" placeholder="Directions hint (e.g. next to the café)" style="margin-top:8px">
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="vn-btn primary sm" onclick="saveRoom()" id="roomSaveBtn">Add room</button><button class="vn-btn sm" onclick="resetRoomForm()" id="roomCancel" style="display:none">Cancel</button></div>
+      <div id="roomList" style="margin-top:12px"></div>
+    </div>
+    <div class="vn-card"><h3>⚙️ Venue &amp; WiFi</h3>
+      <div class="vn-grid2">
+        <div><span class="vn-label">Venue name</span><input class="vn-in" id="g_name"></div>
+        <div><span class="vn-label">الاسم بالعربية</span><input class="vn-in" id="g_name_ar" dir="rtl"></div>
+        <div><span class="vn-label">Address</span><input class="vn-in" id="g_addr"></div>
+        <div><span class="vn-label">العنوان بالعربية</span><input class="vn-in" id="g_addr_ar" dir="rtl"></div>
+      </div>
+      <span class="vn-label">Map link</span><input class="vn-in" id="g_map">
+      <div class="vn-grid2" style="margin-top:8px">
+        <div><span class="vn-label">WiFi network (SSID)</span><input class="vn-in" id="w_ssid"></div>
+        <div><span class="vn-label">Password</span><input class="vn-in" id="w_pass"></div>
+        <div><span class="vn-label">Security</span><select class="vn-in" id="w_sec"><option>WPA</option><option>WEP</option><option value="nopass">Open (no password)</option></select></div>
+        <div><span class="vn-label">Note</span><input class="vn-in" id="w_note"></div>
+      </div>
+      <div style="text-align:right;margin-top:10px"><button class="vn-btn primary sm" onclick="saveGeneralWifi()">Save venue &amp; WiFi</button></div>
+    </div>
+    <div class="vn-card"><h3>📋 Lists</h3>
+      <div style="font:.76rem var(--f);color:var(--w5);margin-bottom:6px">One entry per line, fields separated by <code>|</code>. Arabic columns are optional.</div>
+      <span class="vn-label">Transport — mode | title | details | title_ar | details_ar</span>
+      <textarea class="vn-in" id="t_transport" rows="4"></textarea>
+      <span class="vn-label">Emergency — kind | label | phone | label_ar &nbsp; (kind: security / medical / general)</span>
+      <textarea class="vn-in" id="t_emergency" rows="4"></textarea>
+      <span class="vn-label">Places — category | name | distance | details | name_ar | details_ar &nbsp; (category: hotel / restaurant / pharmacy / atm / other)</span>
+      <textarea class="vn-in" id="t_places" rows="5"></textarea>
+      <div style="text-align:right;margin-top:10px"><button class="vn-btn primary sm" onclick="saveLists()">Save lists</button></div>
+    </div>
+  </div>
+  {% endif %}
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const IS_ORG={{ 'true' if is_organizer else 'false' }};
+function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
+
+// ── i18n ───────────────────────────────────────────────────
+const L={
+ en:{title:'Venue & <span>Dubai Info</span>',tabMap:'Map & Navigate',tabInfo:'WiFi & Local Info',map:'Floor plan',mapHint:'tap a room',nav:'Turn-by-turn navigation',from:'From',to:'To',go:'Get directions',wifi:'WiFi',network:'Network',password:'Password',copy:'Copy',copied:'Copied ✓',scan:'Scan to connect',trans:'Getting here',emer:'Emergency contacts',places:'Nearby in Dubai',now:'Now',next:'Next',freeNow:'Free now',floor:'Floor',call:'Call',map_open:'Open map',noRooms:'No rooms configured yet — the organizers are setting up the floor plan.',dist:'total ≈ {n} m',pick:'Pick two different rooms',
+  cat:{hotel:'Hotels',restaurant:'Food & drink',pharmacy:'Pharmacies',atm:'ATMs',other:'Other'}},
+ ar:{title:'المكان و<span>معلومات دبي</span>',tabMap:'الخريطة والتنقل',tabInfo:'واي فاي ومعلومات',map:'مخطط الطوابق',mapHint:'اضغط على غرفة',nav:'التنقل خطوة بخطوة',from:'من',to:'إلى',go:'احصل على الاتجاهات',wifi:'واي فاي',network:'الشبكة',password:'كلمة المرور',copy:'نسخ',copied:'تم النسخ ✓',scan:'امسح للاتصال',trans:'الوصول إلى المكان',emer:'أرقام الطوارئ',places:'أماكن قريبة في دبي',now:'الآن',next:'التالي',freeNow:'متاحة الآن',floor:'الطابق',call:'اتصال',map_open:'افتح الخريطة',noRooms:'لم يتم إعداد مخطط الطوابق بعد.',dist:'المسافة ≈ {n} م',pick:'اختر غرفتين مختلفتين',
+  cat:{hotel:'فنادق',restaurant:'مطاعم ومقاهي',pharmacy:'صيدليات',atm:'صراف آلي',other:'أخرى'}}};
+let LANG=localStorage.getItem('venueLang')||'en';
+function T(k){return L[LANG][k];}
+function loc(obj,field){return (LANG==='ar'&&obj[field+'_ar'])?obj[field+'_ar']:obj[field];}
+function toggleLang(){LANG=LANG==='en'?'ar':'en';localStorage.setItem('venueLang',LANG);applyLang();}
+function applyLang(){
+  const root=document.getElementById('vnRoot');
+  root.dir=LANG==='ar'?'rtl':'ltr';
+  document.getElementById('langBtn').textContent=LANG==='en'?'عربي':'English';
+  document.getElementById('pageTitle').innerHTML=T('title');
+  document.getElementById('tabMap').textContent=T('tabMap');
+  document.getElementById('tabInfo').textContent=T('tabInfo');
+  document.getElementById('hMap').textContent=T('map');document.getElementById('mapHint').textContent=T('mapHint');
+  document.getElementById('hNav').textContent=T('nav');
+  document.getElementById('lFrom').textContent=T('from');document.getElementById('lTo').textContent=T('to');
+  document.getElementById('goBtn').textContent=T('go');
+  document.getElementById('hWifi').textContent=T('wifi');document.getElementById('hTrans').textContent=T('trans');
+  document.getElementById('hEmer').textContent=T('emer');document.getElementById('hPlaces').textContent=T('places');
+  renderAll();
+}
+
+// ── data ───────────────────────────────────────────────────
+let _v=null,_floor=null,_sel=null,_route=null;
+async function loadVenue(){
+  try{_v=await api('/api/venue');
+    if(_floor===null&&_v.floors.length)_floor=_v.floors[0];
+    renderAll();
+    if(IS_ORG)fillManage();
+  }catch(e){showToast(e.message,'error');}
+}
+function renderAll(){if(!_v)return;renderMap();renderNavSelects();renderRoute();renderWifi();renderTrans();renderEmer();renderPlaces();renderRoomDetail();}
+
+// ── floor plan ─────────────────────────────────────────────
+function renderMap(){
+  const rooms=_v.rooms.filter(r=>r.floor===_floor);
+  const fb=document.getElementById('floorBtns');
+  fb.innerHTML=_v.floors.map(f=>'<button class="vn-floor-btn'+(f===_floor?' active':'')+'" onclick="setFloor('+f+')">'+T('floor')+' '+f+'</button>').join('');
+  const box=document.getElementById('mapBox');
+  if(!_v.rooms.length){box.innerHTML='<div class="vn-empty">'+esc(T('noRooms'))+'</div>';return;}
+  let svg='<svg viewBox="0 0 104 74" xmlns="http://www.w3.org/2000/svg">';
+  svg+='<rect x="1" y="1" width="102" height="72" rx="2" fill="none" stroke="rgba(201,169,98,.25)" stroke-width=".6"/>';
+  rooms.forEach(r=>{
+    const live=!!r.now, sel=_sel===r.id;
+    const sx=r.x*1.02+1, sy=r.y*0.72+1, sw=r.w*1.02, sh=r.h*0.72;
+    svg+='<g onclick="selRoom('+r.id+')"><rect class="vn-room-rect'+(live?' live':'')+(sel?' sel':'')+(r.kind==='facility'?' facility':'')+'" x="'+sx+'" y="'+sy+'" width="'+sw+'" height="'+sh+'" rx="1"/>';
+    svg+='<text class="vn-room-label" x="'+(sx+1.4)+'" y="'+(sy+3.4)+'">'+esc(loc(r,'name'))+'</text>';
+    if(live)svg+='<circle class="vn-live-dot" cx="'+(sx+sw-2.4)+'" cy="'+(sy+2.4)+'" r="1.1"><animate attributeName="opacity" values="1;.25;1" dur="2s" repeatCount="indefinite"/></circle>';
+    svg+='</g>';
+  });
+  svg+='</svg>';
+  box.innerHTML=svg;
+}
+function setFloor(f){_floor=f;renderMap();}
+function selRoom(id){_sel=id;renderMap();renderRoomDetail();const to=document.getElementById('navTo');if(to)to.value=id;}
+function fmtT(iso){return new Date(iso).toLocaleTimeString(LANG==='ar'?'ar-AE':'en-GB',{hour:'2-digit',minute:'2-digit'});}
+function renderRoomDetail(){
+  const el=document.getElementById('roomDetail');
+  const r=_v&&_v.rooms.find(x=>x.id===_sel);
+  if(!r){el.innerHTML='';return;}
+  let h='<strong style="color:var(--gold);font:600 .95rem var(--fh)">'+esc(loc(r,'name'))+'</strong> <span style="font:.72rem var(--f);color:var(--w3)">'+T('floor')+' '+r.floor+'</span>';
+  if(r.now)h+='<div class="vn-sess"><span class="b">● '+T('now')+':</span> '+esc(r.now.title)+' — '+fmtT(r.now.start_time)+'–'+fmtT(r.now.end_time)+'</div>';
+  if(r.next)h+='<div class="vn-sess"><span style="color:var(--gold);font-weight:600">○ '+T('next')+':</span> '+esc(r.next.title)+' — '+fmtT(r.next.start_time)+'</div>';
+  if(!r.now&&!r.next&&r.kind!=='facility')h+='<div class="vn-sess" style="color:var(--w3)">'+T('freeNow')+'</div>';
+  el.innerHTML=h;
+}
+
+// ── navigation ─────────────────────────────────────────────
+function renderNavSelects(){
+  const opts=_v.rooms.map(r=>'<option value="'+r.id+'">'+esc(loc(r,'name'))+' ('+T('floor')+' '+r.floor+')</option>').join('');
+  const f=document.getElementById('navFrom'),t=document.getElementById('navTo');
+  const fv=f.value,tv=t.value;
+  f.innerHTML=opts;t.innerHTML=opts;
+  if(fv)f.value=fv;if(tv)t.value=tv;
+}
+async function getRoute(){
+  const f=document.getElementById('navFrom').value,t=document.getElementById('navTo').value;
+  if(!f||!t||f===t){showToast(T('pick'),'error');return;}
+  try{_route=await api('/api/venue/route?from_room='+f+'&to_room='+t);renderRoute();}
+  catch(e){showToast(e.message,'error');}
+}
+function renderRoute(){
+  const box=document.getElementById('routeBox');
+  if(!_route){box.innerHTML='';return;}
+  box.innerHTML=_route.steps.map((s,i)=>'<div class="vn-route-step"><span class="n">'+(i+1)+'</span><span>'+esc(LANG==='ar'?s.ar:s.en)+'</span></div>').join('')+
+    '<div style="font:.76rem var(--f);color:var(--w5);margin-top:6px">'+T('dist').replace('{n}',_route.distance_m)+'</div>';
+}
+
+// ── info sections ──────────────────────────────────────────
+function copyTxt(txt,btn){navigator.clipboard.writeText(txt).then(()=>{const o=btn.textContent;btn.textContent=T('copied');setTimeout(()=>btn.textContent=o,1400);});}
+function renderWifi(){
+  const w=_v.wifi;
+  document.getElementById('wifiBox').innerHTML=
+    '<div class="qr"><img src="/api/venue/wifi-qr" alt="WiFi QR"></div>'+
+    '<div style="flex:1;min-width:220px"><div class="vn-label" style="margin-top:0">'+T('network')+'</div>'+
+    '<div class="vn-cred"><code>'+esc(w.ssid||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(w.ssid||'').replace(/'/g,"\\'")+'\',this)">'+T('copy')+'</button></div>'+
+    (w.security!=='nopass'?'<div class="vn-label">'+T('password')+'</div><div class="vn-cred"><code>'+esc(w.password||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(w.password||'').replace(/'/g,"\\'")+'\',this)">'+T('copy')+'</button></div>':'')+
+    '<div style="font:.78rem var(--f);color:var(--w5);margin-top:6px">📱 '+T('scan')+(loc(w,'note')?' · '+esc(loc(w,'note')):'')+'</div></div>';
+}
+const TICO={metro:'🚇',taxi:'🚕',parking:'🅿️',airport:'✈️'};
+function renderTrans(){
+  document.getElementById('transBox').innerHTML=_v.transport.map(t=>
+    '<div class="vn-row"><span class="ico">'+(TICO[t.mode]||'🚌')+'</span><div><div class="t">'+esc(loc(t,'title'))+'</div><div class="d">'+esc(loc(t,'details')||'')+(t.link?' <a href="'+esc(t.link)+'" target="_blank" rel="noopener" style="color:var(--gold)">↗</a>':'')+'</div></div></div>').join('')||'<div class="vn-empty">—</div>';
+}
+const EICO={security:'🛡️',medical:'🚑',general:'📞'};
+function renderEmer(){
+  document.getElementById('emerBox').innerHTML=_v.emergency.map(e=>
+    '<div class="vn-row"><span class="ico">'+(EICO[e.kind]||'📞')+'</span><div style="flex:1"><div class="t">'+esc(loc(e,'label'))+'</div></div>'+
+    '<a class="vn-btn sm" href="tel:'+esc((e.phone||'').replace(/\s/g,''))+'">📞 '+esc(e.phone||'')+'</a></div>').join('')||'<div class="vn-empty">—</div>';
+}
+const PICO={hotel:'🏨',restaurant:'🍽️',pharmacy:'💊',atm:'🏧',other:'📍'};
+function renderPlaces(){
+  const groups={};
+  _v.places.forEach(p=>{(groups[p.category||'other']=groups[p.category||'other']||[]).push(p);});
+  document.getElementById('placesBox').innerHTML=Object.keys(groups).map(cat=>
+    '<div class="vn-label">'+(PICO[cat]||'📍')+' '+esc(T('cat')[cat]||cat)+'</div>'+
+    groups[cat].map(p=>'<div class="vn-row"><div style="flex:1"><div class="t">'+esc(loc(p,'name'))+(p.map_url?' <a href="'+esc(p.map_url)+'" target="_blank" rel="noopener" style="color:var(--gold);font-size:.78rem">'+T('map_open')+' ↗</a>':'')+'</div><div class="d">'+esc(loc(p,'details')||'')+'</div></div>'+(p.distance?'<span class="dist">'+esc(p.distance)+'</span>':'')+'</div>').join('')
+  ).join('')||'<div class="vn-empty">—</div>';
+}
+
+// ── manage (organizer) ─────────────────────────────────────
+let _editRoom=null;
+function fillManage(){
+  const g=_v.general,w=_v.wifi;
+  document.getElementById('g_name').value=g.venue_name||'';document.getElementById('g_name_ar').value=g.venue_name_ar||'';
+  document.getElementById('g_addr').value=g.address||'';document.getElementById('g_addr_ar').value=g.address_ar||'';
+  document.getElementById('g_map').value=g.map_url||'';
+  document.getElementById('w_ssid').value=w.ssid||'';document.getElementById('w_pass').value=w.password||'';
+  document.getElementById('w_sec').value=w.security||'WPA';document.getElementById('w_note').value=w.note||'';
+  document.getElementById('t_transport').value=_v.transport.map(t=>[t.mode,t.title,t.details||'',t.title_ar||'',t.details_ar||''].join(' | ')).join('\n');
+  document.getElementById('t_emergency').value=_v.emergency.map(e=>[e.kind,e.label,e.phone||'',e.label_ar||''].join(' | ')).join('\n');
+  document.getElementById('t_places').value=_v.places.map(p=>[p.category,p.name,p.distance||'',p.details||'',p.name_ar||'',p.details_ar||''].join(' | ')).join('\n');
+  renderRoomList();
+}
+function renderRoomList(){
+  const el=document.getElementById('roomList');if(!el)return;
+  el.innerHTML=_v.rooms.length?_v.rooms.map(r=>
+    '<div class="vn-row"><span class="ico">'+(r.kind==='facility'?'🚻':'🚪')+'</span><div style="flex:1"><div class="t">'+esc(r.name)+(r.name_ar?' · '+esc(r.name_ar):'')+'</div>'+
+    '<div class="d">'+T('floor')+' '+r.floor+' · x'+r.x+' y'+r.y+' '+r.w+'×'+r.h+(r.directions_hint?' · '+esc(r.directions_hint):'')+'</div></div>'+
+    '<button class="vn-btn sm" onclick="editRoom('+r.id+')">Edit</button> <button class="vn-btn sm" style="color:var(--red)" onclick="delRoom('+r.id+')">✕</button></div>').join('')
+    :'<div class="vn-empty">No rooms yet — add the first one above.</div>';
+}
+function editRoom(id){
+  const r=_v.rooms.find(x=>x.id===id);if(!r)return;
+  _editRoom=id;
+  document.getElementById('r_name').value=r.name;document.getElementById('r_name_ar').value=r.name_ar||'';
+  document.getElementById('r_kind').value=r.kind;document.getElementById('r_floor').value=r.floor;
+  document.getElementById('r_x').value=r.x;document.getElementById('r_y').value=r.y;
+  document.getElementById('r_w').value=r.w;document.getElementById('r_h').value=r.h;
+  document.getElementById('r_hint').value=r.directions_hint||'';
+  document.getElementById('roomSaveBtn').textContent='Save room';
+  document.getElementById('roomCancel').style.display='inline-flex';
+}
+function resetRoomForm(){
+  _editRoom=null;
+  ['r_name','r_name_ar','r_hint'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('roomSaveBtn').textContent='Add room';
+  document.getElementById('roomCancel').style.display='none';
+}
+async function saveRoom(){
+  const body={name:document.getElementById('r_name').value.trim(),
+    name_ar:document.getElementById('r_name_ar').value.trim()||null,
+    kind:document.getElementById('r_kind').value,
+    floor:parseInt(document.getElementById('r_floor').value,10)||1,
+    x:parseFloat(document.getElementById('r_x').value)||0,y:parseFloat(document.getElementById('r_y').value)||0,
+    w:parseFloat(document.getElementById('r_w').value)||10,h:parseFloat(document.getElementById('r_h').value)||10,
+    directions_hint:document.getElementById('r_hint').value.trim()||null};
+  if(!body.name){showToast('Room name is required','error');return;}
+  try{
+    if(_editRoom)await api('/api/venue/rooms/'+_editRoom,'PUT',body);
+    else await api('/api/venue/rooms','POST',body);
+    showToast('Room saved','success');resetRoomForm();loadVenue();}
+  catch(e){showToast(e.message,'error');}
+}
+async function delRoom(id){
+  if(!await confirmDialog({title:'Delete room',message:'Remove this room from the floor plan?',confirmText:'Delete',danger:true}))return;
+  try{await api('/api/venue/rooms/'+id,'DELETE');showToast('Room deleted','success');loadVenue();}
+  catch(e){showToast(e.message,'error');}
+}
+async function saveGeneralWifi(){
+  const body={general:{venue_name:v('g_name'),venue_name_ar:v('g_name_ar'),address:v('g_addr'),address_ar:v('g_addr_ar'),map_url:v('g_map')},
+    wifi:{ssid:v('w_ssid'),password:v('w_pass'),security:document.getElementById('w_sec').value,note:v('w_note'),note_ar:(_v.wifi.note_ar||'')}};
+  try{_v=await api('/api/venue/settings','PUT',body);showToast('Saved','success');renderAll();}
+  catch(e){showToast(e.message,'error');}
+}
+function v(id){return document.getElementById(id).value.trim();}
+function lines(id){return document.getElementById(id).value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim()));}
+async function saveLists(){
+  const transport=lines('t_transport').map(p=>({mode:p[0]||'other',title:p[1]||'',details:p[2]||'',title_ar:p[3]||'',details_ar:p[4]||''})).filter(t=>t.title);
+  const emergency=lines('t_emergency').map(p=>({kind:p[0]||'general',label:p[1]||'',phone:p[2]||'',label_ar:p[3]||''})).filter(e=>e.label);
+  const places=lines('t_places').map(p=>({category:p[0]||'other',name:p[1]||'',distance:p[2]||'',details:p[3]||'',name_ar:p[4]||'',details_ar:p[5]||'',map_url:''})).filter(p=>p.name);
+  try{_v=await api('/api/venue/settings','PUT',{transport,emergency,places});showToast('Saved','success');renderAll();}
+  catch(e){showToast(e.message,'error');}
+}
+
+function vnTab(t){document.querySelectorAll('.vn-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.vn-panel').forEach(p=>p.classList.toggle('active',p.id==='vn-'+t));}
+document.addEventListener('DOMContentLoaded',()=>{applyLang();loadVenue();setInterval(()=>{if(document.getElementById('vn-map').classList.contains('active'))loadVenue();},60000);});
+</script>
+{% endblock %}

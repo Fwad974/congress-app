@@ -265,6 +265,18 @@ async def poster_qr_print(request: Request, poster_id: int,
     })
 
 
+@router.get("/venue", response_class=HTMLResponse)
+async def venue_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    if _feature_blocked(user, "venue"):
+        return RedirectResponse(url="/home", status_code=302)
+    is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
+    return templates.TemplateResponse("venue.html", {
+        "request": request, "user": user, "is_organizer": is_organizer,
+    })
+
+
 @router.get("/feedback", response_class=HTMLResponse)
 async def feedback_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:

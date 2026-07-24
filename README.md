@@ -100,6 +100,8 @@ pytest -q
 | GET/POST | `/api/feedback/survey` | Post-event survey (unlocks Participation cert) | Any user |
 | GET | `/api/feedback/my-talks` | Anonymized rating digest for my sessions | Speaker |
 | GET | `/api/feedback/sentiment` · `/survey/export` | Sentiment dashboard · survey CSV | Organizer |
+| GET | `/api/venue` · `/wifi-qr` · `/route` | Venue info + live floor plan · WiFi QR · navigation | Any user |
+| PUT/POST | `/api/venue/settings` · `/api/venue/rooms` | Manage venue content & rooms | Organizer |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
@@ -399,6 +401,22 @@ A chrome-free **presenter view** (`/present/{session_id}`, opened via the
 "Present ↗" button) shows the open poll on the big screen — animated bar charts
 for choice polls, a frequency-sized word cloud for word-cloud polls — updating
 live as votes land. Built on the same realtime layer as Q&A.
+
+## Venue & Dubai Info
+
+Interactive venue guide at `/venue` (feature flag `venue`), fully
+**admin-managed** with Dubai defaults served until an organizer edits. See
+[`docs/VENUE.md`](docs/VENUE.md).
+
+- **Floor plan** — schematic SVG from admin-placed rooms with a **live
+  overlay**: each room shows the session happening now (matched to
+  `ScheduleItem.location`) and what's next.
+- **Turn-by-turn navigation** between rooms (exit → stairs/elevator → heading →
+  arrival side), generated from the room grid in **English and Arabic**.
+- **WiFi one-tap connect** — QR in the `WIFI:` format plus copy buttons.
+- **Dubai local info** (hotels, restaurants, pharmacies, ATMs), **transport**
+  (metro/taxi/parking), and **emergency contacts** with tap-to-call.
+- **English / العربية toggle** — RTL layout and per-field Arabic content.
 
 ## Feedback & Ratings
 

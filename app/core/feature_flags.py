@@ -31,6 +31,8 @@ FEATURES: Dict[str, tuple] = {
                  "Sponsor tiers, virtual exhibitor booths, and opt-in lead capture."),
     "feedback": ("Feedback & Ratings",
                  "Session star ratings, the post-event survey, and organizer sentiment."),
+    "venue": ("Venue & Dubai Info",
+              "Floor plan with live sessions, navigation, WiFi, and local info."),
 }
 DEFAULT_ENABLED = True
 _ADMIN_ROLES = {UserRole.admin, UserRole.super_admin}
