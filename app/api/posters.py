@@ -277,8 +277,9 @@ def delete_comment(poster_id: int, comment_id: int, db: Session = Depends(get_db
         PosterComment.id == comment_id, PosterComment.poster_id == poster_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Comment not found")
+    from app.core.admin_security import is_moderator
     owner_id = poster.presenter_id or poster.created_by
-    if not (c.user_id == user.id or _is_admin(user) or owner_id == user.id):
+    if not (c.user_id == user.id or is_moderator(user) or owner_id == user.id):
         raise HTTPException(status_code=403, detail="You can't delete this comment")
     db.delete(c)
     db.commit()

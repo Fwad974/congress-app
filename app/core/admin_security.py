@@ -207,11 +207,18 @@ def can_manage_user(admin: User, target: User) -> bool:
 # Global live moderators run Q&A/polls in ANY session. Session chairs moderate
 # only sessions they're assigned to (see can_moderate_session).
 GLOBAL_LIVE_MODERATOR_ROLES = {UserRole.moderator, UserRole.admin, UserRole.super_admin}
+# Content moderators triage reports and remove user content (same tier).
+MODERATOR_ROLES = GLOBAL_LIVE_MODERATOR_ROLES
 
 
 def is_live_moderator(user: User) -> bool:
     """Global live moderator — may moderate Q&A/polls in any session."""
     return user.role in GLOBAL_LIVE_MODERATOR_ROLES
+
+
+def is_moderator(user: User) -> bool:
+    """Content moderator — may triage reports and remove flagged content."""
+    return user.role in MODERATOR_ROLES
 
 
 def can_moderate_session(db, user: User, session_id: int) -> bool:

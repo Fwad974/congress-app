@@ -24,7 +24,7 @@ def _feature_blocked(user, key: str) -> bool:
 @router.get("/logout")
 async def logout_page():
     resp = RedirectResponse(url="/", status_code=302)
-    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers", "/posters", "/connect"]:
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin", "/notes", "/qa", "/present", "/papers", "/posters", "/connect", "/moderation"]:
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=True, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0, httponly=False, samesite="lax")
         resp.set_cookie(key="access_token", value="deleted", path=p, max_age=0)
@@ -143,6 +143,16 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
         "is_chair": is_chair, "is_reviewer": is_reviewer,
         "max_upload_mb": get_settings().MAX_UPLOAD_MB,
     })
+
+
+@router.get("/moderation", response_class=HTMLResponse)
+async def moderation_page(request: Request, user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    from app.core.admin_security import is_moderator
+    if not is_moderator(user):
+        return RedirectResponse(url="/home", status_code=302)
+    return templates.TemplateResponse("moderation.html", {"request": request, "user": user})
 
 
 @router.get("/connect", response_class=HTMLResponse)

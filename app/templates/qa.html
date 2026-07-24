@@ -220,6 +220,7 @@ function card(q){
     else acts+='<button class="qa-act" onclick="setStatus('+q.id+',\'open\')">Unhide</button>';
   }
   if(q.is_mine||CAN_MOD)acts+='<button class="qa-act del" onclick="delQ('+q.id+')">Delete</button>';
+  if(!q.is_mine&&!CAN_MOD)acts+='<button class="qa-act" onclick="reportContent(\'question\','+q.id+')">Report</button>';
   return '<div class="qa-card '+(q.status==='answered'?'answered ':'')+(q.is_mine?'mine':'')+'">'+
     '<div class="qa-vote'+(voted?' on':'')+'" onclick="toggleVote('+q.id+')" title="Upvote">'+UP_ICON+'<span class="qa-vote-count">'+q.upvotes+'</span></div>'+
     '<div class="qa-body">'+
@@ -260,6 +261,12 @@ async function toggleVote(id){
 
 async function setStatus(id,status){
   try{await api('/api/questions/'+id+'/status','PUT',{status});}
+  catch(e){showToast(e.message,'error');}
+}
+async function reportContent(type,cid){
+  const reason=await promptDialog({title:'Report question',message:'Tell the moderators what’s wrong (optional).',placeholder:'Reason (optional)',textarea:true,confirmText:'Report'});
+  if(reason===null)return;
+  try{const r=await api('/api/moderation/report','POST',{content_type:type,content_id:cid,reason:reason||null});showToast(r.message||'Reported','success');}
   catch(e){showToast(e.message,'error');}
 }
 async function delQ(id){

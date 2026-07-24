@@ -169,7 +169,7 @@ async function openDetail(id){
     const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="display:flex;align-items:center;gap:12px"><span style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</span><a class="pg-btn sm" href="/posters/'+p.id+'/qr-print" target="_blank" rel="noopener">🖨 Print QR</a></div></div>':'';
     const owner=p.can_edit?'<div style="display:flex;gap:8px;margin:10px 0"><button class="pg-btn sm" onclick="openForm('+p.id+')">Edit</button><label class="pg-btn sm" style="cursor:pointer">Change image<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="uploadImg('+p.id+',this)"></label><button class="pg-btn sm" onclick="delPoster('+p.id+')">Delete</button></div>':'';
     const link=p.external_url?'<a class="pg-btn sm" href="'+esc(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
-    const cmts=p.comments.map(c=>'<div class="pg-cmt"><div class="h"><span>'+esc(c.user_name)+'</span><span style="color:var(--w3);font-weight:400">'+fmt(c.created_at)+(c.can_delete?' · <a href="#" onclick="event.preventDefault();delComment('+p.id+','+c.id+')" style="color:var(--red)">delete</a>':'')+'</span></div><div class="b">'+esc(c.body)+'</div></div>').join('')||'<div style="color:var(--w3);font-size:.84rem;margin-bottom:8px">No comments yet.</div>';
+    const cmts=p.comments.map(c=>'<div class="pg-cmt"><div class="h"><span>'+esc(c.user_name)+'</span><span style="color:var(--w3);font-weight:400">'+fmt(c.created_at)+(c.can_delete?' · <a href="#" onclick="event.preventDefault();delComment('+p.id+','+c.id+')" style="color:var(--red)">delete</a>':'')+(c.is_mine?'':' · <a href="#" onclick="event.preventDefault();reportContent(\'poster_comment\','+c.id+')" style="color:var(--w5)">report</a>')+'</span></div><div class="b">'+esc(c.body)+'</div></div>').join('')||'<div style="color:var(--w3);font-size:.84rem;margin-bottom:8px">No comments yet.</div>';
     document.getElementById('detailBody').innerHTML=
       '<div class="pg-track">'+esc(p.category||'Poster')+(p.board_number?' · Board '+esc(p.board_number):'')+'</div>'+
       '<h3>'+esc(p.title)+'</h3><div class="pg-auth" style="margin-bottom:12px">'+esc(p.authors)+(p.presenter_name?' — presented by '+esc(p.presenter_name):'')+'</div>'+
@@ -182,6 +182,12 @@ async function openDetail(id){
       '<div style="text-align:right;margin-top:6px"><button class="pg-btn sm primary" onclick="addComment('+p.id+')">Post</button></div></div>';
     document.getElementById('detailModal').classList.add('open');
   }catch(e){showToast(e.message,'error');}
+}
+async function reportContent(type,cid){
+  const reason=await promptDialog({title:'Report content',message:'Tell the moderators what’s wrong (optional).',placeholder:'Reason (optional)',textarea:true,confirmText:'Report'});
+  if(reason===null)return;
+  try{const r=await api('/api/moderation/report','POST',{content_type:type,content_id:cid,reason:reason||null});showToast(r.message||'Reported','success');}
+  catch(e){showToast(e.message,'error');}
 }
 async function addComment(id){
   const box=document.getElementById('cmtBox');const body=box.value.trim();if(!body){return;}

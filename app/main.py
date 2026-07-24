@@ -23,6 +23,7 @@ from app.models.poster import (  # noqa – registers model
 )
 from app.models.feature_flag import FeatureFlag  # noqa – registers model
 from app.models.attendance import SessionAttendance  # noqa – registers model
+from app.models.report import ContentReport  # noqa – registers model
 from app.core.realtime import broadcaster
 from app.core.oauth import init_oauth
 from app.api import auth, pages
@@ -38,6 +39,7 @@ from app.api import papers as papers_api
 from app.api import posters as posters_api
 from app.api import certificates as certificates_api
 from app.api import connect as connect_api
+from app.api import moderation as moderation_api
 from app.core import feature_flags
 
 settings = get_settings()
@@ -321,3 +323,4 @@ app.include_router(posters_api.router, prefix="/api/posters", tags=["posters"],
 app.include_router(certificates_api.router, prefix="/api", tags=["certificates"])
 app.include_router(connect_api.router, prefix="/api/connect", tags=["connect"],
                    dependencies=[Depends(feature_flags.require_feature("connect"))])
+app.include_router(moderation_api.router, prefix="/api/moderation", tags=["moderation"])
