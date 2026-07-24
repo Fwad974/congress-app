@@ -87,10 +87,19 @@ services:
       CME_CREDITS_PER_SESSION: ${CME_CREDITS_PER_SESSION:-1}
       # Session recordings: how long a published recording stays watchable.
       RECORDING_RETENTION_DAYS: ${RECORDING_RETENTION_DAYS:-30}
-      # AI Congress Companion. Blank key = rule-based answers only (still
-      # fully functional); set it to also answer free-form questions.
+      # AI Congress Companion. Every provider is optional — with no key the
+      # companion still answers from live congress data. LLM_PROVIDER picks
+      # one (auto | anthropic | gemini | openai | off); "auto" takes the first
+      # configured provider. Install only the SDK you use.
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      COMPANION_MODEL: ${COMPANION_MODEL:-claude-opus-5}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-pro}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      # Any OpenAI-compatible endpoint (gateway, vLLM, Ollama, OpenRouter).
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       COMPANION_MAX_TOKENS: ${COMPANION_MAX_TOKENS:-900}
     volumes:
       # Persists auto-generated VAPID keys and uploaded manuscripts so they're

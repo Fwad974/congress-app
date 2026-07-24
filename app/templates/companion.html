@@ -59,7 +59,7 @@
         <button class="cp-btn primary" onclick="send()">Ask</button>
       </div>
       <div class="cp-meta" style="margin-top:10px" id="chips"></div>
-      <div class="cp-meta">{% if llm_on %}Grounded in live congress data, with Claude for free-form questions.{% else %}Answers come straight from live congress data — always available, no network needed.{% endif %}</div>
+      <div class="cp-meta">{% if llm_on %}Grounded in live congress data, with {{ llm_label }} for free-form questions.{% else %}Answers come straight from live congress data — always available, no network needed.{% endif %}</div>
     </div>
   </div>
 
@@ -98,7 +98,10 @@ async function send(){
     (i.when?' <span style="color:var(--w5)">· '+when(i.when)+'</span>':'')+
     (i.location?' <span style="color:var(--w5)">· '+esc(i.location)+'</span>':'')+'</div>').join('')+'</div>';
   if(d.links&&d.links.length)html+='<div style="margin-top:8px">'+d.links.map(l=>'<a class="cp-chip" href="'+esc(l.url)+'">'+esc(l.label)+' →</a>').join('')+'</div>';
-  thinking.innerHTML=html+'<div class="cp-via">'+(d.via==='claude'?'Claude · grounded in congress data':'From live congress data')+'</div>';
+  const LABELS={anthropic:'Claude',gemini:'Gemini',openai:'OpenAI'};
+  const badge=d.via==='rules'?'From live congress data'
+    :((LABELS[d.via]||d.via)+(d.model?' ('+d.model+')':'')+' · grounded in congress data');
+  thinking.innerHTML=html+'<div class="cp-via">'+esc(badge)+'</div>';
 }
 
 // ── My day ─────────────────────────────────────────────────

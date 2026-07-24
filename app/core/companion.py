@@ -8,11 +8,11 @@ handles the questions attendees actually ask — "what's on now", "where is Hall
 2", "what's the WiFi", "what should I see next" — with exact data and no model
 call, so it is fast, free and correct offline.
 
-When an ``ANTHROPIC_API_KEY`` is configured, free-form questions that the
-router can't classify are answered by Claude, given the same facts as context
-and told to answer only from them. If the key is missing, the SDK isn't
-installed, or the call fails, the companion degrades to a helpful rule-based
-answer instead of erroring.
+When an LLM is configured — Claude, Gemini or OpenAI, see ``app.core.llm`` —
+free-form questions that the router can't classify are sent to it with the
+same facts as context and instructions to answer only from them. If no
+provider is configured, its SDK isn't installed, or the call fails, the
+companion degrades to a helpful rule-based answer instead of erroring.
 
 Beyond Q&A this module produces the proactive parts of the spec: nudges,
 energy-aware suggestions, serendipity picks, speaker prep and smart summaries.
@@ -23,7 +23,7 @@ from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from app.core import feature_flags, knowledge as kg
+from app.core import feature_flags, knowledge as kg, llm
 from app.core.config import get_settings
 from app.models.attendance import SessionAttendance
 from app.models.feedback import SessionRating, SurveyResponse
@@ -561,16 +561,15 @@ def _answer_topic_match(db: Session, user: User, question: str) -> Optional[Dict
             "links": [{"label": "Knowledge map", "url": "/knowledge"}]}
 
 
-# ─── Claude integration (optional) ───────────────────────────────
+# ─── LLM integration (optional: Claude / Gemini / OpenAI) ────────
 def llm_available() -> bool:
-    """True when free-form questions can be sent to Claude."""
-    if not get_settings().ANTHROPIC_API_KEY:
-        return False
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return False
-    return True
+    """True when free-form questions can be sent to a configured LLM."""
+    return llm.is_available()
+
+
+def llm_provider() -> Optional[str]:
+    """Which provider would answer the next free-form question, if any."""
+    return llm.active_provider()
 
 
 SYSTEM_PROMPT = (
@@ -625,37 +624,22 @@ def _llm_facts(db: Session, user: User, ctx: Dict) -> str:
     return "\n".join(lines)
 
 
-def ask_claude(db: Session, user: User, ctx: Dict, question: str) -> Optional[str]:
-    """Free-form answer from Claude, grounded in the facts. None on any failure."""
+def ask_llm(db: Session, user: User, ctx: Dict,
+            question: str) -> Optional[llm.LLMResult]:
+    """Free-form answer from the configured LLM, grounded in the facts.
+
+    Returns None whenever an answer isn't produced — no provider configured,
+    a refusal, a safety block, or any API failure — so the caller falls back
+    to its deterministic answer.
+    """
     settings = get_settings()
-    if not settings.ANTHROPIC_API_KEY:
-        return None
-    try:
-        import anthropic
-    except ImportError:
-        return None
-    try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        congress = f"{settings.CONGRESS_NAME} {settings.CONGRESS_YEAR}"
-        response = client.messages.create(
-            model=settings.COMPANION_MODEL,
-            max_tokens=settings.COMPANION_MAX_TOKENS,
-            system=SYSTEM_PROMPT.format(congress=congress),
-            thinking={"type": "adaptive"},
-            messages=[{
-                "role": "user",
-                "content": f"Congress facts:\n{_llm_facts(db, user, ctx)}\n\n"
-                           f"Attendee question: {question}",
-            }],
-        )
-        if getattr(response, "stop_reason", None) == "refusal":
-            return None
-        text = "".join(block.text for block in response.content
-                       if getattr(block, "type", "") == "text").strip()
-        return text or None
-    except Exception as exc:  # network, auth, rate limit, SDK change…
-        logger.warning("Companion LLM call failed: %s", exc)
-        return None
+    congress = f"{settings.CONGRESS_NAME} {settings.CONGRESS_YEAR}"
+    return llm.generate(
+        system=SYSTEM_PROMPT.format(congress=congress),
+        prompt=f"Congress facts:\n{_llm_facts(db, user, ctx)}\n\n"
+               f"Attendee question: {question}",
+        max_tokens=settings.COMPANION_MAX_TOKENS,
+    )
 
 
 # ─── The public entry point ──────────────────────────────────────
@@ -713,10 +697,11 @@ def answer(db: Session, user: User, question: str, *,
         return topical
 
     if allow_llm and llm_available():
-        text = ask_claude(db, user, ctx, question)
-        if text:
-            return {"answer": text, "kind": "freeform", "items": [],
-                    "via": "claude", "intent": None}
+        result = ask_llm(db, user, ctx, question)
+        if result:
+            return {"answer": result.text, "kind": "freeform", "items": [],
+                    "via": result.provider, "model": result.model,
+                    "intent": None}
 
     fallback = _answer_help(db, user)
     fallback["answer"] = ("I couldn't match that to the program. " +

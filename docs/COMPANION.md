@@ -11,17 +11,17 @@ day, venue, posters, papers, recordings, certificates, the knowledge graph). A
 deterministic intent router handles the questions attendees actually ask, so
 those answers are **exact, instant, free and available offline**.
 
-An optional Claude integration handles free-form questions the router can't
-classify. If no API key is set, the SDK isn't installed, or the call fails, the
-companion falls back to a rule-based answer — it never errors out and it never
-answers from model memory.
+An **optional LLM** — Claude, Gemini or OpenAI, your choice — handles free-form
+questions the router can't classify. If no provider is configured, its SDK
+isn't installed, or the call fails, the companion falls back to a rule-based
+answer: it never errors out and it never answers from model memory.
 
 ```
 question → intent router ──match──→ grounded answer (via: "rules")
               │
               └─no match→ topic lookup ──match──→ grounded answer
                               │
-                              └─no match→ Claude (if configured) → answer (via: "claude")
+                              └─no match→ LLM (if configured) → answer (via: provider name)
                                               │
                                               └─unavailable/failed→ capability help
 ```
@@ -66,19 +66,56 @@ question → intent router ──match──→ grounded answer (via: "rules")
   emergency and places content, grouped by category. The WiFi **password is
   omitted** from this endpoint (ask the companion or open `/venue` for it).
 
-## Configuration
+## LLM providers (all optional)
+
+`app/core/llm.py` is the whole integration: one `generate()` call in front of
+three interchangeable backends. **Every provider is optional and none is a
+hard dependency** — each SDK is imported lazily inside its own call, so the
+app installs and runs with none of them present.
+
+A provider is *ready* only when its API key is set **and** its SDK imports.
+
+| Provider | Install | Key | Model setting | Default |
+|----------|---------|-----|---------------|---------|
+| Claude | `pip install anthropic` | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL` | `claude-opus-5` |
+| Gemini | `pip install google-genai` | `GEMINI_API_KEY` | `GEMINI_MODEL` | `gemini-2.5-pro` |
+| OpenAI | `pip install openai` | `OPENAI_API_KEY` | `OPENAI_MODEL` | `gpt-4o` |
+
+The model defaults are just starting points — set them to whatever your
+account actually has.
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| `ANTHROPIC_API_KEY` | `""` | Blank = rule-based answers only (fully functional) |
-| `COMPANION_MODEL` | `claude-opus-5` | Model used for free-form questions |
-| `COMPANION_MAX_TOKENS` | `900` | Response cap |
+| `LLM_PROVIDER` | `auto` | `auto` (first ready provider: Claude → Gemini → OpenAI), or `anthropic` / `gemini` / `openai` to pin one, or `off` to disable the LLM path even when keys are present |
+| `OPENAI_BASE_URL` | `""` | Point the OpenAI client at any OpenAI-compatible endpoint (gateway, vLLM, Ollama, OpenRouter) |
+| `COMPANION_MAX_TOKENS` | `900` | Response cap, all providers |
+| `COMPANION_MODEL` | `""` | Deprecated alias for `ANTHROPIC_MODEL`; still wins when set |
 
-The Anthropic SDK is an **optional** dependency (`pip install anthropic`).
-When a key is configured, the call sends a compact factual brief plus the
+Provider notes:
+
+- **Claude** uses the Messages API with adaptive thinking; a `refusal` stop
+  reason is treated as "no answer".
+- **Gemini** uses `google-genai` (`client.models.generate_content`) and falls
+  back to the older `google-generativeai` package when that's what's
+  installed. A safety block is treated as "no answer".
+- **OpenAI** uses Chat Completions, which is also what OpenAI-compatible
+  servers speak. Models that reject `max_tokens` are retried once with
+  `max_completion_tokens`, and a `content_filter` finish is "no answer".
+
+Whichever provider answers, the call sends a compact factual brief plus the
 question, with a system prompt that forbids inventing session titles, times,
 rooms, names or numbers and tells the model to say so when the facts don't
-cover the question. Refusals and errors fall through to the rule-based answer.
+cover the question.
+
+**Every failure is a fallback, not an error.** No provider, no key, no SDK, a
+refusal, a safety block, a timeout, a rate limit, or an SDK signature change
+all return `None` from `generate()`, and the companion answers from its rules
+instead. The answer payload's `via` field says who answered (`rules`, or the
+provider name) and `model` names the model when an LLM did.
+
+Organizers can check the roster at `GET /api/companion/providers`, which
+reports each provider's configured / installed / ready state and the active
+one — never the keys.
 
 ## API
 
@@ -91,11 +128,13 @@ cover the question. Refusals and errors fall through to the rule-based answer.
 | `GET /api/companion/prep/{id}` | speaker / chair / organizer | Speaker prep |
 | `GET /api/companion/summary/{id}` | any | Smart session summary |
 | `GET /api/companion/guide` | any | Dubai guide |
+| `GET /api/companion/providers` | organizer | LLM provider roster + active provider |
 
 ## Files
 
 | File | Role |
 |------|------|
-| `app/core/companion.py` | context builder, intent router, nudges, prep, Claude path |
+| `app/core/llm.py` | optional LLM backends (Claude / Gemini / OpenAI) + selection |
+| `app/core/companion.py` | context builder, intent router, nudges, prep, LLM path |
 | `app/api/companion.py` | HTTP layer |
 | `app/templates/companion.html` | `/companion` (chat, my day, serendipity, prep) |

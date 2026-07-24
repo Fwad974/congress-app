@@ -111,6 +111,7 @@ pytest -q
 | POST | `/api/companion/ask` | Natural-language question about the congress | Any user |
 | GET | `/api/companion/briefing` · `/nudges` · `/serendipity` | Day briefing · proactive nudges · serendipity picks | Any user |
 | GET | `/api/companion/prep/{id}` · `/summary/{id}` · `/guide` | Speaker prep · session summary · Dubai guide | Speaker+ · Any user |
+| GET | `/api/companion/providers` | Which LLM providers are configured and ready | Organizer |
 | POST | `/api/sessions/{id}/reactions` | Send batched emoji reactions | Any user |
 | GET | `/api/sessions/{id}/reactions/stream` | Live reaction burst stream (SSE) | Any user |
 
@@ -505,11 +506,15 @@ natural language, nudges at the right moment, and suggests what to do next. See
   data by a deterministic intent router: what's on now, what to see next, where
   a room is, the WiFi, CME progress, who works on a topic, food/pharmacy/ATM/
   transport, emergency numbers, recordings, posters, reviews.
-- **Optional Claude integration** — free-form questions the router can't
-  classify go to Claude (`COMPANION_MODEL`, default `claude-opus-5`) with the
-  same facts as context and instructions never to invent program details. With
-  no `ANTHROPIC_API_KEY` the companion runs fully offline; a failed call falls
-  back to a rule-based answer rather than an error.
+- **Optional LLM — Claude, Gemini or OpenAI** — free-form questions the router
+  can't classify go to whichever provider you configure, with the same facts as
+  context and instructions never to invent program details. Every provider is
+  optional and none is a hard dependency: install just the SDK you want
+  (`anthropic`, `google-genai` or `openai`) and set its key. `LLM_PROVIDER`
+  picks one (`auto` takes the first configured; `off` disables the LLM path),
+  and `OPENAI_BASE_URL` points at any OpenAI-compatible endpoint. With no
+  provider the companion runs fully offline, and a refusal, safety block or
+  API failure falls back to a rule-based answer rather than an error.
 - **Proactive nudges** — bookmarked session starting soon (with its room), your
   talk in under two hours, a certificate one step away, unrated sessions,
   reviews owed, recording consent waiting, the post-event survey.
@@ -609,7 +614,7 @@ Once created, access `/admin` to manage all users from the dashboard.
 # Install test dependencies
 pip install pytest httpx
 
-# Run all 717 tests (29 files)
+# Run all 752 tests (30 files)
 pytest tests/ -v
 ```
 
@@ -622,7 +627,7 @@ and points uploads at a temp directory.
 | File | Tests | Coverage |
 |------|------:|---------|
 | `test_admin.py` | 50 | User CRUD, RBAC (ROLE-01/02/04), suspend, bulk, export, audit |
-| `test_companion.py` | 48 | Intent routing, nudges, energy, serendipity, prep, Claude fallback |
+| `test_companion.py` | 51 | Intent routing, nudges, energy, serendipity, prep, LLM fallback |
 | `test_papers.py` | 46 | Submission, blind review, decisions, manuscripts |
 | `test_recordings.py` | 46 | Consent gating, publication window, VTT parsing, transcript search |
 | `test_security.py` | 43 | Password hashing, JWT, rate limiter, login tracker, RBAC helpers |
@@ -630,6 +635,7 @@ and points uploads at a temp directory.
 | `test_schedule.py` | 35 | Program CRUD, bookmarks, presenter fields, change notifications |
 | `test_sponsors.py` | 30 | Tiers, booths, opt-in leads (DATA-06), analytics |
 | `test_knowledge.py` | 29 | Topic extraction, graph, related/threads, cross-pollination, PDF |
+| `test_llm.py` | 32 | Provider discovery/selection, Claude/Gemini/OpenAI calls, fallbacks |
 | `test_moderation_advanced.py` | 29 | Auto-flagging, poster approval, MOD-04 escalation ladder |
 | `test_posters.py` | 27 | Gallery, votes, comments, scavenger hunt |
 | `test_venue.py` | 27 | Floor plan, routing, WiFi QR, EN/AR, Maps links |

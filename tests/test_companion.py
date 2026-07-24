@@ -1,13 +1,16 @@
 """
 Tests for the AI Congress Companion: intent routing over live congress data,
 proactive nudges, the day briefing with energy-aware advice, serendipity mode,
-speaker prep, smart summaries, the Dubai guide, and the optional Claude path
-(including that it degrades cleanly when unavailable).
+speaker prep, smart summaries, the Dubai guide, and the optional LLM path
+(Claude / Gemini / OpenAI, including that it degrades cleanly when absent).
 """
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
+import pytest
+
 from app.core import companion
+from app.core.llm import LLMResult
 from app.models.attendance import SessionAttendance
 from app.models.feedback import SessionRating
 from app.models.qa import Question
@@ -381,43 +384,53 @@ class TestProactive:
         assert data["places"] and data["emergency"]
 
 
-# ─── Claude integration (optional path) ──────────────────────────
-class TestClaudePath:
-    def test_llm_off_without_key(self):
+# ─── LLM path (optional: Claude / Gemini / OpenAI) ───────────────
+class TestLLMPath:
+    def test_llm_off_without_any_key(self):
         from app.core.config import get_settings
-        # No key configured by default, so the companion runs fully offline.
-        assert not get_settings().ANTHROPIC_API_KEY
+        # No provider is configured by default, so the companion runs offline.
+        settings = get_settings()
+        assert not (settings.ANTHROPIC_API_KEY or settings.GEMINI_API_KEY
+                    or settings.OPENAI_API_KEY)
         assert companion.llm_available() is False
+        assert companion.llm_provider() is None
 
-    def test_unmatched_uses_claude_when_configured(self, client, db):
-        att = make_user(db, email="cl1@t.com", role=UserRole.attendee)
+    @pytest.mark.parametrize("provider,model", [
+        ("anthropic", "claude-opus-5"),
+        ("gemini", "gemini-2.5-pro"),
+        ("openai", "gpt-4o"),
+    ])
+    def test_unmatched_question_uses_the_active_provider(self, client, db,
+                                                         provider, model):
+        att = make_user(db, email=f"cl-{provider}@t.com", role=UserRole.attendee)
         _session(db, "A talk", offset_hours=2)
+        result = LLMResult(text="Here is a grounded answer.", provider=provider,
+                           model=model)
         with patch.object(companion, "llm_available", return_value=True), \
-             patch.object(companion, "ask_claude",
-                          return_value="Here is a grounded answer."):
+             patch.object(companion, "ask_llm", return_value=result):
             data = _ask(client, att, "qwerty zxcvb", allow_llm=True)
-        assert data["via"] == "claude"
+        assert data["via"] == provider and data["model"] == model
         assert data["answer"] == "Here is a grounded answer."
 
-    def test_claude_failure_degrades_to_rules(self, client, db):
+    def test_llm_failure_degrades_to_rules(self, client, db):
         att = make_user(db, email="cl2@t.com", role=UserRole.attendee)
         with patch.object(companion, "llm_available", return_value=True), \
-             patch.object(companion, "ask_claude", return_value=None):
+             patch.object(companion, "ask_llm", return_value=None):
             data = _ask(client, att, "qwerty zxcvb", allow_llm=True)
         assert data["via"] == "rules" and data["intent"] == "fallback"
 
-    def test_rule_intents_never_call_claude(self, client, db):
+    def test_rule_intents_never_call_the_llm(self, client, db):
         att = make_user(db, email="cl3@t.com", role=UserRole.attendee)
         _live_session(db, "Now talk")
-        with patch.object(companion, "ask_claude") as spy:
+        with patch.object(companion, "ask_llm") as spy:
             data = _ask(client, att, "What's on right now?", allow_llm=True)
         spy.assert_not_called()
         assert data["via"] == "rules"
 
-    def test_allow_llm_false_skips_claude(self, client, db):
+    def test_allow_llm_false_skips_the_llm(self, client, db):
         att = make_user(db, email="cl4@t.com", role=UserRole.attendee)
         with patch.object(companion, "llm_available", return_value=True), \
-             patch.object(companion, "ask_claude") as spy:
+             patch.object(companion, "ask_llm") as spy:
             _ask(client, att, "qwerty zxcvb", allow_llm=False)
         spy.assert_not_called()
 
@@ -428,11 +441,17 @@ class TestClaudePath:
         assert "Grounding keynote" in facts and "Hall 7" in facts
         assert "WiFi SSID" in facts and "/schedule" in facts
 
-    def test_ask_claude_without_key_returns_none(self, client, db):
-        """No key → no call attempted, and the caller still gets an answer."""
+    def test_ask_llm_without_a_provider_returns_none(self, client, db):
+        """No provider → no call attempted, and the caller still answers."""
         att = make_user(db, email="cl6@t.com", role=UserRole.attendee)
         ctx = companion.build_context(db, att)
-        assert companion.ask_claude(db, att, ctx, "anything") is None
+        assert companion.ask_llm(db, att, ctx, "anything") is None
+
+    def test_briefing_reports_provider_state(self, client, db):
+        att = make_user(db, email="cl7@t.com", role=UserRole.attendee)
+        data = client.get("/api/companion/briefing",
+                          cookies=auth_cookie(att)).json()
+        assert data["llm_enabled"] is False and data["llm_provider"] is None
 
 
 # ─── Page + feature flag ─────────────────────────────────────────

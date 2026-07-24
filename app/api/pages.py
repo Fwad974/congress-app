@@ -294,11 +294,14 @@ async def companion_page(request: Request, user=Depends(get_current_user_optiona
         return RedirectResponse(url="/login", status_code=302)
     if _feature_blocked(user, "companion"):
         return RedirectResponse(url="/home", status_code=302)
-    from app.core.companion import llm_available
+    from app.core.companion import llm_available, llm_provider
+    from app.core.llm import PROVIDER_LABELS
+    provider = llm_provider()
     return templates.TemplateResponse("companion.html", {
         "request": request, "user": user,
         "is_speaker": user.role in (UserRole.speaker, UserRole.session_chair),
         "llm_on": llm_available(),
+        "llm_label": PROVIDER_LABELS.get(provider, "") if provider else "",
     })
 
 

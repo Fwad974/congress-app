@@ -70,11 +70,25 @@ class Settings(BaseSettings):
     RECORDING_RETENTION_DAYS: int = 30
 
     # AI Congress Companion. The companion always answers from live congress
-    # data with its built-in rules; when an Anthropic API key is present it
-    # also handles free-form questions in natural language. Leave the key blank
+    # data with its built-in rules; an optional LLM handles free-form questions
+    # in natural language. Every provider is optional — leave the keys blank
     # to run entirely offline.
+    #
+    # LLM_PROVIDER: "auto" (first configured provider, in the order Claude →
+    # Gemini → OpenAI), or "anthropic" / "gemini" / "openai" to pin one, or
+    # "off" to disable the LLM path even when keys are present.
+    LLM_PROVIDER: str = "auto"
     ANTHROPIC_API_KEY: str = ""
-    COMPANION_MODEL: str = "claude-opus-5"
+    ANTHROPIC_MODEL: str = "claude-opus-5"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-pro"
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+    # Point OpenAI calls at any OpenAI-compatible endpoint (gateway, vLLM,
+    # Ollama, OpenRouter…). Blank = api.openai.com.
+    OPENAI_BASE_URL: str = ""
+    # Deprecated alias for ANTHROPIC_MODEL — still honoured when set.
+    COMPANION_MODEL: str = ""
     COMPANION_MAX_TOKENS: int = 900
 
     # Certificates. Attendance is recorded by scanning a session QR; each
