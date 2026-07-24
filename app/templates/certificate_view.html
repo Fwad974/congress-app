@@ -36,7 +36,7 @@
         in recognition of their attendance at {{ congress_full }},
         held {{ congress_dates }} at {{ congress_venue }}.
       {% elif cert.kind == 'cme' %}
-        for earning <strong>{{ cert.progress }} CME/CPD credit{{ '' if cert.progress == 1 else 's' }}</strong>
+        for earning <strong>{{ credits }} CME/CPD credit{{ '' if credits == 1 else 's' }}</strong>
         through participation in accredited sessions at {{ congress_full }},
         held {{ congress_dates }} at {{ congress_venue }}.
       {% else %}

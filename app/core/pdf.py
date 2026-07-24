@@ -80,12 +80,16 @@ def certificate_pdf(*, holder: str, cert_title: str, body_text: str,
     c.setLineWidth(2)
     c.line(center - 60, h - 168, center + 60, h - 168)
 
-    # Presented to + holder name.
+    # Presented to + holder name (shrink to fit so long names stay inside the border).
     c.setFillColor(BODY)
     c.setFont("Times-Italic", 13)
     c.drawCentredString(center, h - 198, "This certificate is proudly presented to")
     c.setFillColor(GREEN)
-    c.setFont("Times-Bold", 26)
+    name_size = 26
+    max_name_width = w - 200
+    while name_size > 12 and stringWidth(holder, "Times-Bold", name_size) > max_name_width:
+        name_size -= 1
+    c.setFont("Times-Bold", name_size)
     c.drawCentredString(center, h - 236, holder)
 
     # Body paragraph, wrapped and centred.

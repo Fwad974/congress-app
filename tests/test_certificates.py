@@ -246,6 +246,81 @@ class TestAttendanceReport:
         assert serial in body and f"/verify/{serial}" in body
 
 
+class TestCertificateHardening:
+    def _speaker(self, db, email, name="Dr H"):
+        sp = make_user(db, email=email, role=UserRole.speaker, full_name=name)
+        _item(db, speaker_id=sp.id)
+        return sp
+
+    def test_revoked_blocks_pdf_download(self, client, db):
+        sp = self._speaker(db, "hv@test.com")
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        rec = db.query(IssuedCertificate).filter_by(user_id=sp.id).one()
+        rec.revoked = True
+        db.commit()
+        r = client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        assert r.status_code == 403
+
+    def test_revoked_blocks_view_page(self, client, db):
+        sp = self._speaker(db, "hw@test.com")
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        db.query(IssuedCertificate).filter_by(user_id=sp.id).update({"revoked": True})
+        db.commit()
+        r = client.get("/certificates/speaker/view", cookies=auth_cookie(sp),
+                       follow_redirects=False)
+        assert r.status_code == 302
+
+    def test_revoked_verify_json_hides_pii(self, client, db):
+        sp = self._speaker(db, "hp@test.com", name="Secret Holder")
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        rec = db.query(IssuedCertificate).filter_by(user_id=sp.id).one()
+        serial = rec.serial
+        rec.revoked = True
+        db.commit()
+        b = client.get(f"/api/certificates/verify/{serial}").json()
+        assert b["valid"] is False and b["status"] == "revoked"
+        assert "holder" not in b and "Secret Holder" not in str(b)
+
+    def test_serial_is_64bit(self, client, db):
+        sp = self._speaker(db, "hs@test.com")
+        client.get("/api/certificates/speaker/download", cookies=auth_cookie(sp))
+        serial = db.query(IssuedCertificate).filter_by(user_id=sp.id).one().serial
+        # DSCC2027-SPK-<16 hex chars>
+        assert len(serial.rsplit("-", 1)[1]) == 16
+
+    def test_csv_formula_injection_neutralized(self, client, db):
+        admin = make_user(db, email="hc@test.com", role=UserRole.admin)
+        att = make_user(db, email="hca@test.com", role=UserRole.attendee,
+                        full_name="=cmd|calc", institution="+evil")
+        code = _code_for(client, db, _item(db, title="=HYPERLINK(1)"), admin)
+        client.post("/api/attendance/checkin", json={"code": code},
+                    cookies=auth_cookie(att))
+        body = client.get("/api/attendance/report/export",
+                          cookies=auth_cookie(att)).text
+        # Dangerous leading chars are prefixed with a quote; no raw formula cell.
+        assert "'=cmd|calc" in body and "'+evil" in body
+        assert "\n=HYPERLINK" not in body and ",=HYPERLINK" not in body
+
+    def test_break_sessions_not_counted(self, client, db):
+        from datetime import datetime, timezone, timedelta
+        admin = make_user(db, email="hb@test.com", role=UserRole.admin)
+        att = make_user(db, email="hba@test.com", role=UserRole.attendee)
+        now = datetime.now(timezone.utc)
+        brk = ScheduleItem(title="Coffee", type=ScheduleType.break_,
+                           start_time=now, end_time=now + timedelta(minutes=30))
+        db.add(brk); db.commit(); db.refresh(brk)
+        code = _code_for(client, db, brk, admin)
+        client.post("/api/attendance/checkin", json={"code": code},
+                    cookies=auth_cookie(att))
+        d = client.get("/api/certificates/status", cookies=auth_cookie(att)).json()
+        assert d["attended_sessions"] == 0 and d["credits"] == 0
+
+    def test_logged_out_checkin_carries_code_to_login(self, client, db):
+        r = client.get("/certificates?checkin=ABC123", follow_redirects=False)
+        assert r.status_code == 302 and "checkin=ABC123" in r.headers["location"]
+        assert r.headers["location"].startswith("/login")
+
+
 class TestAttendancePctThreshold:
     def test_pct_goal_scales_with_program(self, client, db, monkeypatch):
         from app.core.config import get_settings

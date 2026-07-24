@@ -29,7 +29,17 @@ confirm the holder, kind, issue date, and attested sessions/credits.
 Re-downloading reuses the same serial; if the holder attends more sessions,
 the attested counts refresh upward so `/verify` always matches the newest
 copy. A `revoked` flag on the row turns the verdict to "revoked" (set it via
-SQL/DB tooling; there is no admin UI for it yet).
+SQL/DB tooling; there is no admin UI for it yet) — a revoked certificate can no
+longer be downloaded or viewed, and `/verify` reports only that the serial is
+revoked (no holder identity). Serials carry 64 bits of entropy so the public
+verify endpoint can't be enumerated. First-issuance is race-safe (concurrent
+requests reuse the one `(user, kind)` row).
+
+Only **real sessions count** toward attendance and CME credits — breaks
+(`ScheduleType.break_`) are excluded from the attended count, the credit total,
+and the `CERT_ATTENDANCE_PCT` denominator, so they stay consistent. The CSV
+report is written with a UTF-8 BOM (Excel-friendly) and cells beginning with
+`= + - @` are prefixed with a quote to defuse spreadsheet formula injection.
 
 ## Attendance report for institutions
 

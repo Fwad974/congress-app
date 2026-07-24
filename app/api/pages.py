@@ -78,6 +78,13 @@ async def settings_page(request: Request, user=Depends(get_current_user_optional
 @router.get("/certificates", response_class=HTMLResponse)
 async def certificates_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
+        # Preserve a QR check-in code across the login redirect so scanning the
+        # door QR while logged out still records attendance after sign-in.
+        code = request.query_params.get("checkin")
+        if code:
+            from urllib.parse import quote
+            return RedirectResponse(url=f"/login?checkin={quote(code[:12])}",
+                                    status_code=302)
         return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse("certificates.html", {"request": request, "user": user})
 
@@ -201,12 +208,16 @@ async def certificate_view(request: Request, kind: str,
     if not cert or not cert.unlocked:
         return RedirectResponse(url="/certificates", status_code=302)
     issued = ensure_issued(db, user, kind, status)
+    if issued.revoked:
+        return RedirectResponse(url="/certificates", status_code=302)
     verify_url = f"{_public_base(request)}/verify/{issued.serial}"
     from app.core.qr import qr_svg_document
     return templates.TemplateResponse("certificate_view.html", {
         "request": request, "user": user, "cert": cert,
         "issued_on": issued.issued_at.strftime("%d %B %Y"),
         "serial": issued.serial,
+        # Actual earned credits (uncapped) — cert.progress is capped at the goal.
+        "credits": status.credits,
         "verify_qr_svg": qr_svg_document(verify_url, scale=3),
         "verify_url": verify_url,
     })

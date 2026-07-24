@@ -31,6 +31,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.database import get_db
@@ -45,6 +46,19 @@ router = APIRouter()
 
 CERT_KINDS = ("attendance", "cme", "speaker")
 _SERIAL_CODES = {"attendance": "ATT", "cme": "CME", "speaker": "SPK"}
+
+
+def _csv_safe(value) -> str:
+    """Neutralize spreadsheet formula injection (CWE-1236).
+
+    Free-text fields (names, institutions, session titles) land in a CSV that
+    institutions open in Excel/LibreOffice. A cell starting with = + - @ (or a
+    tab/CR) is interpreted as a formula, so prefix those with a single quote.
+    """
+    s = "" if value is None else str(value)
+    if s and s[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + s
+    return s
 
 
 # ─── Schemas ─────────────────────────────────────────────────────
@@ -90,8 +104,14 @@ class AttendedItem(BaseModel):
 
 # ─── Helpers ─────────────────────────────────────────────────────
 def _attended_count(db: Session, user_id: int) -> int:
-    return db.query(func.count(SessionAttendance.id)).filter(
-        SessionAttendance.user_id == user_id).scalar() or 0
+    """Real sessions attended — breaks don't count toward attendance/credits
+    (and are likewise excluded from the % goal denominator, keeping them
+    consistent)."""
+    return db.query(func.count(SessionAttendance.id)).join(
+        ScheduleItem, ScheduleItem.id == SessionAttendance.schedule_item_id
+    ).filter(
+        SessionAttendance.user_id == user_id,
+        ScheduleItem.type != ScheduleType.break_).scalar() or 0
 
 
 def _is_speaker_of_any(db: Session, user_id: int) -> bool:
@@ -99,19 +119,26 @@ def _is_speaker_of_any(db: Session, user_id: int) -> bool:
         ScheduleItem.speaker_id == user_id).first() is not None
 
 
-def attendance_goal(db: Session) -> int:
-    """Sessions needed for the attendance certificate.
+def _attendance_goal(db: Session):
+    """(goal, pct_applied) — sessions needed for the attendance certificate.
 
     Fixed count by default (CERT_MIN_SESSIONS); when CERT_ATTENDANCE_PCT > 0
-    the goal is that percentage of the program (non-break schedule items).
+    and the program has sessions, the goal is that percentage (clamped to
+    1–100%) of the program (non-break schedule items).
     """
     s = get_settings()
-    if s.CERT_ATTENDANCE_PCT > 0:
+    pct = s.CERT_ATTENDANCE_PCT
+    if pct > 0:
+        pct = min(pct, 100)
         total = db.query(func.count(ScheduleItem.id)).filter(
             ScheduleItem.type != ScheduleType.break_).scalar() or 0
         if total:
-            return max(1, math.ceil(total * s.CERT_ATTENDANCE_PCT / 100))
-    return s.CERT_MIN_SESSIONS
+            return max(1, math.ceil(total * pct / 100)), True
+    return s.CERT_MIN_SESSIONS, False
+
+
+def attendance_goal(db: Session) -> int:
+    return _attendance_goal(db)[0]
 
 
 def cert_status(db: Session, user: User) -> CertStatus:
@@ -119,11 +146,11 @@ def cert_status(db: Session, user: User) -> CertStatus:
     attended = _attended_count(db, user.id)
     credits = attended * s.CME_CREDITS_PER_SESSION
     spoke = _is_speaker_of_any(db, user.id)
-    att_goal = attendance_goal(db)
+    att_goal, pct_applied = _attendance_goal(db)
     att_desc = (
-        f"Check in to {att_goal}+ sessions ({s.CERT_ATTENDANCE_PCT}% of the program) "
-        "by scanning the QR at the door."
-        if s.CERT_ATTENDANCE_PCT > 0 else
+        f"Check in to {att_goal}+ sessions ({min(s.CERT_ATTENDANCE_PCT, 100)}% "
+        "of the program) by scanning the QR at the door."
+        if pct_applied else
         f"Check in to {att_goal}+ sessions by scanning the QR at the door.")
     certs = [
         CertInfo(kind="attendance", title="Certificate of Attendance",
@@ -198,21 +225,26 @@ def ensure_issued(db: Session, user: User, kind: str,
         IssuedCertificate.user_id == user.id,
         IssuedCertificate.kind == kind).first()
     if not rec:
+        # 64-bit random serial — wide enough that guessing/enumerating serials
+        # to scrape the public verify endpoint is impractical.
         prefix = f"DSCC{get_settings().CONGRESS_YEAR}-{_SERIAL_CODES[kind]}"
-        serial = None
-        for _ in range(10):
-            candidate = f"{prefix}-{secrets.token_hex(4).upper()}"
-            if not db.query(IssuedCertificate.id).filter(
-                    IssuedCertificate.serial == candidate).first():
-                serial = candidate
-                break
         rec = IssuedCertificate(
             user_id=user.id, kind=kind,
-            serial=serial or f"{prefix}-{secrets.token_hex(8).upper()}",
+            serial=f"{prefix}-{secrets.token_hex(8).upper()}",
             sessions_count=status.attended_sessions, credits=status.credits)
         db.add(rec)
-        db.commit()
-        db.refresh(rec)
+        try:
+            db.commit()
+            db.refresh(rec)
+        except IntegrityError:
+            # Concurrent first-issuance (double-click / two tabs): another
+            # request won the unique (user, kind) row — reuse it.
+            db.rollback()
+            rec = db.query(IssuedCertificate).filter(
+                IssuedCertificate.user_id == user.id,
+                IssuedCertificate.kind == kind).first()
+            if rec is None:
+                raise
     elif (status.attended_sessions > rec.sessions_count
           or status.credits > rec.credits):
         rec.sessions_count = max(rec.sessions_count, status.attended_sessions)
@@ -247,9 +279,14 @@ def verify_certificate(serial: str, db: Session = Depends(get_db)):
     titles = {"attendance": "Certificate of Attendance",
               "cme": "CME/CPD Credit Certificate",
               "speaker": "Speaker Certificate"}
+    # A revoked certificate should not confirm the holder's identity/credits —
+    # report only that the serial is revoked.
+    if cert.revoked:
+        return {"valid": False, "status": "revoked", "serial": cert.serial,
+                "congress": f"{s.CONGRESS_NAME} {s.CONGRESS_YEAR}"}
     return {
-        "valid": not cert.revoked,
-        "status": "revoked" if cert.revoked else "valid",
+        "valid": True,
+        "status": "valid",
         "serial": cert.serial,
         "kind": cert.kind,
         "title": titles.get(cert.kind, cert.kind),
@@ -274,6 +311,9 @@ def download_certificate(kind: str, request: Request,
     if not cert or not cert.unlocked:
         raise HTTPException(status_code=403, detail="Certificate not unlocked yet")
     rec = ensure_issued(db, user, kind, status)
+    if rec.revoked:
+        raise HTTPException(status_code=403,
+                            detail="This certificate has been revoked")
 
     s = get_settings()
     from app.core.pdf import certificate_pdf
@@ -306,42 +346,51 @@ def export_attendance_report(request: Request, db: Session = Depends(get_db),
 
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow([f"Attendance Report — {s.CONGRESS_NAME} {s.CONGRESS_YEAR}"])
-    w.writerow(["Attendee", user.full_name])
-    w.writerow(["Email", user.email])
-    w.writerow(["Institution", user.institution or ""])
-    w.writerow(["Generated (UTC)",
-                datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")])
-    w.writerow([])
-    w.writerow(["Session", "Type", "Location", "Session start (UTC)",
-                "Checked in (UTC)", "Credits"])
+
+    def row(*cells):
+        w.writerow([_csv_safe(c) for c in cells])
+
+    # Credits only accrue on real (non-break) sessions — matches the % goal.
+    credit_per = s.CME_CREDITS_PER_SESSION
+    counted = [(a, it) for a, it in rows if it.type != ScheduleType.break_]
+
+    row(f"Attendance Report — {s.CONGRESS_NAME} {s.CONGRESS_YEAR}")
+    row("Attendee", user.full_name)
+    row("Email", user.email)
+    row("Institution", user.institution or "")
+    row("Generated (UTC)", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"))
+    row()
+    row("Session", "Type", "Location", "Session start (UTC)",
+        "Checked in (UTC)", "Credits")
     for att, item in rows:
-        w.writerow([
+        is_break = item.type == ScheduleType.break_
+        row(
             item.title,
             item.type.value if item.type else "",
             item.location or "",
             item.start_time.strftime("%Y-%m-%d %H:%M") if item.start_time else "",
             att.created_at.strftime("%Y-%m-%d %H:%M") if att.created_at else "",
-            s.CME_CREDITS_PER_SESSION,
-        ])
-    w.writerow([])
-    w.writerow(["Total sessions attended", len(rows)])
-    w.writerow(["Total CME/CPD credits", len(rows) * s.CME_CREDITS_PER_SESSION])
+            0 if is_break else credit_per,
+        )
+    row()
+    row("Total sessions attended", len(counted))
+    row("Total CME/CPD credits", len(counted) * credit_per)
 
     issued = db.query(IssuedCertificate).filter(
         IssuedCertificate.user_id == user.id,
         IssuedCertificate.revoked.is_(False)).all()
     if issued:
         base = _public_base(request)
-        w.writerow([])
-        w.writerow(["Certificate", "Serial", "Issued on", "Verify at"])
+        row()
+        row("Certificate", "Serial", "Issued on", "Verify at")
         for cert in issued:
-            w.writerow([cert.kind, cert.serial,
-                        cert.issued_at.strftime("%Y-%m-%d"),
-                        f"{base}/verify/{cert.serial}"])
+            row(cert.kind, cert.serial, cert.issued_at.strftime("%Y-%m-%d"),
+                f"{base}/verify/{cert.serial}")
 
+    # utf-8-sig: the BOM makes Excel read the file as UTF-8 (no mojibake).
     return Response(
-        content=buf.getvalue(), media_type="text/csv; charset=utf-8",
+        content=buf.getvalue().encode("utf-8-sig"),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition":
                  'attachment; filename="attendance-report.csv"'})
 
