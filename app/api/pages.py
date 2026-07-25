@@ -67,6 +67,18 @@ async def login_page(request: Request, user=Depends(get_current_user_optional)):
         "login.html", {"request": request, "oauth_providers": enabled_providers()})
 
 
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(request: Request):
+    return templates.TemplateResponse(
+        "reset_password.html",
+        {"request": request, "token": request.query_params.get("token", "")})
+
+
 @router.get("/home", response_class=HTMLResponse)
 async def home_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:

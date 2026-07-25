@@ -88,6 +88,7 @@
     <span class="sched-meta">{{ congress_dates }} &middot; {{ congress_venue }}</span>
   </div>
   <div class="sched-toolbar animate-up delay-1">
+    <input class="sched-filter" id="schedSearch" type="search" placeholder="Search sessions, speakers, rooms…" aria-label="Search the program" oninput="renderSchedule()" style="min-width:220px;flex:1;max-width:340px;cursor:text;background-image:none;padding-right:14px">
     <select class="sched-filter" id="typeFilter" onchange="loadSchedule()">
       <option value="">All Types</option>
       <option value="keynote">Keynote</option>
@@ -115,6 +116,10 @@
       My Sessions
     </button>
     {% endif %}
+    <a class="sched-btn" href="/api/schedule/my-agenda.ics" title="Download your bookmarked sessions as a calendar file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Add to calendar
+    </a>
     <button class="sched-btn" onclick="loadSchedule()">Refresh</button>
     {% if is_admin %}
       <button class="sched-btn primary" onclick="openCreate()">+ Add Item</button>
@@ -277,8 +282,9 @@ async function loadSchedule(){
     const qs=params.toString();
     const url='/api/schedule'+(qs?'?'+qs:'');
     const d=await api(url);
+    _loadedOrder=d.items.map(i=>i.id);
     _items={};d.items.forEach(i=>_items[i.id]=i);
-    render(d.items);
+    renderSchedule();
   }catch(e){
     showToast(e.message,'error');
     document.getElementById('scheduleContainer').innerHTML='<div class="sched-empty"><strong>Could not load schedule</strong>'+esc(e.message)+'</div>';
@@ -327,11 +333,28 @@ async function toggleBookmark(id, btn){
   }
 }
 
-function render(items){
+let _loadedOrder=[];
+// Filter the loaded program by the search box, then render. Kept separate from
+// loadSchedule so typing doesn't re-hit the server.
+function renderSchedule(){
+  const q=(document.getElementById('schedSearch')?.value||'').trim().toLowerCase();
+  let items=_loadedOrder.map(id=>_items[id]).filter(Boolean);
+  if(q){
+    items=items.filter(i=>{
+      const hay=[i.title,i.location,i.description,i.speaker_name,i.chair_name,
+                 (i.extra&&(i.extra.speaker||i.extra.track))||''].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  render(items, q);
+}
+function render(items, searchQ){
   const c=document.getElementById('scheduleContainer');
   if(!items.length){
     let msg;
-    if(_bookmarkOnly){
+    if(searchQ){
+      msg='<strong>No matching sessions</strong>Nothing matches “'+esc(searchQ)+'”. Try a different search.';
+    }else if(_bookmarkOnly){
       msg='<strong>No bookmarks yet</strong>Tap the bookmark icon on any item to save it here.';
     }else if(IS_ADMIN){
       msg='<strong>No schedule yet</strong>Click "Add Item" to start building the program.';

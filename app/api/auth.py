@@ -12,7 +12,9 @@ from app.core.oauth import oauth, PROVIDERS, provider_enabled, enabled_providers
 from app.models.user import User
 from app.models.audit_log import AuditLog, AuditAction
 from app.core.audit_service import log_action
-from app.schemas.user import SignUpRequest, LoginRequest, TokenResponse, UserResponse, ProfileUpdateRequest, PasswordChangeRequest
+from app.schemas.user import (SignUpRequest, LoginRequest, TokenResponse, UserResponse,
+                              ProfileUpdateRequest, PasswordChangeRequest,
+                              ForgotPasswordRequest, ResetPasswordRequest)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -204,6 +206,51 @@ def change_password(req: PasswordChangeRequest, request: Request, db: Session = 
 
     log_action(db, user, AuditAction.password_change, "User changed their password", request=request)
     return {"message": "Password updated successfully"}
+
+
+@router.post("/password/forgot")
+def forgot_password(req: ForgotPasswordRequest, request: Request,
+                    db: Session = Depends(get_db)):
+    """Start a password reset. Always returns the same response whether or not
+    the email exists (no account enumeration). When a matching password account
+    exists, a one-time link is emailed (or logged when SMTP is unconfigured)."""
+    import hashlib
+    import secrets as _secrets
+    from datetime import timedelta
+    from app.core.mailer import send_email
+    cfg = get_settings()
+    user = db.query(User).filter(User.email == req.email).first()
+    if user and user.hashed_password:   # OAuth-only accounts have no password
+        token = _secrets.token_urlsafe(32)
+        user.reset_token_hash = hashlib.sha256(token.encode()).hexdigest()
+        user.reset_token_expires = datetime.now(timezone.utc) + timedelta(
+            minutes=cfg.RESET_TOKEN_TTL_MINUTES)
+        db.commit()
+        base = (cfg.OAUTH_REDIRECT_BASE.rstrip("/")
+                if cfg.OAUTH_REDIRECT_BASE else str(request.base_url).rstrip("/"))
+        link = f"{base}/reset-password?token={token}"
+        send_email(user.email, "Reset your congress password",
+                   f"Use this link within {cfg.RESET_TOKEN_TTL_MINUTES} minutes to "
+                   f"reset your password:\n\n{link}\n\nIf you didn't request this, ignore this email.")
+    return {"message": "If that email is registered, a reset link has been sent."}
+
+
+@router.post("/password/reset")
+def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    import hashlib
+    th = hashlib.sha256(req.token.encode()).hexdigest()
+    user = db.query(User).filter(User.reset_token_hash == th).first()
+    exp = getattr(user, "reset_token_expires", None) if user else None
+    if exp is not None and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if not user or exp is None or exp < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
+    user.hashed_password = hash_password(req.new_password)
+    user.reset_token_hash = None
+    user.reset_token_expires = None
+    user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"message": "Password reset. You can now sign in."}
 
 
 @router.delete("/account")

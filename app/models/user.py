@@ -47,6 +47,10 @@ class User(Base):
     # Moderation: temporary posting ban (MOD-04 mute step). When set to a
     # future time, the user can browse/read but not create content.
     muted_until = Column(DateTime(timezone=True), nullable=True)
+    # Password reset: a SHA-256 hash of the one-time token and its expiry. The
+    # raw token is only ever delivered to the user (never stored).
+    reset_token_hash = Column(String(64), nullable=True)
+    reset_token_expires = Column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

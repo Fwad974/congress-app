@@ -31,6 +31,17 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str = ""
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = "mailto:admin@dubaicongress.example"
+
+    # Outbound email (password reset). Leave SMTP_HOST blank to run without a
+    # mail server — messages are logged instead of sent.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+    SMTP_STARTTLS: bool = True
+    # How long a password-reset link stays valid.
+    RESET_TOKEN_TTL_MINUTES: int = 30
     PUSH_TTL: int = 86400  # seconds a push service should retain an undelivered message
     PUSH_SEND_TIMEOUT: float = 10.0  # per-endpoint HTTP timeout for a single push
 

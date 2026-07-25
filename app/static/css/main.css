@@ -84,8 +84,10 @@ a:hover{color:var(--gold-l)}
 
 /* ═══ BUTTONS ═══ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 .88rem var(--f);padding:12px 28px;border:none;border-radius:50px;cursor:pointer;transition:all .3s;white-space:nowrap}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);box-shadow:0 4px 20px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.15)}
-.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,169,98,.3),0 0 0 1px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.2);background:linear-gradient(135deg,var(--gold-l),var(--gold))}
+/* Canonical primary button. .btn-primary is an alias kept for any dynamic
+   markup that still uses it — same rules, one source of truth. */
+.btn-gold,.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);box-shadow:0 4px 20px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.15)}
+.btn-gold:hover,.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,169,98,.3),0 0 0 1px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.2);background:linear-gradient(135deg,var(--gold-l),var(--gold))}
 .btn-outline{background:transparent;color:var(--w9);border:2px solid var(--ga3)}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 .btn-ghost{background:transparent;color:var(--w7);border:1px solid var(--w1)}
@@ -97,8 +99,7 @@ a:hover{color:var(--gold-l)}
 .sso-ico{width:18px;height:18px;flex-shrink:0;display:block}
 .btn-sm{padding:9px 20px;font-size:.82rem}
 .btn-lg{padding:15px 36px;font-size:.95rem}
-.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:var(--bg);font-weight:600;box-shadow:0 4px 20px rgba(201,169,98,.2),inset 0 1px 0 rgba(255,255,255,.15)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,169,98,.3),inset 0 1px 0 rgba(255,255,255,.2);background:linear-gradient(135deg,var(--gold-l),var(--gold))}
+.btn-primary{font-weight:600}
 
 /* ═══ FORMS ═══ */
 .form-group{display:flex;flex-direction:column;gap:6px}

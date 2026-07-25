@@ -440,3 +440,49 @@ def delete_schedule_item(
             "tag": f"sched-{item_id}", "url": "/schedule",
         })
     return {"message": f"Schedule item '{title}' deleted"}
+
+
+# ─── Calendar export (ICS) ────────────────────────────────────────
+def _ics_escape(s: str) -> str:
+    s = "" if s is None else str(s)
+    return (s.replace("\\", "\\\\").replace(";", "\;")
+             .replace(",", "\\,").replace("\n", "\\n"))
+
+
+def _ics_dt(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+@router.get("/my-agenda.ics")
+def export_agenda_ics(request: Request, db: Session = Depends(get_db),
+                      user=Depends(get_current_user)):
+    """Download the user's bookmarked sessions as an .ics calendar file so they
+    can add their personal agenda to any calendar app."""
+    from fastapi.responses import Response
+    ids = _bookmarked_ids(db, user.id)
+    items = (db.query(ScheduleItem).filter(ScheduleItem.id.in_(ids or [0]))
+             .order_by(asc(ScheduleItem.start_time)).all())
+    now = _ics_dt(datetime.now(timezone.utc))
+    host = request.url.hostname or "congress"
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0",
+             "PRODID:-//Dubai Stem Cell Congress//Agenda//EN", "CALSCALE:GREGORIAN"]
+    for it in items:
+        lines += [
+            "BEGIN:VEVENT",
+            f"UID:session-{it.id}@{host}",
+            f"DTSTAMP:{now}",
+            f"DTSTART:{_ics_dt(it.start_time)}",
+            f"DTEND:{_ics_dt(it.end_time)}",
+            f"SUMMARY:{_ics_escape(it.title)}",
+        ]
+        if it.location:
+            lines.append(f"LOCATION:{_ics_escape(it.location)}")
+        if it.description:
+            lines.append(f"DESCRIPTION:{_ics_escape(it.description)}")
+        lines.append("END:VEVENT")
+    lines.append("END:VCALENDAR")
+    body = "\r\n".join(lines) + "\r\n"
+    return Response(content=body, media_type="text/calendar",
+                    headers={"Content-Disposition": 'attachment; filename="my-agenda.ics"'})

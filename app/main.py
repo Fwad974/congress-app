@@ -160,6 +160,18 @@ def _migrate_users_table(connection):
         connection.execute(text(
             "ALTER TABLE users ADD COLUMN muted_until TIMESTAMPTZ"
         ))
+    if cols and "suspended_until" not in cols:
+        connection.execute(text(
+            "ALTER TABLE users ADD COLUMN suspended_until TIMESTAMPTZ"
+        ))
+    if cols and "reset_token_hash" not in cols:
+        connection.execute(text(
+            "ALTER TABLE users ADD COLUMN reset_token_hash VARCHAR(64)"
+        ))
+    if cols and "reset_token_expires" not in cols:
+        connection.execute(text(
+            "ALTER TABLE users ADD COLUMN reset_token_expires TIMESTAMPTZ"
+        ))
 
 
 def _migrate_papers_table(connection):

@@ -251,13 +251,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // needing to add an explicit landmark: mark the first content .container (the
 // one that isn't the nav bar) as the focus target.
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('main')) return;
-  const containers = document.querySelectorAll('.container');
-  for (const c of containers) {
-    if (!c.closest('.nav-bar')) {
-      c.id = 'main';
-      c.setAttribute('tabindex', '-1');
-      break;
+  const skip = document.querySelector('.skip-link');
+  let target = document.getElementById('main');
+  if (!target) {
+    for (const c of document.querySelectorAll('.container')) {
+      if (!c.closest('.nav-bar')) { target = c; break; }
     }
   }
+  if (!target) return;
+  target.setAttribute('tabindex', '-1');
+  // Don't clobber an existing id (e.g. venue's #vnRoot) — point the skip link
+  // at whatever id the content region already has, only minting one if needed.
+  if (!target.id) target.id = 'main';
+  if (skip) skip.setAttribute('href', '#' + target.id);
 });
