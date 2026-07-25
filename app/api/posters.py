@@ -219,7 +219,9 @@ def _hunt_status(db: Session, user: User) -> HuntStatus:
     goal = get_settings().POSTER_HUNT_GOAL
     ids = [pid for (pid,) in db.query(PosterVisit.poster_id).filter(
         PosterVisit.user_id == user.id).all()]
-    total = db.query(func.count(Poster.id)).scalar() or 0
+    # Only approved posters are visitable, so they alone form the hunt total.
+    total = db.query(func.count(Poster.id)).filter(
+        Poster.status == "approved").scalar() or 0
     return HuntStatus(visited=len(ids), goal=goal, total_posters=total,
                       complete=len(ids) >= goal, visited_poster_ids=ids)
 

@@ -172,6 +172,7 @@ function connectReactions(){
     }
     updateTally();
   };
+  _res.onerror=()=>{/* EventSource auto-reconnects; nothing to surface here */};
 }
 function spawnFloat(emoji){
   const s=document.createElement('span');s.className='rfloat';s.textContent=emoji;

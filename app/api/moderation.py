@@ -187,6 +187,10 @@ def resolve_report(report_id: int, req: ResolveRequest, request: Request,
         ContentReport.content_id == rep.content_id,
         ContentReport.status == "open",
     ).all()
+    # Already handled by another moderator — don't remove the content twice.
+    if not siblings:
+        return {"action": rep.action_taken or "already resolved",
+                "removed": False, "reports_closed": 0}
 
     resolver = _RESOLVERS.get(rep.content_type)
     # Capture the author before removal so we can notify them.

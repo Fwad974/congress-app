@@ -126,8 +126,9 @@ def session_summary(session_id: int, db: Session = Depends(get_db),
     session's own speaker."""
     item = _session_or_404(db, session_id)
     is_org = _is_organizer(user)
-    is_speaker = item.speaker_id == user.id
-    if not (is_org or is_speaker):
+    # The session's speaker and its chair both get the anonymized summary.
+    is_owner = item.speaker_id == user.id or item.chair_id == user.id
+    if not (is_org or is_owner):
         raise HTTPException(status_code=403, detail="Not allowed")
     return _summary(db, item, include_private=is_org)
 

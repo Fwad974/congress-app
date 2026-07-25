@@ -63,7 +63,7 @@
       if(!d.sponsors||!d.sponsors.length)return;
       const wrap=document.getElementById('sponsorRail'),box=document.getElementById('sponsorLogos');
       box.innerHTML=d.sponsors.slice(0,12).map(function(s){
-        const cap=(s.name||'?').replace(/[<>&"]/g,'');
+        const cap=esc(s.name||'?');   // escape, don't strip — "Smith & Co" stays intact
         return s.has_logo
           ? '<div title="'+cap+'" style="height:46px;padding:8px 14px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;display:flex;align-items:center"><img src="/api/sponsors/'+s.id+'/logo" alt="'+cap+'" style="max-height:30px;max-width:120px;object-fit:contain"></div>'
           : '<div style="padding:10px 16px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;font:600 .85rem var(--fh);color:var(--gold)">'+cap+'</div>';

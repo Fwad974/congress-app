@@ -229,7 +229,9 @@ async function uploadImg(id,el,silent){
   if(!el.files||!el.files.length)return;
   const fd=new FormData();fd.append('file',el.files[0]);
   const r=await fetch('/api/posters/'+id+'/image',{method:'POST',body:fd,credentials:'same-origin'});
-  if(!r.ok){let d={};try{d=await r.json();}catch(e){}throw new Error(d.detail||'Image upload failed');}
+  if(!r.ok){let d={};try{d=await r.json();}catch(e){}const err=new Error(d.detail||'Image upload failed');
+    // The direct "Change image" onchange caller can't catch, so surface it here.
+    if(silent)throw err; showToast(err.message,'error'); return;}
   if(!silent){showToast('Image updated','success');openDetail(id);loadPosters();}
 }
 async function delPoster(id){
