@@ -198,7 +198,12 @@ def checkin(req: CheckinRequest, db: Session = Depends(get_db),
         SessionAttendance.user_id == user.id).first() is not None
     if not already:
         db.add(SessionAttendance(schedule_item_id=item.id, user_id=user.id))
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Concurrent double-tap: the unique constraint already recorded it.
+            db.rollback()
+            already = True
     return CheckinResponse(session_title=item.title,
                            attended=_attended_count(db, user.id), already=already)
 

@@ -62,19 +62,36 @@ class Broadcaster:
         self._connected = False
 
     async def _reader(self) -> None:
-        """Pump Redis pub/sub messages to local subscribers."""
-        pubsub = self._redis.pubsub()
-        await pubsub.psubscribe("rt:*")
-        try:
-            async for msg in pubsub.listen():
-                if msg.get("type") != "pmessage":
-                    continue
-                self._dispatch_local(msg["channel"], msg["data"])
-        except asyncio.CancelledError:
-            await pubsub.aclose()
-            raise
-        except Exception as e:  # noqa: BLE001
-            logger.warning("Realtime reader stopped: %s", e)
+        """Pump Redis pub/sub messages to local subscribers.
+
+        Wrapped in a reconnect loop: a transient Redis error used to kill the
+        reader permanently (publishes kept 'succeeding' but nothing was ever
+        delivered), so cross-worker SSE fan-out went silently dead until a
+        restart. Now it backs off and re-subscribes instead.
+        """
+        backoff = 1
+        while True:
+            try:
+                pubsub = self._redis.pubsub()
+                await pubsub.psubscribe("rt:*")
+                backoff = 1  # healthy again
+                async for msg in pubsub.listen():
+                    if msg.get("type") != "pmessage":
+                        continue
+                    self._dispatch_local(msg["channel"], msg["data"])
+            except asyncio.CancelledError:
+                try:
+                    await pubsub.aclose()
+                except Exception:  # noqa: BLE001
+                    pass
+                raise
+            except Exception as e:  # noqa: BLE001 - reconnect instead of dying
+                logger.warning("Realtime reader error (%s); reconnecting in %ss", e, backoff)
+                try:
+                    await asyncio.sleep(backoff)
+                except asyncio.CancelledError:
+                    raise
+                backoff = min(backoff * 2, 30)
 
     def _dispatch_local(self, channel: str, raw: str) -> None:
         for q in list(self._local.get(channel, ())):

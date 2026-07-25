@@ -239,7 +239,44 @@ def _assign_keywords(raw_texts: Dict[Tuple[str, int], str],
     return out
 
 
+_INDEX_CACHE = {"sig": None, "index": None}
+
+
+def _corpus_signature(db: Session):
+    """A cheap fingerprint of the graph's inputs. Any insert/update to the
+    source tables changes a count or a max-timestamp, invalidating the cache —
+    so callers see fresh data while a single companion request (which builds the
+    index up to ~8 times) rebuilds it only once."""
+    from sqlalchemy import func as _f
+    from app.models.qa import Question as _Q
+    from app.models.paper import Paper as _P
+    from app.models.poster import Poster as _Po
+    return (
+        db.query(_f.count(ScheduleItem.id)).scalar() or 0,
+        db.query(_f.max(ScheduleItem.updated_at)).scalar(),
+        db.query(_f.count(_Q.id)).scalar() or 0,
+        db.query(_f.count(_P.id)).scalar() or 0,
+        db.query(_f.count(_Po.id)).scalar() or 0,
+    )
+
+
 def build_index(db: Session) -> GraphIndex:
+    """Build the whole graph from current program data (cached by a cheap
+    corpus signature so repeated calls in one request don't rescan the DB)."""
+    try:
+        sig = _corpus_signature(db)
+        if _INDEX_CACHE["sig"] == sig and _INDEX_CACHE["index"] is not None:
+            return _INDEX_CACHE["index"]
+    except Exception:
+        sig = None
+    index = _build_index_uncached(db)
+    if sig is not None:
+        _INDEX_CACHE["sig"] = sig
+        _INDEX_CACHE["index"] = index
+    return index
+
+
+def _build_index_uncached(db: Session) -> GraphIndex:
     """Build the whole graph from current program data."""
     entities: List[Entity] = []
     raw_texts: Dict[Tuple[str, int], str] = {}

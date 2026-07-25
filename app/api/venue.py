@@ -193,15 +193,17 @@ def venue_info(db: Session = Depends(get_db), user: User = Depends(get_current_u
 
 
 # ─── WiFi one-tap connect QR ─────────────────────────────────────
-def _wifi_escape(v: str) -> str:
+def _wifi_escape(v) -> str:
+    # Settings sections are Dict[str, Any], so a saved non-string (e.g. a number)
+    # must not blow up the QR builder — coerce to str first.
     out = ""
-    for ch in v or "":
+    for ch in "" if v is None else str(v):
         out += ("\\" + ch) if ch in ('\\', ';', ',', ':', '"') else ch
     return out
 
 
 def wifi_qr_payload(wifi: Dict) -> str:
-    sec = (wifi.get("security") or "WPA").upper()
+    sec = str(wifi.get("security") or "WPA").upper()
     if sec not in ("WPA", "WEP", "NOPASS"):
         sec = "WPA"
     ssid = _wifi_escape(wifi.get("ssid") or "")

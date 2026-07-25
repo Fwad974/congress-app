@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -167,12 +168,16 @@ async def upvote(
     ).first()
     if not existing:
         db.add(QuestionVote(question_id=question_id, user_id=user.id))
-        db.flush()
-        q.upvotes = _recount_upvotes(db, question_id)
-        q.updated_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(q)
-        await _broadcast(db, q, "updated")
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()   # concurrent double-vote; the unique constraint held
+        else:
+            q.upvotes = _recount_upvotes(db, question_id)
+            q.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            db.refresh(q)
+            await _broadcast(db, q, "updated")
 
     author = db.query(User.full_name).filter(User.id == q.user_id).scalar() or "Someone"
     return _serialize(q, author, is_mine=(q.user_id == user.id), has_upvoted=True)

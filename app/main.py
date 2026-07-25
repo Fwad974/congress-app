@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.core.config import get_settings
 from app.core.database import engine, Base
-from app.models.user import User  # noqa – registers model
+from app.models.user import User, UserRole  # noqa – registers model
 from app.models.audit_log import AuditLog, AuditAction, AuditSeverity  # noqa – registers model
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark  # noqa – registers model
 from app.models.notification import NotificationSettings, UserNotification, PushSubscription, Broadcast  # noqa – registers model
@@ -308,9 +308,16 @@ async def lifespan(application: FastAPI):
     # Sync Postgres enum types with current Python enum members.
     if engine.dialect.name == "postgresql":
         with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            # Every SAEnum-backed column, so adding a member to any of these
+            # enums doesn't break inserts against an existing production DB.
             _sync_pg_enum(conn, "auditaction", AuditAction)
             _sync_pg_enum(conn, "auditseverity", AuditSeverity)
             _sync_pg_enum(conn, "scheduletype", ScheduleType)
+            _sync_pg_enum(conn, "userrole", UserRole)
+            _sync_pg_enum(conn, "paperstatus", PaperStatus)
+            _sync_pg_enum(conn, "polltype", PollType)
+            _sync_pg_enum(conn, "pollstatus", PollStatus)
+            _sync_pg_enum(conn, "questionstatus", QuestionStatus)
         with engine.begin() as conn:
             _migrate_schedule_table(conn)
             _migrate_users_table(conn)

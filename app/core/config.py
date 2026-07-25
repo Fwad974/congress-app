@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = "mailto:admin@dubaicongress.example"
     PUSH_TTL: int = 86400  # seconds a push service should retain an undelivered message
+    PUSH_SEND_TIMEOUT: float = 10.0  # per-endpoint HTTP timeout for a single push
 
     # Realtime (live Q&A / polls / reactions). Empty = in-process pub/sub only
     # (fine for a single worker / tests). Set to a redis:// URL to fan out

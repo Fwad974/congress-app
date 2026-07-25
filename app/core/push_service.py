@@ -61,6 +61,9 @@ def _send_one(sub: PushSubscription, payload_json: str) -> bool:
             vapid_private_key=settings.VAPID_PRIVATE_KEY,
             vapid_claims={"sub": settings.VAPID_SUBJECT},
             ttl=settings.PUSH_TTL,
+            # Per-send timeout so one unresponsive push endpoint can't stall the
+            # whole serial fan-out (a full-congress emergency alert) for minutes.
+            timeout=settings.PUSH_SEND_TIMEOUT,
         )
         return True
     except WebPushException as e:

@@ -317,7 +317,11 @@ def update_schedule_item(
     if req.end_time is not None:
         item.end_time = req.end_time
 
-    if item.end_time <= item.start_time:
+    # A partial update can mix an aware incoming value with a naive stored one
+    # (SQLite), which raises TypeError on comparison — normalise both to UTC.
+    def _aware(dt):
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    if _aware(item.end_time) <= _aware(item.start_time):
         raise HTTPException(status_code=400, detail="end_time must be after start_time")
 
     # Coerce extras against the (possibly new) type

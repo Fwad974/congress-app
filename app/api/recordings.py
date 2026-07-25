@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit_service import log_action
@@ -203,14 +204,19 @@ def search_transcripts(q: str = Query(..., min_length=2),
                        user: User = Depends(get_current_user)):
     """Full-text search across every transcript the caller may watch."""
     term = q.strip()
+    # Escape LIKE wildcards so a query of "%_" isn't treated as a pattern.
+    like = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    # Bound the DB fetch: we post-filter by availability, so over-fetch a
+    # multiple of `limit` rather than pulling every matching segment into RAM.
     rows = (db.query(TranscriptSegment, SessionRecording, ScheduleItem)
             .join(SessionRecording,
                   SessionRecording.id == TranscriptSegment.recording_id)
             .outerjoin(ScheduleItem,
                        ScheduleItem.id == SessionRecording.schedule_item_id)
-            .filter(TranscriptSegment.text.ilike(f"%{term}%"))
+            .filter(TranscriptSegment.text.ilike(like, escape="\\"))
             .order_by(TranscriptSegment.recording_id,
                       TranscriptSegment.start_seconds)
+            .limit(limit * 20)
             .all())
     now = datetime.now(timezone.utc)
     hits = []
@@ -260,8 +266,13 @@ def register_view(recording_id: int, db: Session = Depends(get_db),
     if not is_available(rec):
         raise HTTPException(status_code=404, detail="Recording not available")
     if not (_is_organizer(user) or _is_speaker_of(item, user)):
-        rec.views = (rec.views or 0) + 1
+        # Atomic increment in SQL so concurrent playbacks don't lose counts to
+        # a read-modify-write race.
+        db.query(SessionRecording).filter(SessionRecording.id == rec.id).update(
+            {SessionRecording.views: func.coalesce(SessionRecording.views, 0) + 1},
+            synchronize_session=False)
         db.commit()
+        db.refresh(rec)
     counts = _counts(db, [rec.id])
     return _serialize(rec, item, user, counts=counts.get(rec.id))
 

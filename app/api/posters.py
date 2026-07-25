@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.uploads import read_capped
@@ -67,20 +68,47 @@ def _comment_out(c: PosterComment, name: str, viewer: User, owner_id) -> Comment
     )
 
 
-def _serialize(db: Session, p: Poster, viewer: User, with_comments: bool = False) -> PosterResponse:
-    vote_count = db.query(func.count(PosterVote.id)).filter(
-        PosterVote.poster_id == p.id).scalar() or 0
-    my_vote = db.query(PosterVote.id).filter(
-        PosterVote.poster_id == p.id, PosterVote.user_id == viewer.id).first() is not None
-    comment_count = db.query(func.count(PosterComment.id)).filter(
-        PosterComment.poster_id == p.id).scalar() or 0
-    visited = db.query(PosterVisit.id).filter(
-        PosterVisit.poster_id == p.id, PosterVisit.user_id == viewer.id).first() is not None
-    can_edit = _can_edit(p, viewer)
+def _bulk_stats(db: Session, posters: List[Poster], viewer: User) -> dict:
+    """Vote/comment counts + this viewer's votes/visits + presenter names for a
+    whole list, in a handful of grouped queries instead of ~5 per poster."""
+    ids = [p.id for p in posters]
+    if not ids:
+        return {"votes": {}, "comments": {}, "my_votes": set(), "my_visits": set(), "names": {}}
+    votes = dict(db.query(PosterVote.poster_id, func.count(PosterVote.id))
+                 .filter(PosterVote.poster_id.in_(ids)).group_by(PosterVote.poster_id).all())
+    comments = dict(db.query(PosterComment.poster_id, func.count(PosterComment.id))
+                    .filter(PosterComment.poster_id.in_(ids)).group_by(PosterComment.poster_id).all())
+    my_votes = {pid for (pid,) in db.query(PosterVote.poster_id).filter(
+        PosterVote.poster_id.in_(ids), PosterVote.user_id == viewer.id).all()}
+    my_visits = {pid for (pid,) in db.query(PosterVisit.poster_id).filter(
+        PosterVisit.poster_id.in_(ids), PosterVisit.user_id == viewer.id).all()}
+    pres_ids = {p.presenter_id for p in posters if p.presenter_id}
+    names = {u.id: u.full_name for u in db.query(User).filter(
+        User.id.in_(pres_ids or [0])).all()} if pres_ids else {}
+    return {"votes": votes, "comments": comments, "my_votes": my_votes,
+            "my_visits": my_visits, "names": names}
 
-    presenter_name = None
-    if p.presenter_id:
-        presenter_name = db.query(User.full_name).filter(User.id == p.presenter_id).scalar()
+
+def _serialize(db: Session, p: Poster, viewer: User, with_comments: bool = False,
+               stats: dict = None) -> PosterResponse:
+    if stats is not None:
+        vote_count = int(stats["votes"].get(p.id, 0))
+        comment_count = int(stats["comments"].get(p.id, 0))
+        my_vote = p.id in stats["my_votes"]
+        visited = p.id in stats["my_visits"]
+        presenter_name = stats["names"].get(p.presenter_id) if p.presenter_id else None
+    else:
+        vote_count = db.query(func.count(PosterVote.id)).filter(
+            PosterVote.poster_id == p.id).scalar() or 0
+        my_vote = db.query(PosterVote.id).filter(
+            PosterVote.poster_id == p.id, PosterVote.user_id == viewer.id).first() is not None
+        comment_count = db.query(func.count(PosterComment.id)).filter(
+            PosterComment.poster_id == p.id).scalar() or 0
+        visited = db.query(PosterVisit.id).filter(
+            PosterVisit.poster_id == p.id, PosterVisit.user_id == viewer.id).first() is not None
+        presenter_name = (db.query(User.full_name).filter(User.id == p.presenter_id).scalar()
+                          if p.presenter_id else None)
+    can_edit = _can_edit(p, viewer)
 
     comments: List[CommentResponse] = []
     if with_comments:
@@ -135,7 +163,8 @@ def list_posters(
     mod = is_moderator(user)
     posters = [p for p in posters if p.status == "approved" or mod
                or p.presenter_id == user.id or p.created_by == user.id]
-    out = [_serialize(db, p, user) for p in posters]
+    stats = _bulk_stats(db, posters, user)
+    out = [_serialize(db, p, user, stats=stats) for p in posters]
     if sort == "recent":
         out.sort(key=lambda r: r.created_at, reverse=True)
     elif sort == "board":
@@ -175,7 +204,8 @@ def my_posters(db: Session = Depends(get_db), user: User = Depends(get_current_u
     posters = db.query(Poster).filter(
         (Poster.presenter_id == user.id) | (Poster.created_by == user.id)
     ).order_by(Poster.created_at.desc()).all()
-    return PosterListResponse(posters=[_serialize(db, p, user) for p in posters],
+    stats = _bulk_stats(db, posters, user)
+    return PosterListResponse(posters=[_serialize(db, p, user, stats=stats) for p in posters],
                               total=len(posters), can_create=_can_create(user))
 
 
@@ -209,7 +239,10 @@ def _visit(db: Session, poster_id: int, user_id: int) -> None:
         PosterVisit.poster_id == poster_id, PosterVisit.user_id == user_id).first()
     if not exists:
         db.add(PosterVisit(poster_id=poster_id, user_id=user_id))
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()   # concurrent first-visit; unique constraint held
 
 
 # ─── Single poster ───────────────────────────────────────────────
@@ -263,7 +296,10 @@ def vote_poster(poster_id: int, db: Session = Depends(get_db),
         PosterVote.poster_id == poster_id, PosterVote.user_id == user.id).first()
     if not exists:
         db.add(PosterVote(poster_id=poster_id, user_id=user.id))
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()   # concurrent double-vote; unique constraint held
     return _serialize(db, poster, user)
 
 
