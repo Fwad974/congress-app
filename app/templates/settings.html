@@ -112,7 +112,24 @@
           <input type="time" class="form-input" id="n_qh_end" style="flex:1" aria-label="Quiet hours end">
         </div>
       </div>
+      <div class="field-block" id="pushBlock" style="display:none">
+        <div class="toggle-row">
+          <div>
+            <div class="ftitle">Browser push notifications</div>
+            <div class="fhint">Get alerts even when the app isn't open. Turn off to stop push on this device.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="n_push" onchange="onPushToggle(this.checked)" aria-label="Enable browser push notifications"><span></span></label>
+        </div>
+      </div>
       <div class="form-actions"><button type="button" class="btn btn-gold btn-sm" id="notifBtn" onclick="saveNotifPrefs()">Save Preferences</button></div>
+    </div>
+  </div>
+
+  <div class="settings-card animate-up delay-3">
+    <div class="settings-header"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><h3>Delete account</h3></div>
+    <div class="settings-body">
+      <div class="fhint">Permanently delete your account and all associated data. This cannot be undone.</div>
+      <div class="form-actions"><button type="button" class="btn btn-sm" style="color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deleteAccount()">Delete my account</button></div>
     </div>
   </div>
 </div></div>
@@ -195,5 +212,48 @@ async function saveNotifPrefs(){
   btn.innerHTML='Save Preferences';btn.disabled=false;
 }
 
+// ── Browser push on/off ────────────────────────────────────────
+async function initPushToggle(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+  try{
+    const r=await fetch('/api/notifications/push/key',{credentials:'same-origin'});
+    if(!r.ok)return;const cfg=await r.json();
+    if(!cfg.enabled||!cfg.public_key)return;   // push not configured server-side
+    document.getElementById('pushBlock').style.display='';
+    const reg=await navigator.serviceWorker.getRegistration();
+    const sub=reg?await reg.pushManager.getSubscription():null;
+    document.getElementById('n_push').checked=!!sub&&Notification.permission==='granted';
+  }catch(e){}
+}
+async function onPushToggle(on){
+  try{
+    if(on){
+      if(window.__schedNotif){const p=await window.__schedNotif.requestPermission();
+        if(p!=='granted'){document.getElementById('n_push').checked=false;showToast('Enable notifications in your browser to receive push','error');return;}
+        await window.__schedNotif.enablePush();showToast('Push notifications on','success');}
+    }else{
+      const reg=await navigator.serviceWorker.getRegistration();
+      const sub=reg?await reg.pushManager.getSubscription():null;
+      if(sub){await fetch('/api/notifications/push/unsubscribe',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})}).catch(()=>{});
+        await sub.unsubscribe().catch(()=>{});}
+      showToast('Push notifications off','success');
+    }
+  }catch(e){showToast(e.message||'Could not update push','error');}
+}
+
+// ── Delete account ──────────────────────────────────────────────
+async function deleteAccount(){
+  if(!await confirmDialog({title:'Delete account',message:'Permanently delete your account and all your data? This cannot be undone.',confirmText:'Delete account',danger:true}))return;
+  const confirmText=await promptDialog({title:'Confirm deletion',message:'Type DELETE to confirm.',placeholder:'DELETE'});
+  if(confirmText!=='DELETE'){if(confirmText!==null)showToast('Deletion cancelled','error');return;}
+  try{
+    const r=await fetch('/api/auth/account',{method:'DELETE',credentials:'same-origin'});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Failed');}
+    showToast('Account deleted','success');
+    setTimeout(()=>window.location.href='/',800);
+  }catch(e){showToast(e.message,'error');}
+}
+
 document.addEventListener('DOMContentLoaded',loadNotifPrefs);
+document.addEventListener('DOMContentLoaded',initPushToggle);
 </script>{% endblock %}

@@ -81,6 +81,11 @@ def _summary(db: Session, item: ScheduleItem, *, include_private: bool) -> Sessi
 def upsert_rating(session_id: int, req: RatingUpsert, db: Session = Depends(get_db),
                   user: User = Depends(get_current_user)):
     _session_or_404(db, session_id)
+    # A rating carries a free-text comment shown to speakers/organizers, so the
+    # mute guard applies (MOD-04).
+    if (req.comment or req.speaker_feedback):
+        from app.core.moderation_service import ensure_can_post
+        ensure_can_post(user)
     row = db.query(SessionRating).filter(
         SessionRating.schedule_item_id == session_id,
         SessionRating.user_id == user.id).first()

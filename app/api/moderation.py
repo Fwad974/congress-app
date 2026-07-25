@@ -188,13 +188,38 @@ def resolve_report(report_id: int, req: ResolveRequest, request: Request,
         ContentReport.status == "open",
     ).all()
 
+    resolver = _RESOLVERS.get(rep.content_type)
+    # Capture the author before removal so we can notify them.
+    author_id = None
+    if resolver:
+        prev = resolver["preview"](db, rep.content_id)
+        if prev:
+            author_id = prev.get("author_id")
+
     removed = False
     if req.action == "remove":
-        resolver = _RESOLVERS.get(rep.content_type)
         removed = bool(resolver and resolver["remove"](db, rep.content_id))
         action, new_status = "removed", "resolved"
     else:
         action, new_status = "dismissed", "dismissed"
+
+    # Close the loop: tell the content author when their content was removed,
+    # and tell each reporter their report was handled.
+    from app.models.notification import UserNotification
+    label = {"question": "question", "poster_comment": "poster comment"}.get(
+        rep.content_type, "post")
+    if removed and author_id:
+        db.add(UserNotification(
+            user_id=author_id, schedule_item_id=None, kind="moderation",
+            title="A post was removed",
+            body=f"Your {label} was removed by a moderator" +
+                 (f": {req.reason}" if req.reason else ".")))
+    reporter_ids = {s.reporter_id for s in siblings if getattr(s, "reporter_id", None)}
+    for rid in reporter_ids:
+        db.add(UserNotification(
+            user_id=rid, schedule_item_id=None, kind="moderation",
+            title="Thanks — your report was reviewed",
+            body=f"The {label} you reported was {action} by our moderators."))
 
     now = datetime.now(timezone.utc)
     for s in siblings:

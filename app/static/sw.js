@@ -31,6 +31,32 @@ self.addEventListener('push', function(e){
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
+// The browser can rotate a push subscription (key change / expiry). Without a
+// handler the old subscription silently dies and notifications stop. Re-fetch
+// the server key, re-subscribe, and register the new subscription.
+self.addEventListener('pushsubscriptionchange', function(e){
+  e.waitUntil((async function(){
+    try {
+      const res = await fetch('/api/notifications/push/key', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const cfg = await res.json();
+      if (!cfg.enabled || !cfg.public_key) return;
+      const key = Uint8Array.from(
+        atob((cfg.public_key + '='.repeat((4 - cfg.public_key.length % 4) % 4))
+          .replace(/-/g, '+').replace(/_/g, '/')),
+        function(c){ return c.charCodeAt(0); });
+      const sub = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: key,
+      });
+      await fetch('/api/notifications/push/subscribe', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      });
+    } catch (_) { /* best effort — in-app feed still works */ }
+  })());
+});
+
 self.addEventListener('notificationclick', function(e){
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || '/schedule';

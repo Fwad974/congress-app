@@ -112,7 +112,7 @@
 
   <div class="ltabs animate-up">
     <button class="ltab-btn active" data-lt="qa" onclick="switchLtab('qa')">Q&amp;A</button>
-    <button class="ltab-btn" data-lt="polls" onclick="switchLtab('polls')">Polls</button>
+    {% if feature_enabled('polls') %}<button class="ltab-btn" data-lt="polls" onclick="switchLtab('polls')">Polls</button>{% endif %}
     {% if can_moderate %}<a class="ltab-present" href="/present/{{ session_id }}" target="_blank" rel="noopener">Present ↗</a>{% endif %}
   </div>
 
@@ -127,7 +127,7 @@
     <div id="qaContainer" class="animate-up delay-2" role="log" aria-live="polite" aria-relevant="additions" aria-label="Live questions"><div class="qa-empty">Loading questions…</div></div>
   </div>
 
-  <div class="react-bar" id="reactBar" title="React"></div>
+  {% if feature_enabled('reactions') %}<div class="react-bar" id="reactBar" title="React"></div>{% endif %}
 
   <div id="lt-polls" class="ltab-panel">
     {% if can_moderate %}
@@ -408,9 +408,11 @@ document.getElementById('qInput').addEventListener('keydown',e=>{if((e.ctrlKey||
 // ── Reactions (tap to send; batched) ────────────────────────────
 let _reBatch={}, _reTimer=null;
 async function initReactions(){
+  const bar=document.getElementById('reactBar');
+  if(!bar)return;   // reactions feature disabled — bar not rendered
   let emojis=['🔥','💡','🤔','👏','❤️'];
   try{const d=await api('/api/reactions/emojis');if(d.emojis&&d.emojis.length)emojis=d.emojis;}catch(e){}
-  document.getElementById('reactBar').innerHTML=emojis.map(e=>'<button class="react-btn" onclick="tapReact(\''+e+'\',event)">'+e+'</button>').join('');
+  bar.innerHTML=emojis.map(e=>'<button class="react-btn" aria-label="React '+e+'" onclick="tapReact(\''+e+'\',event)">'+e+'</button>').join('');
 }
 function tapReact(emoji,ev){
   _reBatch[emoji]=(_reBatch[emoji]||0)+1;

@@ -25,6 +25,7 @@ FEATURES: Dict[str, tuple] = {
     "notes":   ("My Notes", "Personal note-taking for attendees."),
     "qa":      ("Live Q&A", "Audience Q&A during sessions."),
     "polls":   ("Live Polls", "Live polls and word clouds during sessions."),
+    "reactions": ("Live Reactions", "Floating emoji reactions during sessions."),
     "connect": ("Networking Directory",
                 "Opt-in attendee directory for finding and contacting peers."),
     "sponsors": ("Sponsors & Exhibitors",

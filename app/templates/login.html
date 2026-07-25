@@ -43,5 +43,7 @@
 (function(){var p=new URLSearchParams(location.search).get('error');if(p==='oauth')showToast('Sign-in with that provider failed. Please try again.','error');else if(p==='suspended')showToast('This account is suspended.','error');})();
 // If arriving from a scanned session QR while logged out, finish the check-in
 // after sign-in by returning to /certificates with the code.
-function _postLoginDest(){const c=new URLSearchParams(location.search).get('checkin');return c?'/certificates?checkin='+encodeURIComponent(c):'/home';}
+function _postLoginDest(){const q=new URLSearchParams(location.search);const c=q.get('checkin');if(c)return '/certificates?checkin='+encodeURIComponent(c);const n=q.get('next');
+  // Only allow same-origin relative paths as a return target (no //evil.com).
+  if(n&&/^\/(?!\/)/.test(n))return n;return '/home';}
 async function handleLogin(e){e.preventDefault();const btn=document.getElementById('submitBtn');btn.innerHTML='<span class="spinner"></span> Signing in...';btn.disabled=true;try{await api('/api/auth/login',{email:document.getElementById('email').value,password:document.getElementById('password').value});showToast('Welcome back!','success');const dest=_postLoginDest();setTimeout(()=>window.location.href=dest,600)}catch(err){showToast(err.message,'error');btn.innerHTML='Sign In';btn.disabled=false}}</script>{% endblock %}

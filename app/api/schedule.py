@@ -17,6 +17,18 @@ from app.core.security import get_current_user
 from app.core.admin_security import require_admin, is_live_moderator
 from app.core.audit_service import log_action
 from app.core.notification_service import notify_bookmarkers
+
+
+def _notify_assignment(db, item, user_id, role_word):
+    """Tell a user they've been assigned to present or chair a session."""
+    if not user_id:
+        return
+    from app.models.notification import UserNotification
+    db.add(UserNotification(
+        user_id=user_id, schedule_item_id=item.id, kind="assignment",
+        title=f"You're {role_word} for a session",
+        body=f"You've been assigned to {role_word} \"{item.title}\".",
+    ))
 from app.core.push_service import deliver_push
 from app.models.user import User, UserRole
 from app.models.schedule import ScheduleItem, ScheduleType, ScheduleBookmark
@@ -269,6 +281,12 @@ def create_schedule_item(
     db.add(item)
     db.flush()
 
+    # Notify the presenter/chair they've been assigned.
+    if speaker:
+        _notify_assignment(db, item, speaker.id, "presenting")
+    if chair:
+        _notify_assignment(db, item, chair.id, "chairing")
+
     log_action(
         db, admin, AuditAction.schedule_create,
         f"Created schedule item '{item.title}' ({item.type.value}) at {item.start_time.isoformat()}",
@@ -332,10 +350,16 @@ def update_schedule_item(
     # Reassign (or clear) the presenter/chair only when the field is sent.
     if "speaker_email" in req.model_fields_set:
         sp = _resolve_speaker(db, req.speaker_email)
-        item.speaker_id = sp.id if sp else None
+        new_id = sp.id if sp else None
+        if new_id and new_id != item.speaker_id:
+            _notify_assignment(db, item, new_id, "presenting")
+        item.speaker_id = new_id
     if "chair_email" in req.model_fields_set:
         ch = _resolve_speaker(db, req.chair_email)
-        item.chair_id = ch.id if ch else None
+        new_id = ch.id if ch else None
+        if new_id and new_id != item.chair_id:
+            _notify_assignment(db, item, new_id, "chairing")
+        item.chair_id = new_id
 
     item.updated_at = datetime.now(timezone.utc)
     db.flush()

@@ -398,7 +398,8 @@ app.include_router(qa_api.router, prefix="/api", tags=["qa"],
                    dependencies=[Depends(feature_flags.require_feature("qa"))])
 app.include_router(polls_api.router, prefix="/api", tags=["polls"],
                    dependencies=[Depends(feature_flags.require_feature("polls"))])
-app.include_router(reactions_api.router, prefix="/api", tags=["reactions"])
+app.include_router(reactions_api.router, prefix="/api", tags=["reactions"],
+                   dependencies=[Depends(feature_flags.require_feature("reactions"))])
 app.include_router(papers_api.router, prefix="/api/papers", tags=["papers"],
                    dependencies=[Depends(feature_flags.require_feature("papers"))])
 app.include_router(posters_api.router, prefix="/api/posters", tags=["posters"],

@@ -23,6 +23,17 @@ def _feature_blocked(user, key: str) -> bool:
     return not is_enabled(key) and user.role not in (UserRole.admin, UserRole.super_admin)
 
 
+def _login_redirect(request: Request) -> RedirectResponse:
+    """Redirect to /login, remembering where the user was headed so they land
+    back there after signing in instead of always on /home."""
+    from urllib.parse import quote
+    nxt = request.url.path
+    if request.url.query:
+        nxt += "?" + request.url.query
+    dest = "/login?next=" + quote(nxt, safe="") if nxt and nxt != "/home" else "/login"
+    return RedirectResponse(url=dest, status_code=302)
+
+
 @router.get("/logout")
 async def logout_page():
     resp = RedirectResponse(url="/", status_code=302)
@@ -59,21 +70,21 @@ async def login_page(request: Request, user=Depends(get_current_user_optional)):
 @router.get("/home", response_class=HTMLResponse)
 async def home_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     return templates.TemplateResponse("home.html", {"request": request, "user": user})
 
 
 @router.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     return templates.TemplateResponse("profile.html", {"request": request, "user": user})
 
 
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     return templates.TemplateResponse("settings.html", {"request": request, "user": user})
 
 
@@ -87,14 +98,14 @@ async def certificates_page(request: Request, user=Depends(get_current_user_opti
             from urllib.parse import quote
             return RedirectResponse(url=f"/login?checkin={quote(code[:12])}",
                                     status_code=302)
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     return templates.TemplateResponse("certificates.html", {"request": request, "user": user})
 
 
 @router.get("/schedule", response_class=HTMLResponse)
 async def schedule_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     is_admin = user.role in (UserRole.admin, UserRole.super_admin)
     return templates.TemplateResponse(
         "schedule.html",
@@ -107,22 +118,25 @@ async def schedule_page(request: Request, user=Depends(get_current_user_optional
 @router.get("/notes", response_class=HTMLResponse)
 async def notes_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "notes"):
         return RedirectResponse(url="/home", status_code=302)
     return templates.TemplateResponse("notes.html", {"request": request, "user": user})
 
 
 @router.get("/qa/{session_id}", response_class=HTMLResponse)
-async def qa_page(request: Request, session_id: int, user=Depends(get_current_user_optional)):
+async def qa_page(request: Request, session_id: int,
+                  user=Depends(get_current_user_optional),
+                  db: Session = Depends(get_db)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "qa"):
         return RedirectResponse(url="/home", status_code=302)
-    can_moderate = user.role in (
-        UserRole.session_chair, UserRole.review_chair, UserRole.moderator,
-        UserRole.admin, UserRole.super_admin,
-    )
+    # Match the API's authorization exactly: global moderators OR the assigned
+    # presenter/chair of THIS session. Role alone is neither necessary nor
+    # sufficient, so a role-based flag disagreed with the API in both directions.
+    from app.core.admin_security import can_moderate_session
+    can_moderate = can_moderate_session(db, user, session_id)
     return templates.TemplateResponse("qa.html", {
         "request": request, "user": user,
         "session_id": session_id, "can_moderate": can_moderate,
@@ -130,9 +144,18 @@ async def qa_page(request: Request, session_id: int, user=Depends(get_current_us
 
 
 @router.get("/present/{session_id}", response_class=HTMLResponse)
-async def present_page(request: Request, session_id: int, user=Depends(get_current_user_optional)):
+async def present_page(request: Request, session_id: int,
+                       user=Depends(get_current_user_optional),
+                       db: Session = Depends(get_db)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
+    if _feature_blocked(user, "polls") and _feature_blocked(user, "qa"):
+        return RedirectResponse(url="/home", status_code=302)
+    # The big-screen view is for the session's presenter/chair (or a moderator),
+    # not any logged-in attendee.
+    from app.core.admin_security import can_moderate_session
+    if not can_moderate_session(db, user, session_id):
+        return RedirectResponse(url=f"/qa/{session_id}", status_code=302)
     return templates.TemplateResponse("present.html", {
         "request": request, "user": user, "session_id": session_id,
     })
@@ -141,7 +164,7 @@ async def present_page(request: Request, session_id: int, user=Depends(get_curre
 @router.get("/papers", response_class=HTMLResponse)
 async def papers_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "papers"):
         return RedirectResponse(url="/home", status_code=302)
     is_chair = user.role in (UserRole.review_chair, UserRole.admin, UserRole.super_admin)
@@ -160,7 +183,7 @@ async def papers_page(request: Request, user=Depends(get_current_user_optional))
 @router.get("/moderation", response_class=HTMLResponse)
 async def moderation_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     from app.core.admin_security import is_moderator
     if not is_moderator(user):
         return RedirectResponse(url="/home", status_code=302)
@@ -170,7 +193,7 @@ async def moderation_page(request: Request, user=Depends(get_current_user_option
 @router.get("/connect", response_class=HTMLResponse)
 async def connect_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "connect"):
         return RedirectResponse(url="/home", status_code=302)
     return templates.TemplateResponse("connect.html", {"request": request, "user": user})
@@ -181,7 +204,7 @@ async def session_qr_print(request: Request, item_id: int,
                            user=Depends(get_current_user_optional),
                            db: Session = Depends(get_db)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if user.role not in (UserRole.admin, UserRole.super_admin):
         return RedirectResponse(url="/schedule", status_code=302)
     from app.models.schedule import ScheduleItem
@@ -200,7 +223,7 @@ async def certificate_view(request: Request, kind: str,
                            user=Depends(get_current_user_optional),
                            db: Session = Depends(get_db)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     from app.api.certificates import (CERT_KINDS, cert_status, ensure_issued,
                                       _public_base)
     if kind not in CERT_KINDS:
@@ -256,7 +279,7 @@ async def poster_qr_print(request: Request, poster_id: int,
                           user=Depends(get_current_user_optional),
                           db: Session = Depends(get_db)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     from app.api.posters import _can_edit
     from app.models.poster import Poster
     poster = db.query(Poster).filter(Poster.id == poster_id).first()
@@ -270,7 +293,7 @@ async def poster_qr_print(request: Request, poster_id: int,
 @router.get("/venue", response_class=HTMLResponse)
 async def venue_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "venue"):
         return RedirectResponse(url="/home", status_code=302)
     is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
@@ -282,7 +305,7 @@ async def venue_page(request: Request, user=Depends(get_current_user_optional)):
 @router.get("/knowledge", response_class=HTMLResponse)
 async def knowledge_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "knowledge"):
         return RedirectResponse(url="/home", status_code=302)
     return templates.TemplateResponse("knowledge.html", {
@@ -293,7 +316,7 @@ async def knowledge_page(request: Request, user=Depends(get_current_user_optiona
 @router.get("/companion", response_class=HTMLResponse)
 async def companion_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "companion"):
         return RedirectResponse(url="/home", status_code=302)
     from app.core.companion import llm_available, llm_provider
@@ -310,7 +333,7 @@ async def companion_page(request: Request, user=Depends(get_current_user_optiona
 @router.get("/recordings", response_class=HTMLResponse)
 async def recordings_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "recordings"):
         return RedirectResponse(url="/home", status_code=302)
     from app.core.config import get_settings
@@ -325,7 +348,7 @@ async def recordings_page(request: Request, user=Depends(get_current_user_option
 @router.get("/feedback", response_class=HTMLResponse)
 async def feedback_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "feedback"):
         return RedirectResponse(url="/home", status_code=302)
     is_organizer = user.role in (UserRole.admin, UserRole.super_admin)
@@ -339,7 +362,7 @@ async def feedback_page(request: Request, user=Depends(get_current_user_optional
 @router.get("/sponsors", response_class=HTMLResponse)
 async def sponsors_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "sponsors"):
         return RedirectResponse(url="/home", status_code=302)
     from app.models.sponsor import SPONSOR_TIERS
@@ -354,7 +377,7 @@ async def sponsors_page(request: Request, user=Depends(get_current_user_optional
 @router.get("/posters", response_class=HTMLResponse)
 async def posters_page(request: Request, user=Depends(get_current_user_optional)):
     if not user:
-        return RedirectResponse(url="/login", status_code=302)
+        return _login_redirect(request)
     if _feature_blocked(user, "posters"):
         return RedirectResponse(url="/home", status_code=302)
     from app.core.config import get_settings

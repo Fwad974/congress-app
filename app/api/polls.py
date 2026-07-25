@@ -244,6 +244,10 @@ async def vote(
         raise HTTPException(status_code=400, detail="Poll is not open")
 
     if poll.type == PollType.wordcloud:
+        # A word-cloud submission is free text shown on the big screen, so it's
+        # subject to the mute guard (MOD-04); anonymous option votes aren't.
+        from app.core.moderation_service import ensure_can_post
+        ensure_can_post(user)
         word = _norm_word(req.text or "")
         if not word:
             raise HTTPException(status_code=400, detail="Enter a word or phrase")
