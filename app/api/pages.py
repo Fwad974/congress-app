@@ -9,7 +9,9 @@ from app.core.oauth import enabled_providers
 from app.models.user import UserRole
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+import os as _os
+_TPL_DIR = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "templates")
+templates = Jinja2Templates(directory=_TPL_DIR)
 # Always defined so templates can call it even before lifespan overrides it
 # with the real, DB-backed accessor.
 templates.env.globals.setdefault("feature_enabled", lambda key: True)

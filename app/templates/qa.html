@@ -124,7 +124,7 @@
         <button class="qa-btn primary" id="askBtn" onclick="ask()">Ask</button>
       </div>
     </div>
-    <div id="qaContainer" class="animate-up delay-2"><div class="qa-empty">Loading questions…</div></div>
+    <div id="qaContainer" class="animate-up delay-2" role="log" aria-live="polite" aria-relevant="additions" aria-label="Live questions"><div class="qa-empty">Loading questions…</div></div>
   </div>
 
   <div class="react-bar" id="reactBar" title="React"></div>
@@ -148,7 +148,7 @@
       </div>
     </div>
     {% endif %}
-    <div id="pollsContainer"><div class="qa-empty">Loading polls…</div></div>
+    <div id="pollsContainer" aria-live="polite" aria-label="Live polls"><div class="qa-empty">Loading polls…</div></div>
   </div>
 </div>
 </div>
@@ -221,7 +221,7 @@ function card(q){
   if(q.is_mine||CAN_MOD)acts+='<button class="qa-act del" onclick="delQ('+q.id+')">Delete</button>';
   if(!q.is_mine&&!CAN_MOD)acts+='<button class="qa-act" onclick="reportContent(\'question\','+q.id+')">Report</button>';
   return '<div class="qa-card '+(q.status==='answered'?'answered ':'')+(q.is_mine?'mine':'')+'">'+
-    '<div class="qa-vote'+(voted?' on':'')+'" onclick="toggleVote('+q.id+')" title="Upvote">'+UP_ICON+'<span class="qa-vote-count">'+q.upvotes+'</span></div>'+
+    '<div class="qa-vote'+(voted?' on':'')+'" role="button" tabindex="0" aria-pressed="'+(voted?'true':'false')+'" aria-label="Upvote question ('+q.upvotes+')" onclick="toggleVote('+q.id+')" title="Upvote">'+UP_ICON+'<span class="qa-vote-count">'+q.upvotes+'</span></div>'+
     '<div class="qa-body">'+
       '<div class="qa-body-head"><span class="qa-author">'+esc(q.author_name)+(q.is_mine?' · you':'')+'</span>'+statusPill+'</div>'+
       '<div class="qa-text">'+esc(q.text)+'</div>'+
@@ -343,7 +343,10 @@ function pollCard(p){
       const ct=counts[o.id]!=null?counts[o.id]:(o.count||0);
       const pct=total?Math.round(ct/total*100):0;
       const w=Math.round(ct/max*100);
-      return '<div class="poll-opt'+(sel.has(o.id)?' on':'')+(clickable?'':' disabled')+'"'+(clickable?' onclick="voteChoice('+p.id+','+o.id+')"':'')+'>'+
+      const optAttrs=clickable
+        ? ' role="button" tabindex="0" aria-pressed="'+(sel.has(o.id)?'true':'false')+'" onclick="voteChoice('+p.id+','+o.id+')"'
+        : ' aria-disabled="true"';
+      return '<div class="poll-opt'+(sel.has(o.id)?' on':'')+(clickable?'':' disabled')+'"'+optAttrs+'>'+
         '<span class="pfill" style="width:'+w+'%"></span>'+
         '<span class="ptext">'+esc(o.text)+'</span><span class="pnum">'+pct+'% · '+ct+'</span></div>';
     }).join('');

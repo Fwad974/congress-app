@@ -137,12 +137,12 @@
     <div class="modal-body">
       <input type="hidden" id="m_id" value="">
       <div class="form-group">
-        <label class="form-label">Title</label>
+        <label class="form-label" for="m_title">Title</label>
         <input type="text" class="form-input" id="m_title" required>
       </div>
       <div class="row-2">
         <div class="form-group">
-          <label class="form-label">Type</label>
+          <label class="form-label" for="m_type">Type</label>
           <select class="form-input" id="m_type" onchange="renderExtraFields()">
             <option value="keynote">Keynote</option>
             <option value="talk" selected>Talk</option>
@@ -155,31 +155,31 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Location</label>
+          <label class="form-label" for="m_location">Location</label>
           <input type="text" class="form-input" id="m_location" placeholder="Hall A, Room 2B...">
         </div>
       </div>
       <div class="row-2">
         <div class="form-group">
-          <label class="form-label">Start Time</label>
+          <label class="form-label" for="m_start">Start Time</label>
           <input type="datetime-local" class="form-input" id="m_start" required>
         </div>
         <div class="form-group">
-          <label class="form-label">End Time</label>
+          <label class="form-label" for="m_end">End Time</label>
           <input type="datetime-local" class="form-input" id="m_end" required>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Presenter (app account email)</label>
+        <label class="form-label" for="m_speaker_email">Presenter (app account email)</label>
         <input type="email" class="form-input" id="m_speaker_email" placeholder="speaker@example.com — optional, lets them self-manage">
       </div>
       <div class="form-group">
-        <label class="form-label">Chair (app account email)</label>
+        <label class="form-label" for="m_chair_email">Chair (app account email)</label>
         <input type="email" class="form-input" id="m_chair_email" placeholder="chair@example.com — optional, moderates this session's Q&amp;A &amp; polls">
       </div>
       <div id="m_extra_fields"></div>
       <div class="form-group">
-        <label class="form-label">Description</label>
+        <label class="form-label" for="m_desc">Description</label>
         <textarea class="form-input" id="m_desc" rows="3" placeholder="Optional details..."></textarea>
       </div>
     </div>
@@ -197,9 +197,9 @@
     <div class="modal-header"><h3>Edit <span>Presentation</span></h3><button class="modal-close" onclick="closePres()">X</button></div>
     <div class="modal-body">
       <input type="hidden" id="p_id">
-      <div class="form-group"><label class="form-label">Abstract</label><textarea class="form-input" id="p_abstract" rows="4" placeholder="Your talk abstract"></textarea></div>
-      <div class="form-group"><label class="form-label">Slides / materials link</label><input type="url" class="form-input" id="p_materials" placeholder="https://…"></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="p_desc" rows="3" placeholder="Optional details"></textarea></div>
+      <div class="form-group"><label class="form-label" for="p_abstract">Abstract</label><textarea class="form-input" id="p_abstract" rows="4" placeholder="Your talk abstract"></textarea></div>
+      <div class="form-group"><label class="form-label" for="p_materials">Slides / materials link</label><input type="url" class="form-input" id="p_materials" placeholder="https://…"></div>
+      <div class="form-group"><label class="form-label" for="p_desc">Description</label><textarea class="form-input" id="p_desc" rows="3" placeholder="Optional details"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="sched-btn" onclick="closePres()">Cancel</button>
@@ -387,16 +387,16 @@ function renderExtraFields(prefill){
     const id='m_x_'+f.k;
     const v=prefill&&prefill[f.k]!=null?prefill[f.k]:'';
     if(f.kind==='text'){
-      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(v)+'</textarea></div>';
+      return '<div class="form-group"><label class="form-label" for="'+id+'">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(v)+'</textarea></div>';
     }
     if(f.kind==='list'){
       const text=Array.isArray(v)?v.join('\n'):(v||'');
-      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(text)+'</textarea></div>';
+      return '<div class="form-group"><label class="form-label" for="'+id+'">'+esc(f.label)+'</label><textarea class="form-input" id="'+id+'" rows="3" placeholder="'+esc(f.ph||'')+'">'+esc(text)+'</textarea></div>';
     }
     if(f.kind==='int'){
-      return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><input type="number" min="0" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+(v===''?'':esc(String(v)))+'"></div>';
+      return '<div class="form-group"><label class="form-label" for="'+id+'">'+esc(f.label)+'</label><input type="number" min="0" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+(v===''?'':esc(String(v)))+'"></div>';
     }
-    return '<div class="form-group"><label class="form-label">'+esc(f.label)+'</label><input type="text" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+esc(v)+'"></div>';
+    return '<div class="form-group"><label class="form-label" for="'+id+'">'+esc(f.label)+'</label><input type="text" class="form-input" id="'+id+'" placeholder="'+esc(f.ph||'')+'" value="'+esc(v)+'"></div>';
   }).join('');
 }
 
@@ -504,8 +504,8 @@ async function openRate(id,title){
   if(!host){host=document.createElement('div');host.id='rateModal';host.className='modal-overlay';host.onclick=e=>{if(e.target===host)closeRate();};document.body.appendChild(host);}
   host.innerHTML='<div class="modal" style="max-width:420px"><div class="modal-header"><h3>Rate <span>this session</span></h3><button class="modal-close" onclick="closeRate()">X</button></div>'+
     '<div style="padding:4px 4px 8px"><div style="font:.86rem var(--f);color:var(--w7);margin-bottom:10px">'+esc(title)+'</div>'+
-    '<div id="rateStars" style="display:flex;gap:6px;font-size:2rem;cursor:pointer;color:var(--w3)">'+
-    [1,2,3,4,5].map(n=>'<span data-i="'+n+'" onclick="setRate('+n+')">★</span>').join('')+'</div>'+
+    '<div id="rateStars" role="radiogroup" aria-label="Rating out of 5" style="display:flex;gap:6px;font-size:2rem;cursor:pointer;color:var(--w3)">'+
+    [1,2,3,4,5].map(n=>'<span data-i="'+n+'" role="radio" tabindex="0" aria-label="'+n+' star'+(n>1?'s':'')+'" aria-checked="false" onclick="setRate('+n+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setRate('+n+');}">★</span>').join('')+'</div>'+
     '<textarea class="form-input" id="rateComment" rows="3" placeholder="Optional comment (shared anonymously)" style="margin-top:12px"></textarea>'+
     '<textarea class="form-input" id="rateSpeaker" rows="2" placeholder="Private feedback about the speaker (organizers only)" style="margin-top:8px"></textarea>'+
     '<div style="text-align:right;margin-top:12px"><button class="sched-btn primary" onclick="submitRate()">Submit rating</button></div></div></div>';
@@ -514,7 +514,7 @@ async function openRate(id,title){
     if(r.rated){setRate(r.stars);document.getElementById('rateComment').value=r.comment||'';document.getElementById('rateSpeaker').value=r.speaker_feedback||'';}
   }catch(e){}
 }
-function setRate(n){_rateStars=n;document.querySelectorAll('#rateStars span').forEach((el,i)=>el.style.color=i<n?'var(--gold)':'var(--w3)');}
+function setRate(n){_rateStars=n;document.querySelectorAll('#rateStars span').forEach((el,i)=>{el.style.color=i<n?'var(--gold)':'var(--w3)';el.setAttribute('aria-checked',(i+1)===n?'true':'false');});}
 function closeRate(){const h=document.getElementById('rateModal');if(h){h.classList.remove('open');h.innerHTML='';}}
 async function submitRate(){
   if(!_rateStars){showToast('Tap a star to rate','error');return;}

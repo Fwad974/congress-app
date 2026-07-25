@@ -1,0 +1,13 @@
+{
+  "name": "Dubai Stem Cell Congress",
+  "short_name": "DSCC",
+  "description": "Congress companion: schedule, live Q&A, posters, certificates and more.",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#040f0b",
+  "theme_color": "#040f0b",
+  "icons": [
+    { "src": "/static/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

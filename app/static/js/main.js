@@ -151,8 +151,39 @@ async function api(url, data) {
   } catch (err) { throw err; }
 }
 
+function _toggleChip(chip) {
+  chip.classList.toggle('selected');
+  chip.setAttribute('aria-pressed', chip.classList.contains('selected') ? 'true' : 'false');
+}
 document.addEventListener('click', (e) => {
-  if (e.target.closest('.chip')) e.target.closest('.chip').classList.toggle('selected');
+  const chip = e.target.closest('.chip');
+  if (chip) _toggleChip(chip);
+});
+
+// Global keyboard activation: any element the app renders as a button-like div
+// ([role="button"] or .chip) responds to Enter/Space, and a click on a plain
+// [role="button"] is dispatched. Lets render code stay terse while every
+// interactive non-<button> is still operable by keyboard.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+  const el = e.target;
+  if (!el || el.tagName === 'BUTTON' || el.tagName === 'A' ||
+      el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return;
+  const chip = el.closest && el.closest('.chip');
+  if (chip) { e.preventDefault(); _toggleChip(chip); return; }
+  if (el.getAttribute && el.getAttribute('role') === 'button') {
+    e.preventDefault();
+    el.click();
+  }
+});
+// Make chips focusable + labelled as toggles on load (render code needn't repeat it).
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.chip').forEach((c) => {
+    if (!c.hasAttribute('tabindex')) c.setAttribute('tabindex', '0');
+    if (!c.hasAttribute('role')) c.setAttribute('role', 'button');
+    if (!c.hasAttribute('aria-pressed'))
+      c.setAttribute('aria-pressed', c.classList.contains('selected') ? 'true' : 'false');
+  });
 });
 
 function getSelectedChips(container) {
@@ -169,3 +200,64 @@ function observeAnimations() {
 }
 
 document.addEventListener('DOMContentLoaded', observeAnimations);
+
+// Give every form control an accessible name where the markup didn't. Many
+// controls are rendered dynamically with only a placeholder or a sibling label
+// span (.rc-label/.sp-label/.vn-label/.fb-label/.note-label/.form-label), which
+// screen readers don't associate. This backfills aria-label from the nearest
+// such hint. Runs on load and again as new controls are inserted.
+const _LABEL_CLASSES = '.rc-label,.sp-label,.vn-label,.fb-label,.note-label,.form-label,.kg-label,.cp-label,.pp-label,.md-label';
+function _hasAccName(el) {
+  if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return true;
+  if (el.id && document.querySelector('label[for="' + CSS.escape(el.id) + '"]')) return true;
+  if (el.closest('label')) return true;
+  return false;
+}
+function enhanceA11yLabels(root) {
+  (root || document).querySelectorAll('input:not([type=hidden]),select,textarea').forEach((el) => {
+    if (_hasAccName(el)) return;
+    let name = el.getAttribute('placeholder') || '';
+    if (!name) {
+      // Walk previous siblings / parent's previous siblings for a label hint.
+      let node = el.previousElementSibling, hops = 0;
+      while (node && hops < 4) {
+        if (node.matches && node.matches(_LABEL_CLASSES)) { name = node.textContent.trim(); break; }
+        const inner = node.querySelector && node.querySelector(_LABEL_CLASSES);
+        if (inner) { name = inner.textContent.trim(); break; }
+        node = node.previousElementSibling; hops++;
+      }
+      if (!name && el.parentElement) {
+        const lbl = el.parentElement.querySelector(_LABEL_CLASSES);
+        if (lbl) name = lbl.textContent.trim();
+      }
+    }
+    if (name) el.setAttribute('aria-label', name.replace(/\s+/g, ' ').slice(0, 120));
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  enhanceA11yLabels(document);
+  // Re-run when tab panels / lists render their controls.
+  const obs = new MutationObserver((muts) => {
+    for (const m of muts) {
+      for (const n of m.addedNodes) {
+        if (n.nodeType === 1) enhanceA11yLabels(n);
+      }
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+});
+
+// Wire the skip link to the page's main content region without every template
+// needing to add an explicit landmark: mark the first content .container (the
+// one that isn't the nav bar) as the focus target.
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('main')) return;
+  const containers = document.querySelectorAll('.container');
+  for (const c of containers) {
+    if (!c.closest('.nav-bar')) {
+      c.id = 'main';
+      c.setAttribute('tabindex', '-1');
+      break;
+    }
+  }
+});

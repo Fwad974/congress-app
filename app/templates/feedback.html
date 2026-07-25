@@ -69,8 +69,10 @@ textarea.fb-in{resize:vertical;min-height:70px}
 const IS_ORG={{ 'true' if is_organizer else 'false' }};
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function starsRO(n){let h='<span class="stars sm">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=Math.round(n)?' on':'')+'">★</span>';return h+'</span>';}
-function starPicker(id,val){let h='<span class="stars" id="'+id+'" data-v="'+(val||0)+'">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=(val||0)?' on':'')+'" data-i="'+i+'">★</span>';return h+'</span>';}
-document.addEventListener('click',e=>{const s=e.target.closest('.stars [data-i]');if(!s)return;const wrap=s.parentElement;const v=parseInt(s.dataset.i,10);wrap.dataset.v=v;wrap.querySelectorAll('.s').forEach((el,idx)=>el.classList.toggle('on',idx<v));});
+function starPicker(id,val){let h='<span class="stars" id="'+id+'" data-v="'+(val||0)+'" role="radiogroup" aria-label="Rating out of 5">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=(val||0)?' on':'')+'" data-i="'+i+'" role="radio" tabindex="0" aria-label="'+i+' star'+(i>1?'s':'')+'" aria-checked="'+(i===(val||0)?'true':'false')+'">★</span>';return h+'</span>';}
+function _setStars(s){const wrap=s.parentElement;const v=parseInt(s.dataset.i,10);wrap.dataset.v=v;wrap.querySelectorAll('.s').forEach((el,idx)=>{el.classList.toggle('on',idx<v);el.setAttribute('aria-checked',(idx+1)===v?'true':'false');});}
+document.addEventListener('click',e=>{const s=e.target.closest('.stars [data-i]');if(s)_setStars(s);});
+document.addEventListener('keydown',e=>{const s=e.target.closest&&e.target.closest('.stars [data-i]');if(!s)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();_setStars(s);}else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const sib=e.key==='ArrowRight'?s.nextElementSibling:s.previousElementSibling;if(sib&&sib.dataset.i){sib.focus();_setStars(sib);}}});
 function getStars(id){const el=document.getElementById(id);return el?parseInt(el.dataset.v,10)||0:0;}
 
 let _fbTabsLoaded={};

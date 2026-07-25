@@ -379,7 +379,9 @@ app.add_middleware(
     max_age=600,       # the OAuth handshake is short-lived
 )
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+import os as _os
+_APP_DIR = _os.path.dirname(_os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=_os.path.join(_APP_DIR, "static")), name="static")
 
 # Page routes
 app.include_router(admin_pages.router)  # Must be before generic pages

@@ -5,9 +5,28 @@ limit is exceeded, so a hostile client can't force the whole (arbitrarily large)
 body into RAM before the limit check runs. It also honours the Content-Length
 header for an early rejection when the client is honest about the size.
 """
+import os
+
 from fastapi import HTTPException, Request, UploadFile
 
+from app.core.config import get_settings
+
 _CHUNK = 1024 * 1024  # 1 MiB
+# app/ package root — a relative UPLOAD_DIR resolves under this (matching the
+# config comment), so uploads land in the same place regardless of the CWD the
+# app is started from.
+_APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def upload_root(*subdirs: str) -> str:
+    """Absolute upload directory (optionally a subdir), created if missing.
+    An absolute UPLOAD_DIR is used as-is; a relative one resolves under app/."""
+    base = get_settings().UPLOAD_DIR
+    if not os.path.isabs(base):
+        base = os.path.join(_APP_ROOT, base)
+    d = os.path.join(base, *subdirs) if subdirs else base
+    os.makedirs(d, exist_ok=True)
+    return d
 
 
 async def read_capped(file: UploadFile, max_bytes: int, request: Request = None) -> bytes:

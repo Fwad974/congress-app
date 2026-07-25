@@ -25,9 +25,8 @@ def max_bytes() -> int:
 
 
 def _dir() -> str:
-    d = os.path.join(get_settings().UPLOAD_DIR, "posters")
-    os.makedirs(d, exist_ok=True)
-    return d
+    from app.core.uploads import upload_root
+    return upload_root("posters")
 
 
 def save_bytes(data: bytes, original_name: str) -> str:

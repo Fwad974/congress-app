@@ -46,9 +46,9 @@
     <div class="settings-header"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><h3>Change Password</h3></div>
     <div class="settings-body">
       <form onsubmit="handlePwChange(event)" style="display:flex;flex-direction:column;gap:16px">
-        <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
-        <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="newPw" required></div>
-        <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" id="confPw" required></div>
+        <div class="form-group"><label class="form-label" for="curPw">Current Password</label><input type="password" class="form-input" id="curPw" required></div>
+        <div class="form-group"><label class="form-label" for="newPw">New Password</label><input type="password" class="form-input" id="newPw" required></div>
+        <div class="form-group"><label class="form-label" for="confPw">Confirm New Password</label><input type="password" class="form-input" id="confPw" required></div>
         <div class="form-actions"><button type="submit" class="btn btn-gold btn-sm" id="pwBtn">Update Password</button></div>
       </form>
     </div>
@@ -63,7 +63,7 @@
             <div class="ftitle">Schedule reminders</div>
             <div class="fhint">Notify me before items I've bookmarked.</div>
           </div>
-          <label class="switch"><input type="checkbox" id="n_enabled" onchange="onEnabledChange()"><span></span></label>
+          <label class="switch"><input type="checkbox" id="n_enabled" onchange="onEnabledChange()" aria-label="Enable schedule reminders"><span></span></label>
         </div>
         <div class="perm-warn" id="permWarn">Browser notifications are blocked. Reminders will still appear as in-page toasts and play a sound. Enable notifications in your browser site settings to get system pop-ups.</div>
       </div>
@@ -82,7 +82,7 @@
         <div class="ftitle">Sound</div>
         <div class="fhint">Plays when a reminder fires.</div>
         <div class="sound-row">
-          <select class="form-input" id="n_sound">
+          <select class="form-input" id="n_sound" aria-label="Reminder sound">
             <option value="bell">Bell</option>
             <option value="chime">Chime</option>
             <option value="buzz">Buzz</option>
@@ -94,7 +94,7 @@
       <div class="field-block">
         <div class="ftitle">Volume</div>
         <div class="range-row">
-          <input type="range" id="n_volume" min="0" max="100" step="5">
+          <input type="range" id="n_volume" min="0" max="100" step="5" aria-label="Reminder volume">
           <span class="pct" id="volPct">70%</span>
         </div>
       </div>
@@ -104,12 +104,12 @@
             <div class="ftitle">Quiet hours</div>
             <div class="fhint">Hold non-urgent alerts (sound &amp; pop-ups) during these hours. Emergency alerts always come through.</div>
           </div>
-          <label class="switch"><input type="checkbox" id="n_qh_enabled"><span></span></label>
+          <label class="switch"><input type="checkbox" id="n_qh_enabled" aria-label="Enable quiet hours"><span></span></label>
         </div>
         <div class="range-row" id="qhTimes" style="gap:10px;margin-top:10px">
-          <input type="time" class="form-input" id="n_qh_start" style="flex:1">
+          <input type="time" class="form-input" id="n_qh_start" style="flex:1" aria-label="Quiet hours start">
           <span style="color:var(--w5);font:.85rem var(--f)">to</span>
-          <input type="time" class="form-input" id="n_qh_end" style="flex:1">
+          <input type="time" class="form-input" id="n_qh_end" style="flex:1" aria-label="Quiet hours end">
         </div>
       </div>
       <div class="form-actions"><button type="button" class="btn btn-gold btn-sm" id="notifBtn" onclick="saveNotifPrefs()">Save Preferences</button></div>

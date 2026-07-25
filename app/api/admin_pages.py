@@ -12,7 +12,9 @@ from app.core.admin_security import ROLE_HIERARCHY
 from app.models.user import UserRole
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+import os as _os
+_TPL_DIR = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "templates")
+templates = Jinja2Templates(directory=_TPL_DIR)
 templates.env.globals.setdefault("feature_enabled", lambda key: True)
 
 ADMIN_MIN_LEVEL = ROLE_HIERARCHY[UserRole.admin]

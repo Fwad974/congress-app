@@ -25,10 +25,10 @@
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
     <div class="auth-header"><h2>Create Your Account</h2><p>Join 500+ researchers at the congress</p></div>
     <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
-      <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
-      <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
-      <div class="form-group"><label class="form-label">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
-      <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-reqs"><span class="pw-req" id="pw-len">✕ 8+ characters</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
+      <div class="form-group"><label class="form-label" for="fullName">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
+      <div class="form-group"><label class="form-label" for="email">Email Address</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>
+      <div class="form-group"><label class="form-label" for="institution">Institution</label><input type="text" class="form-input" id="institution" placeholder="University / Hospital / Company"></div>
+      <div class="form-group"><label class="form-label" for="password">Password</label><input type="password" class="form-input" id="password" placeholder="Min 8 chars, uppercase + number" required oninput="checkPassword()"><div class="pw-reqs"><span class="pw-req" id="pw-len">✕ 8+ characters</span><span class="pw-req" id="pw-upper">✕ Uppercase</span><span class="pw-req" id="pw-num">✕ Number</span></div></div>
       <div class="form-group"><label class="int-label">Research Interests</label><div class="int-grid" id="interestsGrid"><span class="chip" data-value="iPSC">iPSC</span><span class="chip" data-value="MSC">MSC</span><span class="chip" data-value="Gene Therapy">Gene Therapy</span><span class="chip" data-value="Exosomes">Exosomes</span><span class="chip" data-value="CAR-T">CAR-T</span><span class="chip" data-value="Organoids">Organoids</span><span class="chip" data-value="Clinical Trials">Clinical Trials</span><span class="chip" data-value="CRISPR">CRISPR</span></div></div>
       <button type="submit" class="btn btn-gold w-full" id="submitBtn">Create Account</button>
       {% if oauth_providers %}
