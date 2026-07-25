@@ -152,7 +152,7 @@ def _call_anthropic(system: str, prompt: str, model: str,
                     max_tokens: int) -> Optional[str]:
     anthropic = importlib.import_module("anthropic")
     client = anthropic.Anthropic(api_key=api_key_for("anthropic"),
-                                 timeout=get_settings().LLM_TIMEOUT_SECONDS)
+                                 timeout=getattr(get_settings(), "LLM_TIMEOUT_SECONDS", 30.0))
     response = client.messages.create(
         model=model,
         max_tokens=max_tokens,
@@ -174,7 +174,7 @@ def _call_gemini(system: str, prompt: str, model: str,
         return _call_gemini_legacy(system, prompt, model, max_tokens)
 
     client = genai.Client(api_key=api_key_for("gemini"),
-                          http_options={"timeout": int(get_settings().LLM_TIMEOUT_SECONDS * 1000)})
+                          http_options={"timeout": int(getattr(get_settings(), "LLM_TIMEOUT_SECONDS", 30.0) * 1000)})
     try:
         types_mod = importlib.import_module("google.genai.types")
         config = types_mod.GenerateContentConfig(
@@ -194,7 +194,7 @@ def _call_gemini_legacy(system: str, prompt: str, model: str,
     generative_model = genai.GenerativeModel(model, system_instruction=system)
     response = generative_model.generate_content(
         prompt, generation_config={"max_output_tokens": max_tokens},
-        request_options={"timeout": get_settings().LLM_TIMEOUT_SECONDS})
+        request_options={"timeout": getattr(get_settings(), "LLM_TIMEOUT_SECONDS", 30.0)})
     return _gemini_text(response)
 
 
@@ -215,7 +215,7 @@ def _call_openai(system: str, prompt: str, model: str,
                  max_tokens: int) -> Optional[str]:
     openai_mod = importlib.import_module("openai")
     settings = get_settings()
-    kwargs = {"api_key": api_key_for("openai"), "timeout": settings.LLM_TIMEOUT_SECONDS}
+    kwargs = {"api_key": api_key_for("openai"), "timeout": getattr(settings, "LLM_TIMEOUT_SECONDS", 30.0)}
     # Lets the same code point at any OpenAI-compatible endpoint
     # (Azure-style gateways, vLLM, Ollama, OpenRouter…).
     if settings.OPENAI_BASE_URL:
