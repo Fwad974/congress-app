@@ -10,8 +10,8 @@ Full-stack User Management dashboard at `/admin` with:
 
 | Rule | Implementation |
 |------|---------------|
-| **AUTH-01** | 2FA flagged for admin roles |
-| **AUTH-02** | Admin session timeout: 30 min. Regular: 24h |
+| **AUTH-01** | *Planned* — a `two_factor_enabled` flag exists on the user model; TOTP enrolment/verification is not yet implemented. |
+| **AUTH-02** | *Planned* — token lifetime is currently 24h for everyone (`ACCESS_TOKEN_EXPIRE_MINUTES`); a shorter admin-session timeout is not yet enforced. |
 | **AUTH-03** | 5 failed logins → 15 min lock. 10 → manual unlock only |
 | **ROLE-01** | Only Super Admin can create other Super Admins |
 | **ROLE-02** | Admins can assign up to Moderator level only |
@@ -23,7 +23,7 @@ Full-stack User Management dashboard at `/admin` with:
 
 ### Security Features
 
-- **RBAC Enforcement** — Role hierarchy with 8 levels (attendee → super_admin)
+- **RBAC Enforcement** — 8 roles across 6 privilege levels (attendee → super_admin; review_chair = session_chair, speaker = reviewer)
 - **Rate Limiting** — 120 req/min per IP on admin endpoints
 - **Login Lockout** — Sliding window: 5 failures = 15m lock, 10 = permanent
 - **Audit Trail** — Every admin action recorded with IP hash, user agent, request path
@@ -90,6 +90,10 @@ pytest -q
 | GET | `/api/certificates/{kind}/download` | Certificate PDF (serial + verification QR) | Any user (unlocked) |
 | GET | `/api/certificates/verify/{serial}` · `/verify/{serial}` | Verify a certificate (JSON · page) | Public |
 | GET | `/api/attendance/report/export` | CSV attendance report for institutions | Any user |
+| GET | `/api/schedule/my-agenda.ics` | Bookmarked sessions as a calendar (.ics) file | Any user |
+| POST | `/api/auth/password/forgot` · `/reset` | Request a reset link · set a new password with the token | Public |
+| DELETE | `/api/auth/account` | Delete own account (GDPR) | Any user |
+| GET | `/api/connect/directory` · PUT `/api/connect/visibility` | Attendee directory · toggle own visibility | Any user |
 | GET | `/api/sponsors` · `/api/sponsors/{id}` | Sponsor directory · virtual booth | Any user |
 | POST | `/api/sponsors/{id}/lead` | Submit a lead (requires opt-in consent) | Any user |
 | POST/PUT/DELETE | `/api/sponsors` · `/api/sponsors/{id}` | Manage sponsors | Organizer |
@@ -142,24 +146,23 @@ congress-app/
 │   │   └── security.py        # JWT, password hashing
 │   ├── models/
 │   │   ├── audit_log.py       # Immutable audit log model
-│   │   └── user.py            # User model (8 roles)
+│   │   └── user.py            # User model (8 roles, 6 distinct levels)
 │   ├── schemas/
 │   │   ├── admin.py           # Admin request/response schemas
 │   │   └── user.py            # Auth schemas
 │   ├── templates/
-│   │   ├── admin_dashboard.html  # Admin UI (3 tabs)
+│   │   ├── admin_dashboard.html  # Admin UI (6 tabs)
 │   │   ├── nav.html              # Shared nav (with admin link)
 │   │   └── ...                   # Other pages
 │   ├── static/
 │   │   ├── css/main.css
-│   │   └── js/main.js
+│   │   ├── js/main.js            # Shared UI helpers (esc/safeUrl, dialogs, a11y)
+│   │   ├── js/notifications.js   # Reminder scheduler + web-push registration
+│   │   └── sw.js                 # Service worker (web push)
 │   └── main.py
 ├── tests/
 │   ├── conftest.py            # Test fixtures (SQLite DB, user factories)
-│   ├── test_auth.py           # Auth endpoint tests (17 tests)
-│   ├── test_admin.py          # Admin endpoint & RBAC tests (42 tests)
-│   ├── test_security.py       # Security unit tests (38 tests)
-│   └── test_schemas.py        # Schema validation tests (11 tests)
+│   └── test_*.py              # 30 test files, 750+ tests (see Testing below)
 ├── docker-compose.yml         # Full stack: app + PostgreSQL + Redis + pgAdmin
 ├── Dockerfile                 # Production container image
 ├── .dockerignore

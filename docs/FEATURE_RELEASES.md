@@ -21,8 +21,15 @@ a module on to release it; flip it off to hide it while you finish preparing it.
 | `posters` | Poster Gallery (voting, comments, scavenger hunt) |
 | `notes` | My Notes |
 | `qa` | Live Q&A |
-| `polls` | Live Polls |
+| `polls` | Live Polls & word clouds (gates the API and the Polls tab) |
+| `reactions` | Live emoji reactions during sessions |
 | `connect` | Networking Directory (opt-in attendee directory) |
+| `sponsors` | Sponsors & Exhibitors portal |
+| `feedback` | Feedback & Ratings (session ratings + post-event survey) |
+| `venue` | Venue & Dubai Info (floor plan, navigation, WiFi) |
+| `recordings` | Session Recordings (consent-gated, transcripts) |
+| `knowledge` | Knowledge Graph (topic map) |
+| `companion` | AI Congress Companion |
 
 All default to **on**, so existing behaviour is unchanged until an admin hides one.
 Unknown keys fail open (never accidentally hidden).
