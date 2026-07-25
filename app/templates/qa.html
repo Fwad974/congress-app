@@ -162,7 +162,6 @@ const UP_ICON='<svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 19V5M5 12l
 const _q = {};            // id -> question
 const _voted = new Set(); // ids the user has upvoted (client-side)
 
-function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){
   const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};
   if(body)o.body=JSON.stringify(body);

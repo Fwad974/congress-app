@@ -100,7 +100,6 @@ textarea.rc-in{resize:vertical;min-height:90px;font-family:var(--m,monospace);fo
 const IS_ORG={{ 'true' if is_organizer else 'false' }};
 const RETENTION={{ retention_days }};
 let RECS=[],CURRENT=null,SEGS=[],SLIDES=[];
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function ts(sec){sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):m+':'+String(s).padStart(2,'0');}
 function rcTab(t){document.querySelectorAll('.rc-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.rc-panel').forEach(p=>p.classList.toggle('active',p.id==='rc-'+t));if(t==='mine')loadMine();if(t==='manage')loadManage();}
 async function api(url,opts){const r=await fetch(url,Object.assign({credentials:'same-origin',headers:{'Content-Type':'application/json'}},opts||{}));if(!r.ok){let m='Request failed';try{const d=await r.json();m=d.detail||m;}catch(e){}throw new Error(m);}return r.status===204?null:r.json();}
@@ -134,18 +133,18 @@ async function loadList(){
 
 // ── Player with transcript + slide sync ─────────────────────
 async function openRec(id){
-  let d;try{d=await api('/api/recordings/'+id);}catch(e){alert(e.message);return;}
+  let d;try{d=await api('/api/recordings/'+id);}catch(e){showToast(e.message||'Something went wrong','error');return;}
   CURRENT=d;SEGS=d.transcript||[];SLIDES=d.slides||[];
   try{api('/api/recordings/'+id+'/view',{method:'POST'});}catch(e){}
   const direct=/\.(mp4|webm|ogg|m4v|mov)(\?|$)/i.test(d.video_url||'');
   const media=direct
-    ?'<video id="rcVideo" class="rc-player" controls preload="metadata" src="'+esc(d.video_url)+'"></video>'
-    :'<div class="rc-card"><a class="rc-btn primary" target="_blank" rel="noopener noreferrer" href="'+esc(d.video_url||'#')+'">Open the recording ↗</a><div class="rc-meta">Hosted off-app; the transcript below is still searchable.</div></div>';
+    ?'<video id="rcVideo" class="rc-player" controls preload="metadata" src="'+safeUrl(d.video_url)+'"></video>'
+    :'<div class="rc-card"><a class="rc-btn primary" target="_blank" rel="noopener noreferrer" href="'+safeUrl(d.video_url||'#')+'">Open the recording ↗</a><div class="rc-meta">Hosted off-app; the transcript below is still searchable.</div></div>';
   document.getElementById('playerBox').innerHTML=
     '<div class="rc-card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">'+
     '<h3>'+esc(d.session_title)+'</h3><button class="rc-btn" onclick="closeRec()">Close</button></div>'+
     '<div class="rc-meta">'+pill(d)+(d.speaker_name?'<span>'+esc(d.speaker_name)+'</span>':'')+
-    (d.slides_url?'<a class="rc-btn" style="padding:2px 10px" target="_blank" rel="noopener noreferrer" href="'+esc(d.slides_url)+'">Slide deck ↗</a>':'')+'</div>'+
+    (d.slides_url?'<a class="rc-btn" style="padding:2px 10px" target="_blank" rel="noopener noreferrer" href="'+safeUrl(d.slides_url)+'">Slide deck ↗</a>':'')+'</div>'+
     media+
     '<div class="rc-split">'+
       '<div><span class="rc-label">Transcript</span>'+
@@ -214,7 +213,7 @@ async function loadMine(){
 async function consent(id,decision){
   const el=document.getElementById('note'+id);
   try{await api('/api/recordings/'+id+'/consent',{method:'POST',body:JSON.stringify({decision:decision,note:el?el.value:null})});}
-  catch(e){alert(e.message);return;}
+  catch(e){showToast(e.message||'Something went wrong','error');return;}
   loadMine();loadList();
 }
 
@@ -223,7 +222,9 @@ async function loadManage(){
   const box=document.getElementById('manageList');if(!box)return;
   let list=[],sessions=[];
   try{list=await api('/api/recordings?include_hidden=true');}catch(e){}
-  try{sessions=await api('/api/schedule');}catch(e){}
+  // GET /api/schedule returns {items,total}, not an array.
+  try{const sd=await api('/api/schedule');sessions=(sd&&sd.items)||[];}
+  catch(e){showToast(e.message||'Could not load sessions','error');}
   const sel=document.getElementById('mSession');
   const taken=new Set(list.map(r=>r.schedule_item_id));
   const free=(sessions||[]).filter(s=>!taken.has(s.id));
@@ -249,41 +250,41 @@ async function loadManage(){
 }
 async function createRec(){
   const sid=document.getElementById('mSession').value;
-  if(!sid){alert('Pick a session first');return;}
+  if(!sid){showToast('Pick a session first','error');return;}
   const dur=parseInt(document.getElementById('mDur').value,10);
   try{await api('/api/recordings',{method:'POST',body:JSON.stringify({schedule_item_id:+sid,
     video_url:document.getElementById('mVideo').value||null,
     slides_url:document.getElementById('mSlides').value||null,
     duration_seconds:isNaN(dur)?null:dur})});}
-  catch(e){alert(e.message);return;}
+  catch(e){showToast(e.message||'Something went wrong','error');return;}
   document.getElementById('mVideo').value='';document.getElementById('mSlides').value='';document.getElementById('mDur').value='';
   loadManage();loadList();
 }
 async function saveRec(id){
   try{await api('/api/recordings/'+id,{method:'PUT',body:JSON.stringify({video_url:document.getElementById('v'+id).value||null})});}
-  catch(e){alert(e.message);return;}
+  catch(e){showToast(e.message||'Something went wrong','error');return;}
   loadManage();
 }
 async function saveTranscript(id){
   const vtt=document.getElementById('t'+id).value.trim();
-  if(!vtt){alert('Paste a WebVTT or SRT transcript first');return;}
+  if(!vtt){showToast('Paste a WebVTT or SRT transcript first','error');return;}
   try{await api('/api/recordings/'+id+'/transcript',{method:'POST',body:JSON.stringify({vtt:vtt})});}
-  catch(e){alert(e.message);return;}
+  catch(e){showToast(e.message||'Something went wrong','error');return;}
   loadManage();
 }
 async function saveSlides(id){
   const lines=document.getElementById('s'+id).value.split('\n').map(l=>l.trim()).filter(Boolean);
   const slides=lines.map(l=>{const p=l.split('|').map(x=>x.trim());
     return {at_seconds:parseInt(p[0]||'0',10)||0,slide_number:parseInt(p[1]||'1',10)||1,title:p[2]||null};});
-  if(!slides.length){alert('Add at least one slide line');return;}
+  if(!slides.length){showToast('Add at least one slide line','error');return;}
   try{await api('/api/recordings/'+id+'/slides',{method:'POST',body:JSON.stringify({slides:slides})});}
-  catch(e){alert(e.message);return;}
+  catch(e){showToast(e.message||'Something went wrong','error');return;}
   loadManage();
 }
-async function publish(id){try{await api('/api/recordings/'+id+'/publish',{method:'POST'});}catch(e){alert(e.message);return;}loadManage();loadList();}
-async function withhold(id){try{await api('/api/recordings/'+id+'/withhold',{method:'POST'});}catch(e){alert(e.message);return;}loadManage();loadList();}
-async function delRec(id){if(!confirm('Delete this recording, its transcript and slide markers?'))return;
-  try{await api('/api/recordings/'+id,{method:'DELETE'});}catch(e){alert(e.message);return;}loadManage();loadList();}
+async function publish(id){try{await api('/api/recordings/'+id+'/publish',{method:'POST'});}catch(e){showToast(e.message||'Something went wrong','error');return;}loadManage();loadList();}
+async function withhold(id){try{await api('/api/recordings/'+id+'/withhold',{method:'POST'});}catch(e){showToast(e.message||'Something went wrong','error');return;}loadManage();loadList();}
+async function delRec(id){if(!await confirmDialog({title:'Delete recording',message:'Delete this recording, its transcript and slide markers? This cannot be undone.',confirmText:'Delete',danger:true}))return;
+  try{await api('/api/recordings/'+id,{method:'DELETE'});}catch(e){showToast(e.message||'Something went wrong','error');return;}loadManage();loadList();}
 
 loadList();
 </script>

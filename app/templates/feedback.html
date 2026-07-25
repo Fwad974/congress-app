@@ -67,7 +67,6 @@ textarea.fb-in{resize:vertical;min-height:70px}
 {% block scripts %}
 <script>
 const IS_ORG={{ 'true' if is_organizer else 'false' }};
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function starsRO(n){let h='<span class="stars sm">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=Math.round(n)?' on':'')+'">★</span>';return h+'</span>';}
 function starPicker(id,val){let h='<span class="stars" id="'+id+'" data-v="'+(val||0)+'">';for(let i=1;i<=5;i++)h+='<span class="s'+(i<=(val||0)?' on':'')+'" data-i="'+i+'">★</span>';return h+'</span>';}

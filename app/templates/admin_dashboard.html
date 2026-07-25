@@ -300,7 +300,6 @@ async function loadFeatures(){ld(true);try{const d=await api('/api/admin/feature
 }catch(e){showToast(e.message,'error');}ld(false);}
 
 async function toggleFeature(key,enabled){try{await api('/api/admin/features/'+key,'PUT',{enabled});showToast(enabled?'Released':'Hidden','success');loadFeatures();}catch(e){showToast(e.message,'error');}}
-function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function loadStats(){ld(true);try{const d=await api('/api/admin/stats');document.getElementById('stat-total').textContent=d.total_users;document.getElementById('stat-active').textContent=d.active_users;document.getElementById('stat-suspended').textContent=d.suspended_users;document.getElementById('stat-today').textContent=d.new_today;document.getElementById('stat-week').textContent=d.new_this_week;const rb=document.getElementById('roleBreakdown');const ro=['super_admin','admin','moderator','review_chair','session_chair','speaker','reviewer','attendee'];rb.innerHTML=ro.filter(r=>d.roles_breakdown[r]).map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.025);"><span class="role-pill ${r}">${r.replace('_',' ')}</span><span style="font-family:var(--m);font-size:0.85rem;color:var(--w9);">${d.roles_breakdown[r]}</span></div>`).join('')||'<div class="empty-state">No users</div>';const ra=document.getElementById('recentActivity');ra.innerHTML=d.recent_activity.length?d.recent_activity.map((a,i)=>auditRow(a,i)).join(''):'<div class="empty-state">No activity</div>';}catch(e){showToast(e.message,'error');}ld(false);}
 
@@ -401,11 +400,17 @@ async function _doBcSearch(){
   if(q.length<2){box.classList.remove('open');box.innerHTML='';return;}
   try{const d=await api('/api/admin/users?search='+encodeURIComponent(q)+'&per_page=8');
     const rows=(d.users||[]).filter(u=>!_bcPeople.has(u.id));
-    box.innerHTML=rows.length?rows.map(u=>`<div class="bc-ur-item" onclick="addPerson(${u.id},'${esc(u.full_name).replace(/'/g,"\\'")}')">${esc(u.full_name)} <span class="e">${esc(u.email)}</span></div>`).join(''):'<div class="bc-ur-item" style="color:var(--w3);cursor:default;">No matches</div>';
+    // Names ride on data-* and are read via dataset — never built into an
+    // inline handler string (that was the attribute-injection XSS sink).
+    box.innerHTML=rows.length?rows.map(u=>`<div class="bc-ur-item" role="button" tabindex="0" data-uid="${u.id}" data-uname="${esc(u.full_name)}">${esc(u.full_name)} <span class="e">${esc(u.email)}</span></div>`).join(''):'<div class="bc-ur-item" style="color:var(--w3);cursor:default;">No matches</div>';
     box.classList.add('open');
-  }catch(e){}
+  }catch(e){box.innerHTML='<div class="bc-ur-item" style="color:var(--red);cursor:default;">'+esc(e.message||'Search failed')+'</div>';box.classList.add('open');}
 }
 function addPerson(id,name){_bcPeople.set(id,name);renderBcPeople();document.getElementById('bc_usearch').value='';document.getElementById('bc_uresults').classList.remove('open');}
+(function(){const box=document.getElementById('bc_uresults');if(!box)return;
+  const pick=el=>{if(el&&el.dataset.uid)addPerson(+el.dataset.uid,el.dataset.uname||'');};
+  box.addEventListener('click',e=>pick(e.target.closest('.bc-ur-item')));
+  box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e.target.closest('.bc-ur-item'));}});})();
 document.addEventListener('click',e=>{if(!e.target.closest('#bc_usearch')&&!e.target.closest('#bc_uresults'))document.getElementById('bc_uresults')?.classList.remove('open');});
 
 function buildAudience(){

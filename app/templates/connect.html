@@ -57,7 +57,6 @@
 {% block scripts %}
 <script>
 let _visible=false,_t;
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function debouncedLoad(){clearTimeout(_t);_t=setTimeout(loadDirectory,300);}
 

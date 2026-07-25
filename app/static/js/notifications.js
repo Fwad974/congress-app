@@ -196,7 +196,11 @@
     // String compare works for HH:MM. start<=end is a same-day window; else overnight.
     return (s<=e) ? (cur>=s && cur<e) : (cur>=s || cur<e);
   }
-  function escHtml(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+  function escHtml(s){
+    if(typeof esc==='function')return esc(s);   // shared encoder from main.js
+    const m={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+    return String(s==null?'':s).replace(/[&<>"']/g,c=>m[c]);
+  }
   function markFeedRead(id){
     fetch('/api/notifications/feed/'+id+'/read',{method:'POST',credentials:'same-origin'}).catch(()=>{});
   }

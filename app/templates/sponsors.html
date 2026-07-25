@@ -105,7 +105,6 @@ textarea.sp-in{resize:vertical;min-height:70px}
 <script>
 const IS_ORG = {{ 'true' if is_organizer else 'false' }};
 const TIERS = {{ tiers_json | safe }};
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function spTab(t){document.querySelectorAll('.sp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.sp-panel').forEach(p=>p.classList.toggle('active',p.id==='sp-'+t));if(t==='directory')loadDirectory();if(t==='manage')loadManage();if(t==='analytics')loadAnalytics();}
 function tierClass(t){return 'tier-'+t;}
@@ -141,7 +140,7 @@ function embedVideo(url){
   const vm=url.match(/vimeo\.com\/(\d+)/);
   if(vm)id='https://player.vimeo.com/video/'+vm[1];
   if(id)return '<div style="position:relative;padding-top:56.25%;margin-top:6px;border-radius:12px;overflow:hidden"><iframe src="'+id+'" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe></div>';
-  return '<a class="sp-btn sm" href="'+esc(url)+'" target="_blank" rel="noopener">▶ Watch promo video ↗</a>';
+  return '<a class="sp-btn sm" href="'+safeUrl(url)+'" target="_blank" rel="noopener">▶ Watch promo video ↗</a>';
 }
 async function openBooth(id){
   const m=document.getElementById('boothModal'),sh=document.getElementById('boothSheet');
@@ -150,8 +149,8 @@ async function openBooth(id){
   try{const s=await api('/api/sponsors/'+id);
     let media='';
     if(s.video_url)media+=embedVideo(s.video_url);
-    if(s.brochure_url)media+=' <a class="sp-btn sm" href="'+esc(s.brochure_url)+'" target="_blank" rel="noopener">📄 Brochure ↗</a>';
-    if(s.website_url)media+=' <a class="sp-btn sm" href="'+esc(s.website_url)+'" target="_blank" rel="noopener">🌐 Website ↗</a>';
+    if(s.brochure_url)media+=' <a class="sp-btn sm" href="'+safeUrl(s.brochure_url)+'" target="_blank" rel="noopener">📄 Brochure ↗</a>';
+    if(s.website_url)media+=' <a class="sp-btn sm" href="'+safeUrl(s.website_url)+'" target="_blank" rel="noopener">🌐 Website ↗</a>';
     const team=(s.team||[]).length?'<div class="sp-section">Team</div><div class="sp-team">'+s.team.map(mb=>
       '<div class="sp-member"><div class="mn">'+esc(mb.name)+'</div>'+(mb.title?'<div class="mt">'+esc(mb.title)+'</div>':'')+(mb.bio?'<div class="mb">'+esc(mb.bio)+'</div>':'')+'</div>').join('')+'</div>':'';
     const lead=s.lead_submitted
@@ -209,9 +208,9 @@ function mgCard(s){
     '<label class="sp-btn sm" style="cursor:pointer">Logo<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif" style="display:none" onchange="uploadLogo('+s.id+',this)"></label>'+
     '<button class="sp-btn sm" onclick="editSponsor('+s.id+')">Edit</button>'+
     '<button class="sp-btn sm" onclick="toggleActive('+s.id+','+(s.is_active?'false':'true')+')">'+(s.is_active?'Hide':'Show')+'</button>'+
-    '<button class="sp-btn sm" onclick="viewLeads('+s.id+',\''+esc(s.name).replace(/'/g,"")+'\')">Leads ('+(s.lead_count||0)+')</button>'+
+    '<button class="sp-btn sm" onclick="viewLeads('+s.id+',\''+esc(jsStr(s.name))+'\')">Leads ('+(s.lead_count||0)+')</button>'+
     '<a class="sp-btn sm" href="/api/sponsors/'+s.id+'/leads/export">Export</a>'+
-    '<button class="sp-btn sm" style="color:var(--red)" onclick="deleteSponsor('+s.id+',\''+esc(s.name).replace(/'/g,"")+'\')">Delete</button>'+
+    '<button class="sp-btn sm" style="color:var(--red)" onclick="deleteSponsor('+s.id+',\''+esc(jsStr(s.name))+'\')">Delete</button>'+
     '</div></div>';
 }
 async function uploadLogo(id,el){

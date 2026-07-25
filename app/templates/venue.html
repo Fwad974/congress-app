@@ -150,7 +150,6 @@ textarea.vn-in{resize:vertical;min-height:70px;font-family:var(--m);font-size:.8
 {% block scripts %}
 <script>
 const IS_ORG={{ 'true' if is_organizer else 'false' }};
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 
 // ── i18n ───────────────────────────────────────────────────
@@ -198,7 +197,7 @@ function renderVenue(){
   document.getElementById('venueBox').innerHTML=
     '<div class="vn-row"><span class="ico">🏛️</span><div style="flex:1"><div class="t">'+esc(loc(g,'venue_name')||'')+'</div>'+
     '<div class="d">'+esc(loc(g,'address')||'')+'</div></div></div>'+
-    '<div style="margin-top:8px"><a class="vn-btn" id="venueMapBtn" href="'+esc(url)+'" target="_blank" rel="noopener">🗺️ '+T('gmaps')+' ↗</a></div>';
+    '<div style="margin-top:8px"><a class="vn-btn" id="venueMapBtn" href="'+safeUrl(url)+'" target="_blank" rel="noopener">🗺️ '+T('gmaps')+' ↗</a></div>';
 }
 
 // ── floor plan ─────────────────────────────────────────────
@@ -263,14 +262,14 @@ function renderWifi(){
   document.getElementById('wifiBox').innerHTML=
     '<div class="qr"><img src="/api/venue/wifi-qr" alt="WiFi QR"></div>'+
     '<div style="flex:1;min-width:220px"><div class="vn-label" style="margin-top:0">'+T('network')+'</div>'+
-    '<div class="vn-cred"><code>'+esc(w.ssid||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(w.ssid||'').replace(/'/g,"\\'")+'\',this)">'+T('copy')+'</button></div>'+
-    (w.security!=='nopass'?'<div class="vn-label">'+T('password')+'</div><div class="vn-cred"><code>'+esc(w.password||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(w.password||'').replace(/'/g,"\\'")+'\',this)">'+T('copy')+'</button></div>':'')+
+    '<div class="vn-cred"><code>'+esc(w.ssid||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(jsStr(w.ssid||''))+'\',this)">'+T('copy')+'</button></div>'+
+    (w.security!=='nopass'?'<div class="vn-label">'+T('password')+'</div><div class="vn-cred"><code>'+esc(w.password||'—')+'</code><button class="vn-btn sm" onclick="copyTxt(\''+esc(jsStr(w.password||''))+'\',this)">'+T('copy')+'</button></div>':'')+
     '<div style="font:.78rem var(--f);color:var(--w5);margin-top:6px">📱 '+T('scan')+(loc(w,'note')?' · '+esc(loc(w,'note')):'')+'</div></div>';
 }
 const TICO={metro:'🚇',taxi:'🚕',parking:'🅿️',airport:'✈️'};
 function renderTrans(){
   document.getElementById('transBox').innerHTML=_v.transport.map(t=>
-    '<div class="vn-row"><span class="ico">'+(TICO[t.mode]||'🚌')+'</span><div><div class="t">'+esc(loc(t,'title'))+'</div><div class="d">'+esc(loc(t,'details')||'')+(t.link?' <a href="'+esc(t.link)+'" target="_blank" rel="noopener" style="color:var(--gold)">↗</a>':'')+'</div></div></div>').join('')||'<div class="vn-empty">—</div>';
+    '<div class="vn-row"><span class="ico">'+(TICO[t.mode]||'🚌')+'</span><div><div class="t">'+esc(loc(t,'title'))+'</div><div class="d">'+esc(loc(t,'details')||'')+(t.link?' <a href="'+safeUrl(t.link)+'" target="_blank" rel="noopener" style="color:var(--gold)">↗</a>':'')+'</div></div></div>').join('')||'<div class="vn-empty">—</div>';
 }
 const EICO={security:'🛡️',medical:'🚑',general:'📞'};
 function renderEmer(){
@@ -287,7 +286,7 @@ function renderPlaces(){
     groups[cat].map(p=>{
       const url=p.map_url||gmaps(p.name);   // every place gets a Maps link
       return '<div class="vn-row"><div style="flex:1"><div class="t">'+esc(loc(p,'name'))+
-        ' <a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:var(--gold);font-size:.78rem;white-space:nowrap">🗺️ '+T('map_open')+' ↗</a></div>'+
+        ' <a href="'+safeUrl(url)+'" target="_blank" rel="noopener" style="color:var(--gold);font-size:.78rem;white-space:nowrap">🗺️ '+T('map_open')+' ↗</a></div>'+
         '<div class="d">'+esc(loc(p,'details')||'')+'</div></div>'+
         (p.distance?'<span class="dist">'+esc(p.distance)+'</span>':'')+'</div>';
     }).join('')

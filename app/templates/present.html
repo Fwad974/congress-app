@@ -70,7 +70,6 @@ const SESSION_ID={{ session_id }};
 let _poll=null, _results=null, _closed=false;
 
 async function api(url){const r=await fetch(url,{credentials:'same-origin'});if(!r.ok)throw new Error('load failed');return r.json();}
-function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function setLive(on){const b=document.getElementById('live');b.classList.toggle('on',on);document.getElementById('liveTxt').textContent=on?'live':'reconnecting';}
 
 async function init(){

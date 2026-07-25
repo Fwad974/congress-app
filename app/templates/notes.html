@@ -78,7 +78,6 @@ const ICONS={
 let _notes={};
 
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
-function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function qparam(n){return new URLSearchParams(window.location.search).get(n);}
 
 async function api(url,method='GET',body=null){

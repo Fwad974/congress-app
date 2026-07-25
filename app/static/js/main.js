@@ -1,5 +1,36 @@
 /* Dubai Stem Cell Congress 2026 — Frontend JS */
 
+/* ── Output encoding (shared by every page — do NOT redefine per page) ──
+   esc()     escapes the five XML specials, so it is safe in HTML text AND
+             inside quoted attributes (the old per-page esc() missed quotes,
+             which allowed attribute-injection XSS).
+   escAttr() alias, used to make attribute context explicit at call sites.
+   safeUrl() for href/src: only http(s)/mailto/tel and relative URLs pass;
+             a stored `javascript:` URL can never become a clickable link.
+   jsStr()   escapes a string being embedded inside an inline handler. Prefer
+             data-* + addEventListener; use this only when unavoidable.      */
+const _ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, (c) => _ESC_MAP[c]);
+}
+const escAttr = esc;
+const _SAFE_SCHEME = /^(https?:|mailto:|tel:)/i;
+function safeUrl(u) {
+  if (u == null) return '';
+  const flat = String(u).trim().replace(/[\u0000-\u001F\u007F]/g, '');
+  if (!flat) return '';
+  if (/^[/#?]/.test(flat) && !flat.startsWith('//')) return esc(flat);
+  if (_SAFE_SCHEME.test(flat)) return esc(flat);
+  return '';
+}
+function jsStr(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    .replace(/</g, '\\x3C').replace(/>/g, '\\x3E');
+}
+
 function showToast(message, type = 'success') {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const toast = document.createElement('div');

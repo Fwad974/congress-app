@@ -100,7 +100,6 @@ textarea.pg-in{resize:vertical;min-height:80px;width:100%}
 const CAN_CREATE={{ 'true' if can_create else 'false' }};
 const HUNT_GOAL={{ hunt_goal }};
 let _mine=false, _posters=[];
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 async function api(url,method='GET',body=null){const o={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};if(body)o.body=JSON.stringify(body);const r=await fetch(url,o);let d={};try{d=await r.json();}catch(e){}if(!r.ok){let m=d.detail||'Failed';if(Array.isArray(m))m=m.map(e=>e.msg).join('. ');throw new Error(m);}return d;}
 function fmt(iso){return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}
 
@@ -168,7 +167,7 @@ async function openDetail(id){
       : '';
     const code=p.hunt_code?'<div class="pg-field"><label>Scavenger-hunt code (print on the poster)</label><div style="display:flex;align-items:center;gap:12px"><span style="font:600 1rem var(--m);color:var(--gold);letter-spacing:.1em">'+esc(p.hunt_code)+'</span><a class="pg-btn sm" href="/posters/'+p.id+'/qr-print" target="_blank" rel="noopener">🖨 Print QR</a></div></div>':'';
     const owner=p.can_edit?'<div style="display:flex;gap:8px;margin:10px 0"><button class="pg-btn sm" onclick="openForm('+p.id+')">Edit</button><label class="pg-btn sm" style="cursor:pointer">Change image<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.pdf" style="display:none" onchange="uploadImg('+p.id+',this)"></label><button class="pg-btn sm" onclick="delPoster('+p.id+')">Delete</button></div>':'';
-    const link=p.external_url?'<a class="pg-btn sm" href="'+esc(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
+    const link=p.external_url?'<a class="pg-btn sm" href="'+safeUrl(p.external_url)+'" target="_blank" rel="noopener">Open full poster ↗</a>':'';
     const cmts=p.comments.map(c=>'<div class="pg-cmt"><div class="h"><span>'+esc(c.user_name)+'</span><span style="color:var(--w3);font-weight:400">'+fmt(c.created_at)+(c.can_delete?' · <a href="#" onclick="event.preventDefault();delComment('+p.id+','+c.id+')" style="color:var(--red)">delete</a>':'')+(c.is_mine?'':' · <a href="#" onclick="event.preventDefault();reportContent(\'poster_comment\','+c.id+')" style="color:var(--w5)">report</a>')+'</span></div><div class="b">'+esc(c.body)+'</div></div>').join('')||'<div style="color:var(--w3);font-size:.84rem;margin-bottom:8px">No comments yet.</div>';
     document.getElementById('detailBody').innerHTML=
       '<div class="pg-track">'+esc(p.category||'Poster')+(p.board_number?' · Board '+esc(p.board_number):'')+'</div>'+

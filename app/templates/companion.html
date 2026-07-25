@@ -70,7 +70,6 @@
 {% endblock %}
 {% block scripts %}
 <script>
-function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<em>$1</em>');}
 function when(v){if(!v)return'';const d=new Date(v);return isNaN(d)?'':d.toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
 function cpTab(t){document.querySelectorAll('.cp-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));document.querySelectorAll('.cp-panel').forEach(p=>p.classList.toggle('active',p.id==='cp-'+t));
@@ -94,10 +93,10 @@ async function send(){
   catch(e){thinking.innerHTML=esc(e.message);return;}
   let html=md(d.answer);
   if(d.items&&d.items.length)html+='<div style="margin-top:8px">'+d.items.slice(0,4).map(i=>
-    '<div class="cp-item"><a href="'+esc(i.url||'#')+'">'+esc(i.title)+'</a>'+
+    '<div class="cp-item"><a href="'+safeUrl(i.url||'#')+'">'+esc(i.title)+'</a>'+
     (i.when?' <span style="color:var(--w5)">· '+when(i.when)+'</span>':'')+
     (i.location?' <span style="color:var(--w5)">· '+esc(i.location)+'</span>':'')+'</div>').join('')+'</div>';
-  if(d.links&&d.links.length)html+='<div style="margin-top:8px">'+d.links.map(l=>'<a class="cp-chip" href="'+esc(l.url)+'">'+esc(l.label)+' →</a>').join('')+'</div>';
+  if(d.links&&d.links.length)html+='<div style="margin-top:8px">'+d.links.map(l=>'<a class="cp-chip" href="'+safeUrl(l.url)+'">'+esc(l.label)+' →</a>').join('')+'</div>';
   const LABELS={anthropic:'Claude',gemini:'Gemini',openai:'OpenAI'};
   const badge=d.via==='rules'?'From live congress data'
     :((LABELS[d.via]||d.via)+(d.model?' ('+d.model+')':'')+' · grounded in congress data');
@@ -120,11 +119,11 @@ async function loadToday(){
   html+='<div class="cp-card"><h3>Nudges</h3><div id="nudgeBox">'+
     ((d.nudges||[]).length?d.nudges.map(n=>
       '<div class="cp-nudge '+esc(n.urgency)+'"><div><div class="t">'+esc(n.title)+'</div><div class="b">'+esc(n.body)+
-      '</div><a class="cp-chip" style="margin-top:6px" href="'+esc(n.link)+'">Open →</a></div></div>').join('')
+      '</div><a class="cp-chip" style="margin-top:6px" href="'+safeUrl(n.link)+'">Open →</a></div></div>').join('')
      :'<div class="cp-meta">Nothing needs you right now.</div>')+'</div></div>';
   box.innerHTML=html;
 }
-function item(i){return '<div class="cp-item"><a href="'+esc(i.url||'#')+'">'+esc(i.title)+'</a>'+
+function item(i){return '<div class="cp-item"><a href="'+safeUrl(i.url||'#')+'">'+esc(i.title)+'</a>'+
   (i.when?' <span style="color:var(--w5)">· '+when(i.when)+'</span>':'')+
   (i.location?' <span style="color:var(--w5)">· '+esc(i.location)+'</span>':'')+'</div>';}
 
@@ -137,7 +136,7 @@ async function loadSurprise(){
     (d.picks.length?d.picks.map(p=>'<div class="cp-card"><h3>'+esc(p.title)+'</h3>'+
       '<div class="cp-meta">'+esc(p.kind)+(p.when?' · '+when(p.when):'')+(p.location?' · '+esc(p.location):'')+'</div>'+
       '<div class="cp-nudge"><div><div class="t">'+esc(p.topic||'Worth a detour')+'</div><div class="b">'+esc(p.because)+'</div></div></div>'+
-      '<a class="cp-btn" href="'+esc(p.url||'#')+'">Take a look →</a></div>').join('')
+      '<a class="cp-btn" href="'+safeUrl(p.url||'#')+'">Take a look →</a></div>').join('')
      :'<div class="cp-empty">Not enough of the program is in yet for a surprise.</div>')+
     '<div style="text-align:center"><button class="cp-btn" onclick="loadSurprise()">Another</button></div>';
 }
@@ -162,7 +161,7 @@ async function loadPrep(){
       (d.top_questions.length?'<h3 style="margin-top:12px;font-size:.9rem">Questions already waiting</h3>'+
         d.top_questions.map(q=>'<div class="cp-item">'+esc(q.text)+' <span style="color:var(--gold)">▲'+q.upvotes+'</span></div>').join(''):'')+
       (d.related.length?'<h3 style="margin-top:12px;font-size:.9rem">Related in the program</h3>'+
-        d.related.map(r=>'<div class="cp-item"><a href="'+esc(r.url)+'">'+esc(r.title)+'</a> <span style="color:var(--w5)">· '+esc(r.reason)+'</span></div>').join(''):'')+
+        d.related.map(r=>'<div class="cp-item"><a href="'+safeUrl(r.url)+'">'+esc(r.title)+'</a> <span style="color:var(--w5)">· '+esc(r.reason)+'</span></div>').join(''):'')+
       '</div>';
   }
   box.innerHTML=html||'<div class="cp-empty">Nothing to prepare yet.</div>';

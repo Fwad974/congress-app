@@ -231,7 +231,6 @@ let _presenterOnly = false;
 let _chairOnly = false;
 
 function ld(on){document.getElementById('loadingBar').classList.toggle('active',on);}
-function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function api(url, method='GET', body=null){
   const opts={method,headers:{'Content-Type':'application/json'},credentials:'same-origin'};
@@ -467,7 +466,7 @@ function card(i){
     (i.chair_name&&!i.is_chair)?'<span class="sched-tag">Chair: '+esc(i.chair_name)+'</span>':'',
     extraTags(i),
     i.location?'<span class="sched-tag location">'+esc(i.location)+'</span>':'',
-    x.materials_url?'<a class="sched-tag location" href="'+esc(x.materials_url)+'" target="_blank" rel="noopener">📎 Slides</a>':'',
+    x.materials_url?'<a class="sched-tag location" href="'+safeUrl(x.materials_url)+'" target="_blank" rel="noopener">📎 Slides</a>':'',
   ].filter(Boolean).join('');
   const bmTitle=i.is_bookmarked?'Remove bookmark':'Bookmark this item';
   const bmBtn='<button class="sched-act bm'+(i.is_bookmarked?' on':'')+'" title="'+bmTitle+'" onclick="toggleBookmark('+i.id+',this)">'+ICONS.bookmark+'</button>';
