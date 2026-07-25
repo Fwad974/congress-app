@@ -11,6 +11,45 @@ the fix in each case is to use the palette correctly, not to re-theme it.
 
 ---
 
+## Remediation status (2026-07-25)
+
+Both P1 blockers and the large majority of the P2/P3 findings below were fixed
+on this branch and verified (full test suite green; key flows re-checked on a
+live instance). Highlights:
+
+- **Both P1s fixed and verified live** — the attendee→admin XSS (centralised,
+  quote-escaping `esc()` + `safeUrl()`/`jsStr()`; the payload no longer
+  executes) and the Recordings *Manage* crash (reads `.items`; the tab now
+  populates).
+- **Security** — `.env` untracked; `Secure` cookies driven by `ENVIRONMENT`;
+  admin `sort_by` allowlist; CSV formula-injection guard; `bulk_action` rejects
+  unknown actions; timed suspension enforced; poster-image approval gate;
+  streaming upload cap; LLM timeouts + companion rate-limit; Docker/compose
+  hardening.
+- **Stability** — race guards on check-in / votes / view-counter; DB pool
+  `pre_ping`/sizing; knowledge-graph caching; poster N+1 batching; Redis reader
+  auto-reconnect; datetime + enum-sync + wifi-QR fixes.
+- **Accessibility** — keyboard-operable upvote / poll / stars / chips; skip
+  link; `aria-live`; form-label coverage (measured 2/49 → nearly all); the two
+  contrast bugs; PWA manifest; absolute static/template paths.
+- **Completeness / UX** — presenter moderation gate now assignment-based;
+  `/present` authz; mute enforced on feedback + word cloud; withdraw /
+  account-delete / push-unsubscribe wired into the UI; assignment + report
+  notifications; login `?next=`; schedule search; ICS export; a working
+  password-reset flow (verified end-to-end); broadcast confirmation.
+- **Docs** — README/FEATURE_RELEASES drift corrected; AUTH-01/AUTH-02 relabelled
+  *Planned*; CONNECT/NOTES/POLLS docs added.
+
+**Deliberately not changed:** real TOTP 2FA (AUTH-01) and a shorter admin
+session timeout (AUTH-02) remain unimplemented — the README now labels them
+*Planned* rather than claiming they are enforced. A small number of P3 polish
+items (e.g. further CSS de-duplication, request-sequencing on debounced
+searches) are left as follow-ups; none affect correctness or security.
+
+The original findings, kept below for the record:
+
+---
+
 ## 1. How this review was carried out
 
 | Method | What it covered |
