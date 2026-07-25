@@ -49,10 +49,19 @@ async def get_current_user_optional(request: Request, db: Session = Depends(get_
     if not user_id:
         return None
     user = db.query(User).filter(User.id == int(user_id)).first()
-    # Suspended accounts are treated as logged out everywhere — pages redirect
-    # to /login and API calls get 401, so a suspend takes effect immediately
-    # instead of lingering until the token expires.
     if user and not user.is_active:
+        # A timed suspension auto-expires: reactivate once its window passes,
+        # otherwise treat the account as logged out (pages -> /login, API -> 401)
+        # so a suspend takes effect immediately, not when the token expires.
+        su = getattr(user, "suspended_until", None)
+        if su is not None:
+            if su.tzinfo is None:
+                su = su.replace(tzinfo=timezone.utc)
+            if su <= datetime.now(timezone.utc):
+                user.is_active = True
+                user.suspended_until = None
+                db.commit()
+                return user
         return None
     return user
 

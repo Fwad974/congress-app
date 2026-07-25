@@ -8,3 +8,8 @@ __pycache__/
 .pytest_cache/
 # Runtime data: uploaded manuscripts, auto-generated VAPID keys, etc.
 data/
+
+# Local environment / secrets — never commit real credentials.
+.env
+.env.*
+!.env.example

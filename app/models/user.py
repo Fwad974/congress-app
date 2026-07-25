@@ -38,6 +38,10 @@ class User(Base):
 
     # Status
     is_active = Column(Boolean, default=True)         # False = suspended
+    # When set to a future time, a timed suspension: is_active stays False until
+    # this passes, after which the account auto-reactivates on next auth. NULL
+    # means an indefinite suspension (manual reactivation only).
+    suspended_until = Column(DateTime(timezone=True), nullable=True)
     is_verified = Column(Boolean, default=False)
     two_factor_enabled = Column(Boolean, default=False)
     # Moderation: temporary posting ban (MOD-04 mute step). When set to a

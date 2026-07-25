@@ -25,6 +25,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
+from app.core.uploads import read_capped
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core import sponsor_files
@@ -349,7 +350,7 @@ def export_leads(sponsor_id: int, request: Request, db: Session = Depends(get_db
 
 # ─── Logo (upload / serve) ───────────────────────────────────────
 @router.post("/{sponsor_id}/logo", response_model=SponsorResponse)
-async def upload_logo(sponsor_id: int, file: UploadFile = File(...),
+async def upload_logo(sponsor_id: int, request: Request, file: UploadFile = File(...),
                       db: Session = Depends(get_db),
                       user: User = Depends(get_current_user)):
     _require_organizer(user)
@@ -357,12 +358,9 @@ async def upload_logo(sponsor_id: int, file: UploadFile = File(...),
     if not sponsor_files.is_allowed(file.filename or ""):
         raise HTTPException(status_code=422,
                             detail=f"Only {sponsor_files.EXT_LABEL} files are allowed")
-    data = await file.read()
+    data = await read_capped(file, sponsor_files.max_bytes(), request)
     if not data:
         raise HTTPException(status_code=422, detail="The file is empty")
-    if len(data) > sponsor_files.max_bytes():
-        raise HTTPException(status_code=413,
-                            detail=f"File is too large (max {get_settings().MAX_UPLOAD_MB} MB)")
     old = s.stored_logo
     s.stored_logo = sponsor_files.save_bytes(data, file.filename)
     s.logo_name = (file.filename or "logo")[:255]

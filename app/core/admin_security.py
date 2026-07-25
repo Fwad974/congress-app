@@ -108,8 +108,26 @@ class LoginTracker:
             del self._locked[email]
         return False, None
 
+    def _prune(self, now: float):
+        # Bound memory: drop empty attempt windows and expired temporary locks.
+        # (Permanent locks are few and cleared on admin unlock.)
+        window = now - 1800
+        for email in list(self._attempts):
+            kept = [t for t in self._attempts[email] if t > window]
+            if kept:
+                self._attempts[email] = kept
+            else:
+                self._attempts.pop(email, None)
+        for email in list(self._locked):
+            if self._locked[email] <= now:
+                self._locked.pop(email, None)
+
     def record_failure(self, email: str):
         now = time.time()
+        # Opportunistically prune stale state so the dicts don't grow without
+        # bound under a stream of failed logins for distinct emails.
+        if len(self._attempts) > 512:
+            self._prune(now)
         window = now - 1800  # 30 min window
         self._attempts[email] = [t for t in self._attempts[email] if t > window]
         self._attempts[email].append(now)

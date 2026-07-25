@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.config import get_settings
+from app.core.uploads import read_capped
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core import poster_files
@@ -334,7 +335,7 @@ def poster_qr(poster_id: int, request: Request, db: Session = Depends(get_db),
 
 # ─── Poster image (upload / serve) ───────────────────────────────
 @router.post("/{poster_id}/image", response_model=PosterResponse)
-async def upload_image(poster_id: int, file: UploadFile = File(...),
+async def upload_image(poster_id: int, request: Request, file: UploadFile = File(...),
                        db: Session = Depends(get_db),
                        user: User = Depends(get_current_user)):
     poster = _get(db, poster_id)
@@ -343,12 +344,9 @@ async def upload_image(poster_id: int, file: UploadFile = File(...),
     if not poster_files.is_allowed(file.filename or ""):
         raise HTTPException(status_code=422,
                             detail=f"Only {poster_files.EXT_LABEL} files are allowed")
-    data = await file.read()
+    data = await read_capped(file, poster_files.max_bytes(), request)
     if not data:
         raise HTTPException(status_code=422, detail="The file is empty")
-    if len(data) > poster_files.max_bytes():
-        raise HTTPException(status_code=413,
-                            detail=f"File is too large (max {get_settings().MAX_UPLOAD_MB} MB)")
     old = poster.stored_image
     poster.stored_image = poster_files.save_bytes(data, file.filename)
     poster.image_name = (file.filename or "poster")[:255]
@@ -363,7 +361,12 @@ async def upload_image(poster_id: int, file: UploadFile = File(...),
 @router.get("/{poster_id}/image")
 def get_image(poster_id: int, db: Session = Depends(get_db),
               user: User = Depends(get_current_user)):
+    from app.core.admin_security import is_moderator
     poster = _get(db, poster_id)
+    # Same approval gate as the detail endpoint: a pending/rejected poster's
+    # image is visible only to its owner and moderators, never by id-enumeration.
+    if poster.status != "approved" and not (_can_edit(poster, user) or is_moderator(user)):
+        raise HTTPException(status_code=404, detail="Poster not found")
     if not poster.stored_image:
         raise HTTPException(status_code=404, detail="No image uploaded")
     path = poster_files.path_for(poster.stored_image)

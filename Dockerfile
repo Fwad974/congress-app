@@ -26,11 +26,12 @@ VOLUME ["/app/data"]
 
 EXPOSE 8000
 
-# --proxy-headers + --forwarded-allow-ips="*" so uvicorn trusts the
-# X-Forwarded-Proto/For set by the Cloudflare/reverse proxy in front of it.
-# Without this, url_for() builds http:// OAuth redirect URIs behind TLS and
-# the client IP is always the proxy's. Safe because the app is only reachable
-# through that proxy (the container port isn't published directly).
+# --proxy-headers so uvicorn honours X-Forwarded-Proto/For from the reverse
+# proxy in front of it. --forwarded-allow-ips is restricted to the trusted
+# proxy hop(s) via FORWARDED_ALLOW_IPS (a Docker network is typically
+#172.16.0.0/12) so a client can't spoof its IP by sending its own
+# X-Forwarded-For. Override for your topology; only widen to "*" when the
+# container port is genuinely unreachable except through the proxy.
+ENV FORWARDED_ALLOW_IPS="172.16.0.0/12"
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips \"$FORWARDED_ALLOW_IPS\""]

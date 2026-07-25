@@ -14,7 +14,7 @@ Thin HTTP layer over ``app.core.companion``:
 """
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
@@ -29,6 +29,22 @@ router = APIRouter()
 
 ORGANIZER_ROLES = {UserRole.admin, UserRole.super_admin}
 MAX_QUESTION = 500
+
+# Per-user throttle on the LLM-backed /ask endpoint: an attendee can't burn
+# unbounded paid LLM spend or starve the shared threadpool. In-process sliding
+# window — fine for a single worker; move to Redis for a multi-worker fleet.
+_ASK_WINDOW_SECONDS = 60
+_ASK_MAX_PER_WINDOW = 15
+_ask_hits: dict = {}
+
+
+def _throttle_ask(user_id: int, now: float) -> None:
+    hits = [t for t in _ask_hits.get(user_id, ()) if now - t < _ASK_WINDOW_SECONDS]
+    if len(hits) >= _ASK_MAX_PER_WINDOW:
+        raise HTTPException(status_code=429,
+                            detail="You're asking very quickly — give it a moment and try again.")
+    hits.append(now)
+    _ask_hits[user_id] = hits
 
 
 class AskRequest(BaseModel):
@@ -57,8 +73,11 @@ class AskResponse(BaseModel):
 
 
 @router.post("/ask", response_model=AskResponse)
-def ask(req: AskRequest, db: Session = Depends(get_db),
+def ask(req: AskRequest, request: Request, db: Session = Depends(get_db),
         user: User = Depends(get_current_user)):
+    # time.monotonic() via loop; import lazily to avoid a module-level import churn
+    import time as _time
+    _throttle_ask(user.id, _time.monotonic())
     result = companion.answer(db, user, req.question, allow_llm=req.allow_llm)
     return AskResponse(
         answer=result.get("answer", ""), kind=result.get("kind", "freeform"),

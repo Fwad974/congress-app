@@ -133,8 +133,10 @@ def list_users(
     # Count
     total = q.count()
 
-    # Sort
-    sort_col = getattr(User, sort_by, User.created_at)
+    # Sort — allowlist columns so sort_by can't reach arbitrary attributes
+    # (e.g. hashed_password) or non-column members that 500 on order_by().
+    SORTABLE = {"created_at", "last_login", "full_name", "email", "role"}
+    sort_col = getattr(User, sort_by if sort_by in SORTABLE else "created_at")
     q = q.order_by(desc(sort_col) if sort_order == "desc" else asc(sort_col))
 
     # Paginate
@@ -311,6 +313,11 @@ def suspend_user(
         raise HTTPException(status_code=403, detail="Cannot manage user at same or higher role")
 
     user.is_active = False
+    # duration_hours > 0 = a timed suspension that auto-expires; else indefinite.
+    if req.duration_hours and req.duration_hours > 0:
+        user.suspended_until = datetime.now(timezone.utc) + timedelta(hours=req.duration_hours)
+    else:
+        user.suspended_until = None
     user.updated_at = datetime.now(timezone.utc)
     db.flush()
 
@@ -341,6 +348,7 @@ def activate_user(
         raise HTTPException(status_code=403, detail="Cannot manage user at same or higher role")
 
     user.is_active = True
+    user.suspended_until = None
     user.updated_at = datetime.now(timezone.utc)
     db.flush()
 
@@ -419,14 +427,27 @@ def bulk_action(
             results["errors"].append(f"Cannot manage {user.email}")
             continue
 
+        # Only these bulk actions are supported. Anything else (including the
+        # once-documented "delete") is rejected instead of counting as success.
+        if req.action not in ("suspend", "activate", "role_change"):
+            results["failed"] += 1
+            results["errors"].append(f"Unsupported bulk action: {req.action}")
+            continue
+        if req.action == "role_change" and not req.role:
+            results["failed"] += 1
+            results["errors"].append("role_change requires a target role")
+            continue
+
         try:
             if req.action == "suspend":
                 user.is_active = False
+                user.suspended_until = None
                 log_action(db, admin, AuditAction.user_suspend,
                     f"Bulk suspend: {user.email}. Reason: {req.reason or 'bulk action'}",
                     request=request, target=user)
             elif req.action == "activate":
                 user.is_active = True
+                user.suspended_until = None
                 log_action(db, admin, AuditAction.user_activate,
                     f"Bulk activate: {user.email}", request=request, target=user)
             elif req.action == "role_change" and req.role:
@@ -468,12 +489,18 @@ def export_users_csv(
         target_type="system",
     )
 
+    def _safe(v):
+        """Neutralise spreadsheet formula injection (CWE-1236): a cell starting
+        with = + - @ or a control char is prefixed with a single quote."""
+        s = "" if v is None else str(v)
+        return "'" + s if s[:1] in ("=", "+", "-", "@", "\t", "\r") else s
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["ID", "Email", "Name", "Institution", "Role", "Active", "Created"])
     for u in users:
         writer.writerow([
-            u.id, u.email, u.full_name, u.institution or "",
+            u.id, _safe(u.email), _safe(u.full_name), _safe(u.institution or ""),
             u.role.value, u.is_active, u.created_at.isoformat()
         ])
 

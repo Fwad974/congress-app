@@ -3,9 +3,10 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: congress_user
-      POSTGRES_PASSWORD: congress_pass
-      POSTGRES_DB: dubai_congress
+      # Credentials come from .env (git-ignored); the defaults are dev-only.
+      POSTGRES_USER: ${POSTGRES_USER:-congress_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-dubai_congress}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -15,7 +16,7 @@ services:
       # would expose the DB directly.)
       - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U congress_user -d dubai_congress"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-congress_user} -d ${POSTGRES_DB:-dubai_congress}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -44,7 +45,7 @@ services:
     environment:
       # production makes the app refuse to boot without a strong SECRET_KEY.
       ENVIRONMENT: ${ENVIRONMENT:-production}
-      DATABASE_URL: postgresql://congress_user:congress_pass@db:5432/dubai_congress
+      DATABASE_URL: postgresql://${POSTGRES_USER:-congress_user}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-dubai_congress}
       # No insecure fallback: set SECRET_KEY in .env
       # (`python -c "import secrets; print(secrets.token_hex(32))"`).
       SECRET_KEY: ${SECRET_KEY:-}
@@ -120,7 +121,7 @@ services:
     profiles: ["tools"]
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@congress.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?set PGADMIN_PASSWORD in .env}
     ports:
       - "127.0.0.1:5050:80"
     depends_on:

@@ -90,6 +90,9 @@ class Settings(BaseSettings):
     # Deprecated alias for ANTHROPIC_MODEL — still honoured when set.
     COMPANION_MODEL: str = ""
     COMPANION_MAX_TOKENS: int = 900
+    # Hard wall-clock cap on any single LLM call so a slow/hung provider can't
+    # pin a threadpool worker. Applied to every provider client below.
+    LLM_TIMEOUT_SECONDS: float = 30.0
 
     # Certificates. Attendance is recorded by scanning a session QR; each
     # attended session earns CME_CREDITS_PER_SESSION credits.

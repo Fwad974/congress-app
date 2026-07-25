@@ -367,7 +367,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY,
     same_site="lax",
-    https_only=False,  # set True behind HTTPS in production
+    # Secure in production (HTTPS), relaxed in dev so http://localhost works.
+    https_only=settings.ENVIRONMENT.lower() == "production",
     max_age=600,       # the OAuth handshake is short-lived
 )
 

@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from app.core.config import get_settings
+from app.core.uploads import read_capped
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.admin_security import is_review_chair, is_assignable_reviewer
@@ -439,7 +440,7 @@ def _can_view(db: Session, paper: Paper, user: User) -> bool:
 
 
 @router.post("/{paper_id}/file", response_model=PaperResponse)
-async def upload_paper_file(paper_id: int, file: UploadFile = File(...),
+async def upload_paper_file(paper_id: int, request: Request, file: UploadFile = File(...),
                             db: Session = Depends(get_db),
                             user: User = Depends(get_current_user)):
     paper = db.query(Paper).filter(Paper.id == paper_id).first()
@@ -453,13 +454,9 @@ async def upload_paper_file(paper_id: int, file: UploadFile = File(...),
         raise HTTPException(status_code=422,
                             detail=f"Only {paper_files.EXT_LABEL} files are allowed")
 
-    data = await file.read()
+    data = await read_capped(file, paper_files.max_bytes(), request)
     if not data:
         raise HTTPException(status_code=422, detail="The file is empty")
-    if len(data) > paper_files.max_bytes():
-        raise HTTPException(
-            status_code=413,
-            detail=f"File is too large (max {get_settings().MAX_UPLOAD_MB} MB)")
 
     old = paper.stored_file
     paper.stored_file = paper_files.save_bytes(data, file.filename)

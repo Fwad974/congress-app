@@ -61,6 +61,13 @@ def reset_rate_limiter():
     login_tracker._attempts.clear()
     login_tracker._locked.clear()
     login_tracker._permanently_locked.clear()
+    # Companion /ask throttle is per-process; reset so reused user ids across
+    # tests don't accumulate into a 429.
+    try:
+        from app.api.companion import _ask_hits
+        _ask_hits.clear()
+    except Exception:
+        pass
     yield
 
 

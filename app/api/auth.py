@@ -19,6 +19,22 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+def set_auth_cookie(response: Response, token: str) -> None:
+    """Single writer for the session cookie.
+
+    `secure` follows ENVIRONMENT so production never sends the token over plain
+    HTTP (local http://localhost dev still works), and `max_age` derives from
+    ACCESS_TOKEN_EXPIRE_MINUTES so the cookie can't outlive the JWT.
+    """
+    cfg = get_settings()
+    response.set_cookie(
+        key="access_token", value=token, httponly=True,
+        samesite="lax", path="/",
+        max_age=cfg.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=cfg.ENVIRONMENT.lower() == "production",
+    )
+
+
 @router.post("/signup", response_model=UserResponse, status_code=201)
 def signup(req: SignUpRequest, response: Response, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == req.email).first():
@@ -36,10 +52,7 @@ def signup(req: SignUpRequest, response: Response, db: Session = Depends(get_db)
     db.refresh(user)
 
     token = create_access_token({"sub": str(user.id), "role": user.role.value})
-    response.set_cookie(
-        key="access_token", value=token, httponly=True,
-        samesite="lax", path="/", max_age=86400,
-    )
+    set_auth_cookie(response, token)
     return user
 
 
@@ -67,10 +80,7 @@ def login(req: LoginRequest, request: Request, response: Response, db: Session =
     log_action(db, user, AuditAction.login_success, f"Login from {get_client_ip(request)}", request=request)
 
     token = create_access_token({"sub": str(user.id), "role": user.role.value})
-    response.set_cookie(
-        key="access_token", value=token, httponly=True,
-        samesite="lax", path="/", max_age=86400,
-    )
+    set_auth_cookie(response, token)
     return user
 
 
@@ -155,8 +165,7 @@ async def oauth_callback(provider: str, request: Request, db: Session = Depends(
 
     jwt_token = create_access_token({"sub": str(user.id), "role": user.role.value})
     resp = RedirectResponse(url="/home", status_code=302)
-    resp.set_cookie(key="access_token", value=jwt_token, httponly=True,
-                    samesite="lax", path="/", max_age=86400)
+    set_auth_cookie(resp, jwt_token)
     return resp
 
 
@@ -181,6 +190,11 @@ def update_profile(req: ProfileUpdateRequest, db: Session = Depends(get_db), use
 
 @router.put("/password")
 def change_password(req: PasswordChangeRequest, request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # OAuth-only accounts have no password to verify — guide them instead of
+    # 500-ing on verify_password(None).
+    if not user.hashed_password:
+        raise HTTPException(status_code=400,
+                            detail="This account signs in with a social provider and has no password to change.")
     if not verify_password(req.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
@@ -193,9 +207,16 @@ def change_password(req: PasswordChangeRequest, request: Request, db: Session = 
 
 
 @router.delete("/account")
-def delete_account(db: Session = Depends(get_db), user: User = Depends(get_current_user), response: Response = None):
+def delete_account(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    log_action(db, user, AuditAction.user_delete,
+               "User deleted their own account (GDPR)", request=request,
+               target_type="user", target_id=user.id)
     db.delete(user)
     db.commit()
-    response = Response(status_code=200)
-    response.delete_cookie("access_token")
-    return {"message": "Account deleted"}
+    # Clear the cookie on every path the login flow may have set it.
+    from fastapi.responses import JSONResponse
+    resp = JSONResponse(content={"message": "Account deleted"})
+    for p in ["/", "/api", "/api/auth", "/home", "/profile", "/settings", "/certificates", "/admin"]:
+        resp.delete_cookie("access_token", path=p)
+    resp.delete_cookie("access_token")
+    return resp
