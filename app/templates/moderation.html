@@ -4,8 +4,6 @@
 {% block head %}
 <style>
 .md-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
-.md-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
-.md-title h2{font:600 1.4rem var(--fh);color:var(--w)}.md-title h2 span{color:var(--gold)}
 .md-stats{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
 .md-stat{background:rgba(10,61,46,.35);border:1px solid rgba(201,169,98,.12);border-radius:var(--r);padding:12px 18px;min-width:96px}
 .md-stat .v{font:700 1.4rem var(--fh);color:var(--w)}
@@ -30,13 +28,19 @@
 <div class="md-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="md-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Content <span>Moderation</span></h2></div>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Tools</span></div>
+      <h1>Content <em>Moderation</em></h1>
+      <div class="ph-sub">Review reported content and keep congress discussions healthy.</div>
+    </div>
+  </div>
   <div class="md-stats" id="mdStats"></div>
 
-  <div class="md-title" style="padding:8px 0"><h2 style="font-size:1rem">Report queue</h2><button class="md-btn" onclick="loadAll()" style="margin-left:auto">Refresh</button></div>
+  <div class="sec-head" style="margin-top:8px"><h2>Report queue</h2><span class="sec-rule"></span><button class="md-btn" onclick="loadAll()">Refresh</button></div>
   <div id="mdQueue"><div class="md-empty">Loading…</div></div>
 
-  <div class="md-title" style="padding:16px 0 8px"><h2 style="font-size:1rem">Poster approvals</h2></div>
+  <div class="sec-head" style="margin-top:16px"><h2>Poster approvals</h2><span class="sec-rule"></span></div>
   <div id="mdPosters"><div class="md-empty">Loading…</div></div>
 </div></div>
 

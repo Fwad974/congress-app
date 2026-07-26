@@ -5,9 +5,6 @@
 <style>
 .admin-page { min-height: 100vh; padding-bottom: 60px; background: radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg); }
 .home-header { border-bottom: 1px solid rgba(201,169,98,.15); padding-bottom: 18px; margin-bottom: 0; }
-.admin-title-bar { display: flex; align-items: center; gap: 14px; padding: 24px 0 18px; flex-wrap: wrap; }
-.admin-title-bar h2 { font: 600 1.4rem var(--fh); color: var(--w); }
-.admin-title-bar h2 span { color: var(--gold); }
 .admin-role-badge { font: 600 0.65rem var(--f); letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; color: var(--gold); background: rgba(201,169,98,.1); border: 1px solid rgba(201,169,98,.2); }
 .admin-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(201,169,98,.15); margin-bottom: 24px; overflow-x: auto; }
 .admin-tab { font: 500 0.78rem var(--f); letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 20px; border: none; background: none; color: var(--w3); cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; white-space: nowrap; }
@@ -100,7 +97,7 @@
 .loading-bar.active { display: block; }
 @keyframes loading-slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 @media(max-width:900px){.stat-row{grid-template-columns:repeat(2,1fr)}.hide-mobile-col{display:none}}
-@media(max-width:640px){.stat-row{grid-template-columns:1fr}.toolbar{flex-direction:column}.search-box{min-width:100%}.admin-title-bar{flex-direction:column;align-items:flex-start;gap:8px}.modal{max-width:100%;margin:0 12px}}
+@media(max-width:640px){.stat-row{grid-template-columns:1fr}.toolbar{flex-direction:column}.search-box{min-width:100%}.modal{max-width:100%;margin:0 12px}}
 .feat-switch{position:relative;width:46px;height:26px;border-radius:50px;border:1px solid rgba(201,169,98,.2);background:rgba(255,255,255,.06);cursor:pointer;flex-shrink:0;transition:.2s;padding:0}
 .feat-switch>i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--w5);transition:.2s}
 .feat-switch.on{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:#27ae60}
@@ -122,10 +119,13 @@
 <div class="admin-page">
 {% include "nav.html" %}
 <div class="container">
-<div class="admin-title-bar animate-up">
-  <a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
-  <h2>User <span>Management</span></h2>
-  <span class="admin-role-badge">{{ user.role.value | replace('_', ' ') | upper }}</span>
+<div class="page-head animate-up">
+  <div>
+    <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Tools</span></div>
+    <h1>Congress <em>Management</em></h1>
+    <div class="ph-sub">Users, features, broadcasts and live congress operations.</div>
+  </div>
+  <div class="ph-actions"><span class="admin-role-badge">{{ user.role.value | replace('_', ' ') | upper }}</span></div>
 </div>
 <div class="admin-tabs animate-up delay-1">
   <button class="admin-tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>

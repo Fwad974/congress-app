@@ -23,7 +23,8 @@
 <div class="auth-page">
   <div class="nav-bar"><div class="container"><nav class="topnav animate-in"><a href="/" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a><div class="topnav-links gap-sm"><a href="/login" class="btn btn-ghost btn-sm">Sign In</a></div></nav></div></div>
   <div class="auth-body"><div class="auth-card animate-scale"><div class="card">
-    <div class="auth-header"><h2>Create Your Account</h2><p>Join 500+ researchers at the congress</p></div>
+    <div class="auth-crest"><img src="/static/favicon.png" alt=""><span class="ak">{{ congress_name }} {{ congress_year }}</span><span class="ad">{{ congress_dates }} · {{ congress_venue }}</span></div>
+    <div class="auth-header"><h2>Create your account</h2><p>Join 500+ researchers shaping regenerative medicine.</p></div>
     <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
       <div class="form-group"><label class="form-label" for="fullName">Full Name</label><input type="text" class="form-input" id="fullName" placeholder="Dr. Jane Smith" required></div>
       <div class="form-group"><label class="form-label" for="email">Email Address</label><input type="email" class="form-input" id="email" placeholder="jane@university.edu" required></div>

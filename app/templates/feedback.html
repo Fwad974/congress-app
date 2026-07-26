@@ -3,8 +3,6 @@
 {% block head %}
 <style>
 .fb-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
-.fb-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
-.fb-title h2{font:600 1.4rem var(--fh);color:var(--w)}.fb-title h2 span{color:var(--gold)}
 .fb-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
 .fb-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
 .fb-tab:hover{color:var(--w7)}.fb-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
@@ -42,7 +40,13 @@ textarea.fb-in{resize:vertical;min-height:70px}
 <div class="fb-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="fb-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Feedback &amp; <span>Ratings</span></h2></div>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Programme</span></div>
+      <h1>Feedback &amp; <em>Ratings</em></h1>
+      <div class="ph-sub">Rate sessions, help speakers improve, and shape next year's programme.</div>
+    </div>
+  </div>
   <div class="fb-tabs animate-up">
     <button class="fb-tab active" data-t="mine" onclick="fbTab('mine')">My Feedback</button>
     {% if is_speaker or is_organizer %}<button class="fb-tab" data-t="talks" onclick="fbTab('talks')">My Talks</button>{% endif %}

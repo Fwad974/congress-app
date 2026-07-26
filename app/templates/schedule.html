@@ -4,9 +4,6 @@
 {% block head %}
 <style>
 .sched-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
-.sched-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 18px;flex-wrap:wrap}
-.sched-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
-.sched-title-bar h2 span{color:var(--gold)}
 .sched-meta{font:.82rem var(--f);color:var(--w5)}
 .sched-toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
 .sched-filter{padding:11px 14px;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w7);font:.86rem var(--f);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c9a962'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
@@ -82,10 +79,12 @@
 <div class="sched-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="sched-title-bar animate-up">
-    <a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
-    <h2>Congress <span>Schedule</span></h2>
-    <span class="sched-meta">{{ congress_dates }} &middot; {{ congress_venue }}</span>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Programme</span></div>
+      <h1>Congress <em>Schedule</em></h1>
+      <div class="ph-sub">{{ congress_dates }} &middot; {{ congress_venue }} — search the programme, filter by type, and build your own agenda.</div>
+    </div>
   </div>
   <div class="sched-toolbar animate-up delay-1">
     <input class="sched-filter" id="schedSearch" type="search" placeholder="Search sessions, speakers, rooms…" aria-label="Search the program" oninput="renderSchedule()" style="min-width:220px;flex:1;max-width:340px;cursor:text;background-image:none;padding-right:14px">
@@ -373,7 +372,10 @@ function render(items, searchQ){
   const keys=Object.keys(groups).sort();
   c.innerHTML=keys.map(k=>{
     const g=groups[k];
-    return '<div class="sched-day-group"><div class="sched-day-header"><strong>'+esc(g.label.split(',')[0])+'</strong>'+esc(g.label.substring(g.label.indexOf(',')+1).trim())+'</div><div class="sched-list">'+
+    // Label is "Sunday, 26 July 2026" or "Sunday 26 July 2026" depending on
+    // the browser's locale data — split on the first token either way.
+    var _lp=g.label.replace(',',' ').split(/\s+/);
+    return '<div class="sched-day-group"><div class="sched-day-header"><strong>'+esc(_lp[0])+'</strong>'+esc(_lp.slice(1).join(' '))+'</div><div class="sched-list">'+
       g.items.map(card).join('')+
     '</div></div>';
   }).join('');

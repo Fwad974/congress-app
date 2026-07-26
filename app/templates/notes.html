@@ -4,10 +4,6 @@
 {% block head %}
 <style>
 .notes-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
-.notes-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 18px;flex-wrap:wrap}
-.notes-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
-.notes-title-bar h2 span{color:var(--gold)}
-.notes-meta{font:.82rem var(--f);color:var(--w5)}
 .note-composer{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(201,169,98,.12);border-radius:var(--rl);padding:18px 20px;margin-bottom:24px;display:flex;flex-direction:column;gap:12px}
 .note-input{width:100%;background:rgba(10,61,46,.3);border:1px solid rgba(201,169,98,.15);border-radius:var(--r);color:var(--w9);font:.92rem/1.5 var(--f);padding:12px 14px;outline:none;resize:vertical;min-height:90px}
 .note-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,169,98,.08)}
@@ -45,10 +41,12 @@
 <div class="notes-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="notes-title-bar animate-up">
-    <a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
-    <h2>My <span>Notes</span></h2>
-    <span class="notes-meta">Private to you</span>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Research</span></div>
+      <h1>My <em>Notes</em></h1>
+      <div class="ph-sub">Takeaways, ideas and follow-ups — linked to sessions, and private to you.</div>
+    </div>
   </div>
 
   <div class="note-composer animate-up delay-1">

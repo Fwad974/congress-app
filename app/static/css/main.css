@@ -135,14 +135,10 @@ a:hover{color:var(--gold-l)}
 .topnav-logo{width:36px;height:36px;flex-shrink:0}
 .topnav-logo img{width:100%;height:100%;object-fit:contain}
 .topnav-name{font:600 .9rem/1.2 var(--fh);color:var(--gold);letter-spacing:.01em}
-/* Right side: the feature pills scroll in the middle; the bell + avatar are
-   pinned so they can never be pushed off-screen no matter how many pills. */
+/* Public pages (landing/login/signup) put simple actions on the right;
+   the app header renders grouped nav via nav.html. */
 .topnav-links{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;justify-content:flex-end}
-.topnav-scroll{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:1px}
-.topnav-scroll::-webkit-scrollbar{display:none}
-.topnav-scroll.scrollable{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
-.topnav-scroll .nav-quick{flex-shrink:0}
-.topnav-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.topnav-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
 
 /* ═══ ANIMATIONS ═══ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -273,3 +269,24 @@ a:hover{color:var(--gold-l)}
 /* Elevation utility for interactive cards. */
 .lift{transition:transform .25s cubic-bezier(.22,1,.36,1),border-color .25s,box-shadow .25s}
 .lift:hover{transform:translateY(-4px);border-color:var(--ga3);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+
+/* ── Page head (shared across every page) ────────────────────────
+   Breadcrumb kicker → Playfair h1 (gold em accent) → subtitle,
+   with an actions slot on the right and a gold-tick base rule.  */
+.page-head{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:14px 22px;flex-wrap:wrap;margin:30px 0 26px;padding-bottom:20px;border-bottom:1px solid var(--ga2)}
+.page-head::after{content:'';position:absolute;left:0;bottom:-1px;width:56px;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.ph-kick{display:flex;align-items:center;gap:8px;font:600 .64rem var(--f);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.ph-kick a{color:var(--w3);text-decoration:none;transition:.2s}
+.ph-kick a:hover{color:var(--gold)}
+.ph-kick .sep{color:var(--w3);letter-spacing:0}
+.page-head h1{font:600 1.8rem/1.14 var(--fh);color:var(--w);letter-spacing:.005em}
+.page-head h1 em{font-style:normal;color:var(--gold)}
+.ph-sub{font:.9rem/1.55 var(--f);color:var(--w5);margin-top:7px;max-width:620px}
+.ph-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:auto}
+@media(max-width:768px){.page-head{margin:20px 0 20px;padding-bottom:16px}.page-head h1{font-size:1.4rem}.ph-actions{margin-left:0}}
+
+/* ── Auth flow: shared brand crest above the card heading ──────── */
+.auth-crest{display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:20px;text-align:center}
+.auth-crest img{width:50px;height:50px;filter:drop-shadow(0 4px 14px rgba(201,169,98,.25))}
+.auth-crest .ak{font:600 .6rem var(--f);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.auth-crest .ad{font:.72rem var(--m);color:var(--w3);letter-spacing:.05em}

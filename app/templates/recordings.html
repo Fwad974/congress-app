@@ -3,8 +3,6 @@
 {% block head %}
 <style>
 .rc-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
-.rc-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
-.rc-title h2{font:600 1.4rem var(--fh);color:var(--w)}.rc-title h2 span{color:var(--gold)}
 .rc-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
 .rc-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
 .rc-tab:hover{color:var(--w7)}.rc-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
@@ -46,7 +44,13 @@ textarea.rc-in{resize:vertical;min-height:90px;font-family:var(--m,monospace);fo
 <div class="rc-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="rc-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Session <span>Recordings</span></h2></div>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Programme</span></div>
+      <h1>Session <em>Recordings</em></h1>
+      <div class="ph-sub">Catch up on any session you missed — with searchable transcripts and slide sync.</div>
+    </div>
+  </div>
   <div class="rc-tabs animate-up">
     <button class="rc-tab active" data-t="watch" onclick="rcTab('watch')">Watch</button>
     <button class="rc-tab" data-t="search" onclick="rcTab('search')">Search transcripts</button>

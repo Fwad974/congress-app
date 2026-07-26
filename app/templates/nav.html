@@ -1,26 +1,54 @@
 <!-- Nav -->
 <style>
+  /* ── Primary nav: grouped, editorial ─────────────────────────── */
+  .nav-primary{display:flex;align-items:center;gap:2px;flex:1 1 auto;justify-content:center;min-width:0;flex-wrap:wrap}
+  .nav-item{position:relative;display:inline-flex;align-items:center;gap:6px;padding:9px 11px;background:none;border:none;cursor:pointer;font:500 .84rem var(--f);color:var(--w7);text-decoration:none;letter-spacing:.01em;transition:color .2s;white-space:nowrap;border-radius:10px}
+  .nav-item svg{width:15px;height:15px;stroke:currentColor;fill:none;flex-shrink:0}
+  .nav-item:hover{color:var(--w)}
+  .nav-item::after{content:'';position:absolute;left:11px;right:11px;bottom:2px;height:2px;border-radius:2px;background:var(--gold);transform:scaleX(0);opacity:0;transition:.22s}
+  .nav-item.nav-active{color:var(--gold)}
+  .nav-item.nav-active::after{transform:scaleX(1);opacity:1}
+  .nav-item.nav-gold{color:var(--gold)}
+  .nav-caret{width:11px!important;height:11px!important;opacity:.5;transition:transform .2s;margin-left:-2px}
+  .nav-group{position:relative}
+  .nav-group:hover .nav-caret,.nav-group.open .nav-caret,.nav-group:focus-within .nav-caret{transform:rotate(180deg);opacity:1}
+  .nav-menu{position:absolute;top:calc(100% + 8px);left:-8px;min-width:252px;padding:7px;background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--rl);box-shadow:0 18px 50px rgba(0,0,0,.55);opacity:0;visibility:hidden;transform:translateY(6px);transition:.18s;z-index:140}
+  .nav-menu::before{content:'';position:absolute;top:-10px;left:0;right:0;height:10px}
+  .nav-menu::after{content:'';position:absolute;top:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,var(--gold),transparent);opacity:.5}
+  .nav-group:hover .nav-menu,.nav-group.open .nav-menu,.nav-group:focus-within .nav-menu{opacity:1;visibility:visible;transform:none}
+  .nav-mi{display:flex;gap:12px;align-items:center;padding:9px 11px;border-radius:10px;text-decoration:none;transition:.15s}
+  .nav-mi:hover{background:var(--ga1)}
+  .nav-mi .ic{width:34px;height:34px;border-radius:9px;background:var(--ga1);border:1px solid var(--ga2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+  .nav-mi:hover .ic{border-color:var(--ga3)}
+  .nav-mi .ic svg{width:16px;height:16px;stroke:var(--gold);fill:none}
+  .nav-mi .tt{display:block;font:600 .84rem var(--f);color:var(--w9)}
+  .nav-mi .dd{display:block;font:.72rem var(--f);color:var(--w5);margin-top:1px}
+  .nav-count{display:none;align-items:center;justify-content:center;min-width:17px;height:17px;border-radius:50px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font:700 .6rem var(--f);padding:0 4px}
+  /* Space management for item-heavy roles: drop the Home pill (the brand is
+     Home), then the brand wordmark, before ever wrapping to a second row. */
+  @media(max-width:1280px){.nav-home{display:none}}
+  @media(max-width:1100px){.nav-item{padding:9px 9px;font-size:.8rem}.topnav-name{display:none}}
+  /* ── Utilities (bell / avatar) ───────────────────────────────── */
   .nav-user-menu{position:relative}
-  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--ga2);border-radius:50px;background:var(--ga2);color:var(--w9);cursor:pointer;font:.84rem var(--f);transition:.2s}
-  .nav-user-btn:hover{border-color:var(--ga3);background:var(--ga2)}
+  .nav-user-btn{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border:1px solid var(--ga2);border-radius:50px;background:var(--ga1);color:var(--w9);cursor:pointer;font:.84rem var(--f);transition:.2s}
+  .nav-user-btn:hover{border-color:var(--ga3)}
   .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-d));display:flex;align-items:center;justify-content:center;font:.7rem var(--fh);color:var(--bg);font-weight:600}
-  .nav-user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--r);padding:5px;min-width:190px;display:none;z-index:100;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .nav-user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--rl);padding:6px;min-width:200px;display:none;z-index:140;box-shadow:0 18px 50px rgba(0,0,0,.55)}
   .nav-user-dropdown.open{display:block}
-  .nav-dd-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font:.86rem var(--f);color:var(--w5);cursor:pointer;transition:.12s;text-decoration:none;width:100%}
+  .nav-dd-head{padding:10px 12px 8px;border-bottom:1px solid var(--ga2);margin-bottom:5px}
+  .nav-dd-head .n{font:600 .86rem var(--f);color:var(--w9)}
+  .nav-dd-head .r{font:600 .6rem var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:2px}
+  .nav-dd-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font:.85rem var(--f);color:var(--w5);cursor:pointer;transition:.12s;text-decoration:none;width:100%}
   .nav-dd-item:hover{background:var(--ga2);color:var(--w9)}
   .nav-dd-item svg{width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0}
-  .nav-quick{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--ga2);border:1px solid var(--ga2);border-radius:50px;font:.76rem var(--f);color:var(--w5);transition:.2s;cursor:pointer;text-decoration:none}
-  .nav-quick:hover{border-color:var(--gold);color:var(--gold)}
-  .nav-quick.nav-active{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.12);font-weight:600}
-  .nav-quick svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-menu-link svg{width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none}
   .nav-bell-wrap{position:relative}
-  .nav-bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--ga2);background:var(--ga2);color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+  .nav-bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--ga2);background:var(--ga1);color:var(--w5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
   .nav-bell:hover{border-color:var(--gold);color:var(--gold)}
   .nav-bell svg{width:17px;height:17px;stroke:currentColor;fill:none}
   .nav-bell-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;border-radius:50px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font:700 .6rem var(--f);display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg)}
-  .nav-bell-panel{position:absolute;top:calc(100% + 8px);right:0;width:330px;max-width:calc(100vw - 24px);background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--r);display:none;z-index:120;box-shadow:0 12px 40px rgba(0,0,0,.5);overflow:hidden}
+  .nav-bell-panel{position:absolute;top:calc(100% + 8px);right:0;width:330px;max-width:calc(100vw - 24px);background:var(--bg2);border:1px solid var(--ga2);border-radius:var(--rl);display:none;z-index:140;box-shadow:0 18px 50px rgba(0,0,0,.55);overflow:hidden}
   .nav-bell-panel.open{display:block}
   .nav-bell-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--ga2);font:600 .8rem var(--f);color:var(--w9)}
   .nav-bell-head button{background:none;border:none;color:var(--gold);font:.72rem var(--f);cursor:pointer}
@@ -32,30 +60,55 @@
   .nav-bell-item .d{font:.66rem var(--m);color:var(--w3);margin-top:4px}
   .nav-bell-item .k-emergency{color:#e74c3c;font-weight:700}
   .nav-bell-empty{padding:26px 14px;text-align:center;color:var(--w3);font:.8rem var(--f)}
-  @media(max-width:768px){.nav-user-menu{display:none}.nav-desktop-logout{display:none}.nav-desktop-link{display:none}.nav-bell-panel{position:fixed;top:64px;right:12px}}
+  @media(max-width:768px){.nav-primary{display:none}.nav-user-menu{display:none}.nav-bell-panel{position:fixed;top:64px;right:12px}}
 </style>
 
 <div class="nav-bar">
 <div class="container">
-  <nav class="topnav animate-in">
+  <nav class="topnav animate-in" aria-label="Primary">
     <a href="/home" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a>
-    <div class="topnav-links gap-sm">
-      <div class="topnav-scroll">
-      <a href="/schedule" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>
-      {% if feature_enabled('notes') %}<a href="/notes" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
-      {% if feature_enabled('papers') %}<a href="/papers" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
-      {% if feature_enabled('posters') %}<a href="/posters" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Posters</a>{% endif %}
-      {% if feature_enabled('connect') %}<a href="/connect" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Connect</a>{% endif %}
-      {% if feature_enabled('sponsors') %}<a href="/sponsors" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg> Sponsors</a>{% endif %}
-      {% if feature_enabled('feedback') %}<a href="/feedback" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg> Feedback</a>{% endif %}
-      {% if feature_enabled('venue') %}<a href="/venue" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Venue</a>{% endif %}
-      {% if feature_enabled('recordings') %}<a href="/recordings" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> Recordings</a>{% endif %}
-      {% if feature_enabled('knowledge') %}<a href="/knowledge" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg> Knowledge map</a>{% endif %}
-      {% if feature_enabled('companion') %}<a href="/companion" class="nav-quick nav-desktop-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> Companion</a>{% endif %}
-      {% if user.role.value in ['moderator', 'admin', 'super_admin'] %}<a href="/moderation" class="nav-quick nav-desktop-link" style="position:relative"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Moderation<span class="nav-bell-badge" id="modBadge" style="display:none">0</span></a>{% endif %}
-      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}
+
+    <div class="nav-primary" id="navPrimary">
+      <a href="/home" class="nav-item nav-home">Home</a>
+
+      <div class="nav-group">
+        <button class="nav-item" type="button" aria-haspopup="true" aria-expanded="false">Programme <svg class="nav-caret" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="nav-menu">
+          <a class="nav-mi" href="/schedule"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span><span class="tt">Schedule</span><span class="dd">The full programme, day by day</span></span></a>
+          {% if feature_enabled('recordings') %}<a class="nav-mi" href="/recordings"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span><span><span class="tt">Recordings</span><span class="dd">Watch sessions you missed</span></span></a>{% endif %}
+          {% if feature_enabled('feedback') %}<a class="nav-mi" href="/feedback"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg></span><span><span class="tt">Feedback</span><span class="dd">Rate sessions &amp; speakers</span></span></a>{% endif %}
+        </div>
       </div>
-      <div class="topnav-actions">
+
+      {% if feature_enabled('papers') or feature_enabled('posters') or feature_enabled('knowledge') or feature_enabled('notes') %}
+      <div class="nav-group">
+        <button class="nav-item" type="button" aria-haspopup="true" aria-expanded="false">Research <svg class="nav-caret" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="nav-menu">
+          {% if feature_enabled('papers') %}<a class="nav-mi" href="/papers"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span><span class="tt">Papers &amp; Abstracts</span><span class="dd">Submit &amp; browse research</span></span></a>{% endif %}
+          {% if feature_enabled('posters') %}<a class="nav-mi" href="/posters"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span><span class="tt">Poster Gallery</span><span class="dd">Browse, vote &amp; play the hunt</span></span></a>{% endif %}
+          {% if feature_enabled('knowledge') %}<a class="nav-mi" href="/knowledge"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg></span><span><span class="tt">Knowledge Map</span><span class="dd">Follow topics across the congress</span></span></a>{% endif %}
+          {% if feature_enabled('notes') %}<a class="nav-mi" href="/notes"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span><span class="tt">My Notes</span><span class="dd">Your personal session notes</span></span></a>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if feature_enabled('connect') or feature_enabled('sponsors') or feature_enabled('venue') %}
+      <div class="nav-group">
+        <button class="nav-item" type="button" aria-haspopup="true" aria-expanded="false">Community <svg class="nav-caret" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="nav-menu">
+          {% if feature_enabled('connect') %}<a class="nav-mi" href="/connect"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span><span class="tt">Connect</span><span class="dd">The attendee directory</span></span></a>{% endif %}
+          {% if feature_enabled('sponsors') %}<a class="nav-mi" href="/sponsors"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg></span><span><span class="tt">Sponsors &amp; Exhibitors</span><span class="dd">Partners &amp; virtual booths</span></span></a>{% endif %}
+          {% if feature_enabled('venue') %}<a class="nav-mi" href="/venue"><span class="ic"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><span><span class="tt">Venue &amp; Dubai</span><span class="dd">Maps, WiFi &amp; local info</span></span></a>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if feature_enabled('companion') %}<a href="/companion" class="nav-item nav-gold"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> Companion</a>{% endif %}
+      {% if user.role.value in ['moderator', 'admin', 'super_admin'] %}<a href="/moderation" class="nav-item">Moderation <span class="nav-count" id="modBadge">0</span></a>{% endif %}
+      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-item">Admin</a>{% endif %}
+    </div>
+
+    <div class="topnav-actions">
       <div class="nav-bell-wrap">
         <button class="nav-bell" id="navBell" onclick="toggleBellPanel(event)" title="Notifications" aria-label="Notifications">
           <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -67,51 +120,45 @@
         </div>
       </div>
       <div class="nav-user-menu">
-        <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')">
+        <button class="nav-user-btn" onclick="this.parentElement.querySelector('.nav-user-dropdown').classList.toggle('open')" aria-haspopup="true" aria-label="Account menu">
           <div class="nav-user-avatar">{{ user.full_name[0] }}</div><span class="hide-mobile">{{ user.full_name.split(' ')[0] }}</span>
         </button>
         <div class="nav-user-dropdown">
+          <div class="nav-dd-head"><div class="n">{{ user.full_name }}</div><div class="r">{{ user.role.value | replace('_', ' ') | title }}</div></div>
           <a href="/profile" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile</a>
-          {% if feature_enabled('notes') %}<a href="/notes" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
-          {% if feature_enabled('papers') %}<a href="/papers" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
-          {% if feature_enabled('posters') %}<a href="/posters" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Posters</a>{% endif %}
-          {% if feature_enabled('connect') %}<a href="/connect" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Connect</a>{% endif %}
-          {% if feature_enabled('sponsors') %}<a href="/sponsors" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg> Sponsors</a>{% endif %}
-          {% if feature_enabled('feedback') %}<a href="/feedback" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg> Feedback</a>{% endif %}
-          {% if feature_enabled('venue') %}<a href="/venue" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Venue</a>{% endif %}
-          {% if feature_enabled('recordings') %}<a href="/recordings" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> Recordings</a>{% endif %}
-          {% if feature_enabled('knowledge') %}<a href="/knowledge" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg> Knowledge map</a>{% endif %}
-          {% if feature_enabled('companion') %}<a href="/companion" class="nav-dd-item" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> AI Companion</a>{% endif %}
           <a href="/certificates" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Certificates</a>
+          {% if feature_enabled('notes') %}<a href="/notes" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> My Notes</a>{% endif %}
           <a href="/settings" class="nav-dd-item"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Settings</a>
           {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-dd-item" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}
           <a href="/logout" class="nav-dd-item" style="color:var(--w5)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out</a>
         </div>
       </div>
-      <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
-      </div>
+      <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Open menu">☰</button>
     </div>
   </nav>
 </div>
 </div>
 <div class="mobile-menu-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 <div class="mobile-menu-panel" id="mobilePanel">
-  <div class="mobile-menu-header"><div class="mobile-menu-user"><div class="avatar">{{ user.full_name[0] }}</div><div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div></div><button class="mobile-menu-close" onclick="closeMobileMenu()">✕</button></div>
+  <div class="mobile-menu-header"><div class="mobile-menu-user"><div class="avatar">{{ user.full_name[0] }}</div><div><div class="name">{{ user.full_name }}</div><div class="role">{{ user.role.value | replace('_', ' ') | title }}</div></div></div><button class="mobile-menu-close" onclick="closeMobileMenu()" aria-label="Close menu">✕</button></div>
   <div class="mobile-menu-links">
-    <div class="mobile-menu-section">Navigate</div>
     <a href="/home" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+    {% if feature_enabled('companion') %}<a href="/companion" class="mobile-menu-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> AI Companion</a>{% endif %}
+    <div class="mobile-menu-section">Programme</div>
     <a href="/schedule" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>
-    {% if feature_enabled('notes') %}<a href="/notes" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
+    {% if feature_enabled('recordings') %}<a href="/recordings" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> Recordings</a>{% endif %}
+    {% if feature_enabled('feedback') %}<a href="/feedback" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg> Feedback</a>{% endif %}
+    {% if feature_enabled('papers') or feature_enabled('posters') or feature_enabled('knowledge') or feature_enabled('notes') %}<div class="mobile-menu-section">Research</div>{% endif %}
     {% if feature_enabled('papers') %}<a href="/papers" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
-    {% if feature_enabled('posters') %}<a href="/posters" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Posters</a>{% endif %}
+    {% if feature_enabled('posters') %}<a href="/posters" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Posters</a>{% endif %}
+    {% if feature_enabled('knowledge') %}<a href="/knowledge" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg> Knowledge map</a>{% endif %}
+    {% if feature_enabled('notes') %}<a href="/notes" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> My Notes</a>{% endif %}
+    {% if feature_enabled('connect') or feature_enabled('sponsors') or feature_enabled('venue') %}<div class="mobile-menu-section">Community</div>{% endif %}
     {% if feature_enabled('connect') %}<a href="/connect" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Connect</a>{% endif %}
     {% if feature_enabled('sponsors') %}<a href="/sponsors" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg> Sponsors</a>{% endif %}
-    {% if feature_enabled('feedback') %}<a href="/feedback" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg> Feedback</a>{% endif %}
     {% if feature_enabled('venue') %}<a href="/venue" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Venue</a>{% endif %}
-    {% if feature_enabled('recordings') %}<a href="/recordings" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> Recordings</a>{% endif %}
-    {% if feature_enabled('knowledge') %}<a href="/knowledge" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg> Knowledge map</a>{% endif %}
-    {% if feature_enabled('companion') %}<a href="/companion" class="mobile-menu-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> AI Companion</a>{% endif %}
-    {% if user.role.value in ['admin', 'super_admin'] %}<div class="mobile-menu-section">Admin</div><a href="/admin" class="mobile-menu-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Management</a>{% endif %}
+    {% if user.role.value in ['moderator', 'admin', 'super_admin'] %}<div class="mobile-menu-section">Tools</div><a href="/moderation" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Moderation</a>{% endif %}
+    {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="mobile-menu-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Management</a>{% endif %}
     <div class="mobile-menu-section">Account</div>
     <a href="/profile" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile</a>
     <a href="/certificates" class="mobile-menu-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Certificates</a>
@@ -128,21 +175,33 @@
 </nav>
 <script>
 document.addEventListener('click',e=>{if(!e.target.closest('.nav-user-menu'))document.querySelectorAll('.nav-user-dropdown').forEach(d=>d.classList.remove('open'))});
-// Desktop nav pills: scroll horizontally when they don't all fit, and show a
-// right-edge fade as the "there's more" hint. The bell + avatar stay pinned.
+
+// ── Primary nav: dropdown groups + active page marking ─────────
 (function(){
-  var strip=document.querySelector('.topnav-scroll');if(!strip)return;
-  function upd(){strip.classList.toggle('scrollable',strip.scrollWidth-strip.clientWidth>4);}
-  upd();window.addEventListener('resize',upd);
-  // Mark + centre the current page's pill.
-  var cur=strip.querySelector('a[href="'+location.pathname+'"]');
-  if(cur){cur.classList.add('nav-active');cur.setAttribute('aria-current','page');
-    if(cur.scrollIntoView)cur.scrollIntoView({inline:'center',block:'nearest'});}
-  // Translate vertical wheel to horizontal so the strip is scrollable with a mouse.
-  strip.addEventListener('wheel',function(e){
-    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){strip.scrollLeft+=e.deltaY;e.preventDefault();}
-  },{passive:false});
+  var prim=document.getElementById('navPrimary');if(!prim)return;
+  function closeAll(){prim.querySelectorAll('.nav-group.open').forEach(function(g){
+    g.classList.remove('open');g.querySelector('button.nav-item').setAttribute('aria-expanded','false');});}
+  prim.querySelectorAll('.nav-group>button.nav-item').forEach(function(btn){
+    btn.addEventListener('click',function(e){e.stopPropagation();
+      var g=btn.parentElement,was=g.classList.contains('open');
+      closeAll();
+      if(!was){g.classList.add('open');btn.setAttribute('aria-expanded','true');}});
+  });
+  document.addEventListener('click',closeAll);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll();});
+  // Mark the current page: direct items and the group that contains it.
+  var path=location.pathname;
+  prim.querySelectorAll('a.nav-item,.nav-menu a').forEach(function(a){
+    var h=a.getAttribute('href');if(!h)return;
+    var hit=(h==='/home')?(path==='/home'||path==='/'):path.startsWith(h);
+    if(!hit)return;
+    a.setAttribute('aria-current','page');
+    if(a.classList.contains('nav-item'))a.classList.add('nav-active');
+    var g=a.closest('.nav-group');
+    if(g)g.querySelector('button.nav-item').classList.add('nav-active');
+  });
 })();
+
 function openMobileMenu(){document.getElementById('mobileOverlay').classList.add('open');document.getElementById('mobilePanel').classList.add('open');document.body.style.overflow='hidden'}
 function closeMobileMenu(){document.getElementById('mobileOverlay').classList.remove('open');document.getElementById('mobilePanel').classList.remove('open');document.body.style.overflow=''}
 // Highlight active bottom nav item based on current page

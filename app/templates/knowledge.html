@@ -3,8 +3,6 @@
 {% block head %}
 <style>
 .kg-page{min-height:100vh;padding-bottom:60px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
-.kg-title{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
-.kg-title h2{font:600 1.4rem var(--fh);color:var(--w)}.kg-title h2 span{color:var(--gold)}
 .kg-tabs{display:flex;gap:4px;border-bottom:1px solid rgba(201,169,98,.15);margin:12px 0 20px;overflow-x:auto}
 .kg-tab{font:500 .8rem var(--f);padding:11px 18px;border:none;background:none;color:var(--w3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
 .kg-tab:hover{color:var(--w7)}.kg-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
@@ -36,7 +34,13 @@
 <div class="kg-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="kg-title animate-up"><a href="/home" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a><h2>Knowledge <span>Map</span></h2></div>
+  <div class="page-head animate-up">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><span>Research</span></div>
+      <h1>Knowledge <em>Map</em></h1>
+      <div class="ph-sub">See how talks, posters, papers and people connect — follow a topic across the congress.</div>
+    </div>
+  </div>
   <div class="kg-tabs animate-up">
     <button class="kg-tab active" data-t="map" onclick="kgTab('map')">Map</button>
     <button class="kg-tab" data-t="trending" onclick="kgTab('trending')">Trending</button>

@@ -4,9 +4,6 @@
 {% block head %}
 <style>
 .qa-page{min-height:100vh;padding-bottom:80px;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.03),transparent 50%),var(--bg)}
-.qa-title-bar{display:flex;align-items:center;gap:14px;padding:24px 0 8px;flex-wrap:wrap}
-.qa-title-bar h2{font:600 1.4rem var(--fh);color:var(--w)}
-.qa-title-bar h2 span{color:var(--gold)}
 .qa-sub{font:.85rem var(--f);color:var(--w5);padding-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .qa-live{display:inline-flex;align-items:center;gap:6px;font:600 .68rem var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--w3)}
 .qa-live .dot{width:8px;height:8px;border-radius:50%;background:var(--w3)}
@@ -96,9 +93,11 @@
 <div class="qa-page">
 {% include "nav.html" %}
 <div class="container">
-  <div class="qa-title-bar animate-up">
-    <a href="/schedule" style="color:var(--w5);text-decoration:none;font-size:1.1rem;">&#8592;</a>
-    <h2>Live <span>Q&amp;A</span></h2>
+  <div class="page-head animate-up" style="margin-bottom:12px;padding-bottom:14px">
+    <div>
+      <div class="ph-kick"><a href="/home">Home</a><span class="sep">/</span><a href="/schedule">Schedule</a><span class="sep">/</span><span>Live session</span></div>
+      <h1>Live <em>Q&amp;A</em></h1>
+    </div>
   </div>
   <div class="qa-sub animate-up">
     <span id="sessTitle">Loading session…</span>
