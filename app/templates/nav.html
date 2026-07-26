@@ -11,6 +11,7 @@
   .nav-dd-item svg{width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0}
   .nav-quick{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--ga2);border:1px solid var(--ga2);border-radius:50px;font:.76rem var(--f);color:var(--w5);transition:.2s;cursor:pointer;text-decoration:none}
   .nav-quick:hover{border-color:var(--gold);color:var(--gold)}
+  .nav-quick.nav-active{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.12);font-weight:600}
   .nav-quick svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-menu-link svg{width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0}
   .mobile-nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none}
@@ -39,6 +40,7 @@
   <nav class="topnav animate-in">
     <a href="/home" class="topnav-brand"><div class="topnav-logo"><img src="/static/favicon.png" alt="Logo"></div><span class="topnav-name">Dubai Stem Cell Congress</span></a>
     <div class="topnav-links gap-sm">
+      <div class="topnav-scroll">
       <a href="/schedule" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>
       {% if feature_enabled('notes') %}<a href="/notes" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}
       {% if feature_enabled('papers') %}<a href="/papers" class="nav-quick nav-desktop-link"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
@@ -52,6 +54,8 @@
       {% if feature_enabled('companion') %}<a href="/companion" class="nav-quick nav-desktop-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg> Companion</a>{% endif %}
       {% if user.role.value in ['moderator', 'admin', 'super_admin'] %}<a href="/moderation" class="nav-quick nav-desktop-link" style="position:relative"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Moderation<span class="nav-bell-badge" id="modBadge" style="display:none">0</span></a>{% endif %}
       {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="nav-quick nav-desktop-link" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}
+      </div>
+      <div class="topnav-actions">
       <div class="nav-bell-wrap">
         <button class="nav-bell" id="navBell" onclick="toggleBellPanel(event)" title="Notifications" aria-label="Notifications">
           <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -85,6 +89,7 @@
         </div>
       </div>
       <button class="mobile-menu-btn" onclick="openMobileMenu()">☰</button>
+      </div>
     </div>
   </nav>
 </div>
@@ -123,6 +128,21 @@
 </nav>
 <script>
 document.addEventListener('click',e=>{if(!e.target.closest('.nav-user-menu'))document.querySelectorAll('.nav-user-dropdown').forEach(d=>d.classList.remove('open'))});
+// Desktop nav pills: scroll horizontally when they don't all fit, and show a
+// right-edge fade as the "there's more" hint. The bell + avatar stay pinned.
+(function(){
+  var strip=document.querySelector('.topnav-scroll');if(!strip)return;
+  function upd(){strip.classList.toggle('scrollable',strip.scrollWidth-strip.clientWidth>4);}
+  upd();window.addEventListener('resize',upd);
+  // Mark + centre the current page's pill.
+  var cur=strip.querySelector('a[href="'+location.pathname+'"]');
+  if(cur){cur.classList.add('nav-active');cur.setAttribute('aria-current','page');
+    if(cur.scrollIntoView)cur.scrollIntoView({inline:'center',block:'nearest'});}
+  // Translate vertical wheel to horizontal so the strip is scrollable with a mouse.
+  strip.addEventListener('wheel',function(e){
+    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){strip.scrollLeft+=e.deltaY;e.preventDefault();}
+  },{passive:false});
+})();
 function openMobileMenu(){document.getElementById('mobileOverlay').classList.add('open');document.getElementById('mobilePanel').classList.add('open');document.body.style.overflow='hidden'}
 function closeMobileMenu(){document.getElementById('mobileOverlay').classList.remove('open');document.getElementById('mobilePanel').classList.remove('open');document.body.style.overflow=''}
 // Highlight active bottom nav item based on current page
