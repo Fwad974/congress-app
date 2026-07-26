@@ -2,76 +2,287 @@
 {% block title %}Home — {{ congress_full }}{% endblock %}
 {% block head %}
 <style>
-.home-page{min-height:100vh;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.3),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(201,169,98,.04),transparent 50%),var(--bg)}
-.welcome{padding:28px 0 0}
-.wc{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--ga2);border-radius:var(--rx);overflow:hidden;margin-bottom:32px}
-.wc-top{background:linear-gradient(135deg,rgba(201,169,98,.12),rgba(201,169,98,.04));padding:28px 32px;border-bottom:1px solid var(--ga2)}
-.wc-hi{font:600 1.4rem var(--fh);color:var(--w);margin-bottom:4px}
-.wc-hi em{font-style:normal;color:var(--gold)}
-.wc-sub{font:.88rem var(--f);color:var(--w5)}
-.wc-body{padding:20px 32px}
-.wc-meta{display:flex;gap:8px;flex-wrap:wrap}
-.stitle{font:600 .72rem var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
-.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:36px}
-.dt{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--ga2);border-radius:var(--rl);padding:24px;transition:.3s;cursor:pointer;position:relative;overflow:hidden}
-.dt::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:.3s}
-.dt:hover{transform:translateY(-4px);border-color:var(--ga3)}.dt:hover::before{opacity:1}
-.dt-ico{font-size:1.4rem;margin-bottom:10px}
-.dt h3{font:600 1rem var(--fh);color:var(--w);margin-bottom:4px}
-.dt p{font:.84rem/1.55 var(--f);color:var(--w5)}
-.qa{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px}
-.qi{display:flex;align-items:center;gap:6px;padding:10px 20px;background:var(--ga2);border:1px solid var(--ga2);border-radius:50px;font:.82rem var(--f);color:var(--w5);transition:.25s;cursor:pointer;text-decoration:none}
-.qi:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.12)}
-.itags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.home-page{min-height:100vh;background:radial-gradient(ellipse at 0% 0%,rgba(10,61,46,.32),transparent 55%),radial-gradient(ellipse at 100% 8%,rgba(201,169,98,.05),transparent 45%),var(--bg)}
+.home-wrap{padding:26px 0 40px;display:flex;flex-direction:column;gap:34px}
+
+/* ── Hero ─────────────────────────────────────────────── */
+.hero{position:relative;background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--ga2);border-radius:var(--rx);overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.hero-top{padding:30px 34px 22px;background:linear-gradient(135deg,rgba(201,169,98,.1),rgba(201,169,98,.02) 60%,transparent);display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.hero-hi{font:600 1.9rem/1.15 var(--fh);color:var(--w);margin-bottom:6px;letter-spacing:.01em}
+.hero-hi em{font-style:normal;color:var(--gold)}
+.hero-sub{font:.92rem var(--f);color:var(--w5)}
+.hero-daychip{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--ga2);border-radius:50px;background:rgba(10,61,46,.35);font:600 .78rem var(--f);color:var(--w7);white-space:nowrap}
+.hero-daychip .n{font:700 .9rem var(--m);color:var(--gold)}
+.hero-body{padding:18px 34px 26px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.itags{display:flex;flex-wrap:wrap;gap:6px}
 .itag{font:500 .68rem var(--f);padding:4px 12px;border-radius:50px;background:var(--ga2);color:var(--gold);border:1px solid var(--ga2)}
-@media(max-width:768px){.wc-top,.wc-body{padding:20px}.dg{grid-template-columns:1fr}}
+
+/* ── Spotlight (now / next) + progress side-by-side ───── */
+.grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:stretch}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+
+.spot{position:relative;background:var(--glass);border:1px solid var(--ga2);border-radius:var(--rx);padding:24px 26px;display:flex;flex-direction:column;min-height:190px;overflow:hidden}
+.spot::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--gold),var(--gold-d))}
+.spot.live::before{background:linear-gradient(180deg,var(--green),var(--emerald-ll))}
+.spot-kick{display:flex;align-items:center;gap:9px;font:700 .68rem var(--f);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.spot.live .spot-kick{color:var(--green)}
+.spot-title{font:600 1.3rem/1.3 var(--fh);color:var(--w);margin-bottom:8px}
+.spot-meta{display:flex;flex-wrap:wrap;gap:8px 16px;font:.85rem var(--f);color:var(--w7);margin-bottom:16px}
+.spot-meta .mi{display:inline-flex;align-items:center;gap:6px}
+.spot-meta svg{width:15px;height:15px;stroke:var(--gold);fill:none;flex-shrink:0}
+.spot-count{font:700 1.05rem var(--m);color:var(--gold)}
+.spot-actions{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap}
+.spot-empty{margin:auto 0;color:var(--w5);font:.95rem/1.6 var(--f)}
+.spot-empty strong{display:block;color:var(--w9);font:600 1.1rem var(--fh);margin-bottom:4px}
+
+/* Progress card */
+.prog{background:var(--glass);border:1px solid var(--ga2);border-radius:var(--rx);padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.prog-h{font:600 .72rem var(--f);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.prog-row{display:flex;align-items:center;gap:14px}
+.prog-ring-wrap{position:relative;width:56px;height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.prog-ring-wrap .rv{position:absolute;font:700 .82rem var(--m);color:var(--w9)}
+.prog-info{flex:1;min-width:0}
+.prog-info .t{font:600 .9rem var(--f);color:var(--w9)}
+.prog-info .s{font:.76rem var(--f);color:var(--w5);margin-top:2px}
+.prog-done{color:var(--green);font:600 .7rem var(--f);letter-spacing:.04em;text-transform:uppercase}
+
+/* ── Quick actions ────────────────────────────────────── */
+.qa{display:flex;gap:8px;flex-wrap:wrap}
+.qi{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:var(--ga2);border:1px solid var(--ga2);border-radius:50px;font:.84rem var(--f);color:var(--w7);transition:.22s;text-decoration:none}
+.qi:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,169,98,.1);transform:translateY(-2px)}
+.qi svg{width:16px;height:16px;stroke:currentColor;fill:none}
+
+/* ── Explore grid ─────────────────────────────────────── */
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px}
+.dt{position:relative;background:var(--glass);border:1px solid var(--ga2);border-radius:var(--rl);padding:22px;text-decoration:none;color:inherit;display:flex;flex-direction:column;overflow:hidden}
+.dt::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:.3s}
+.dt:hover::before{opacity:1}
+.dt-ico{width:42px;height:42px;border-radius:12px;background:var(--ga2);border:1px solid var(--ga2);display:flex;align-items:center;justify-content:center;margin-bottom:14px;transition:.25s}
+.dt:hover .dt-ico{background:rgba(201,169,98,.14);border-color:var(--ga3)}
+.dt-ico svg{width:21px;height:21px;stroke:var(--gold);fill:none}
+.dt h3{font:600 1.02rem var(--fh);color:var(--w);margin-bottom:5px}
+.dt p{font:.83rem/1.55 var(--f);color:var(--w5)}
+.dt .go{margin-top:12px;font:600 .74rem var(--f);color:var(--gold);opacity:0;transform:translateX(-4px);transition:.25s}
+.dt:hover .go{opacity:1;transform:none}
+
+.sponsor-rail{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+@media(max-width:768px){.hero-top,.hero-body{padding-left:20px;padding-right:20px}.hero-hi{font-size:1.5rem}.spot,.prog{padding:20px}}
 </style>
 {% endblock %}
 {% block body %}
 <div class="home-page">
 {% include "nav.html" %}
-<div class="container">
-  <div class="welcome"><div class="wc animate-up">
-    <div class="wc-top"><div class="wc-hi">Welcome back, <em>{{ user.full_name.split(' ')[0] }}</em></div><div class="wc-sub">Your personalized congress experience starts here.</div></div>
-    <div class="wc-body">
-      <div class="wc-meta"><span class="badge badge-green">{{ congress_dates }}</span><span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>{% if user.institution %}<span class="badge" style="color:var(--w5);border-color:var(--w1);background:var(--w05)">{{ user.institution }}</span>{% endif %}</div>
-      {% if user.research_interests %}<div class="itags">{% for interest in user.research_interests %}<span class="itag">{{ interest }}</span>{% endfor %}</div>{% endif %}
+<div class="container"><div class="home-wrap">
+
+  <!-- Hero -->
+  <section class="hero animate-up">
+    <div class="hero-top">
+      <div>
+        <div class="hero-hi" id="heroHi">Welcome back, <em>{{ user.full_name.split(' ')[0] }}</em></div>
+        <div class="hero-sub" id="heroSub">Your personalized congress experience.</div>
+      </div>
+      <div class="hero-daychip" id="dayChip"><span>{{ congress_dates }}</span></div>
     </div>
-  </div></div>
-  <div class="stitle animate-up delay-1">Quick Actions</div>
-  <div class="qa animate-up delay-1"><a href="/schedule" class="qi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>{% if feature_enabled('papers') %}<a href="/papers" class="qi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}{% if feature_enabled('posters') %}<a href="/posters" class="qi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Posters</a>{% endif %}{% if feature_enabled('notes') %}<a href="/notes" class="qi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</a>{% endif %}<a href="/certificates" class="qi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Certificates</a>{% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="qi" style="color:var(--gold)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}</div>
-  <div class="stitle animate-up delay-2">Your Dashboard</div>
-  <div class="dg">
-    <a href="/schedule" class="dt animate-up delay-2" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><h3>Schedule</h3><p>Browse the full congress program — sessions, talks, and breaks.</p></a>
-    {% if feature_enabled('papers') %}<a href="/papers" class="dt animate-up delay-3" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><h3>Papers &amp; Abstracts</h3><p>Submit your research, track review status, and browse accepted papers. Deadline: {{ congress_deadline }}.</p></a>{% endif %}
-    {% if feature_enabled('posters') %}<a href="/posters" class="dt animate-up delay-4" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><h3>Poster Gallery</h3><p>Browse the poster hall, vote for your favourites, and play the scavenger hunt.</p></a>{% endif %}
-    <a href="/certificates" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><h3>Certificates</h3><p>Attendance, CME/CPD, and speaker certificates.</p></a>
-    {% if feature_enabled('connect') %}<a href="/connect" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h3>Connect</h3><p>Find fellow researchers in the opt-in attendee directory.</p></a>{% endif %}
-    {% if feature_enabled('sponsors') %}<a href="/sponsors" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg></div><h3>Sponsors &amp; Exhibitors</h3><p>Meet our partners, explore virtual booths, and connect with exhibitors.</p></a>{% endif %}
-    {% if feature_enabled('companion') %}<a href="/companion" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg></div><h3>AI Congress Companion</h3><p>Ask anything about the program, get timely nudges, and find the sessions worth your day.</p></a>{% endif %}
-    {% if feature_enabled('recordings') %}<a href="/recordings" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div><h3>Session Recordings</h3><p>Watch talks you missed, with searchable transcripts and slide-sync playback.</p></a>{% endif %}
-    {% if feature_enabled('knowledge') %}<a href="/knowledge" class="dt animate-up delay-5" style="text-decoration:none;color:inherit;display:block;"><div class="dt-ico"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg></div><h3>Knowledge Map</h3><p>See how talks, posters, papers and researchers connect — and follow a topic across the days.</p></a>{% endif %}
-  </div>
+    <div class="hero-body">
+      <span class="badge badge-gold">{{ user.role.value | replace('_', ' ') | title }}</span>
+      {% if user.institution %}<span class="badge" style="color:var(--w5);border-color:var(--w1);background:var(--w05)">{{ user.institution }}</span>{% endif %}
+      {% if user.research_interests %}<span class="itags">{% for interest in user.research_interests %}<span class="itag">{{ interest }}</span>{% endfor %}</span>{% endif %}
+    </div>
+  </section>
+
+  <!-- Spotlight + progress -->
+  <section class="grid-2 animate-up delay-1">
+    <div class="spot" id="spotCard">
+      <div class="spot-kick"><span class="pulse" style="visibility:hidden"></span> <span id="spotKick">Your day</span></div>
+      <div class="spot-empty"><strong>Loading your day…</strong>Fetching what's happening at the congress.</div>
+    </div>
+    <div class="prog" id="progCard">
+      <div class="prog-h">Your progress</div>
+      <div id="progBody"><div class="prog-info"><div class="s">Loading…</div></div></div>
+    </div>
+  </section>
+
+  <!-- Quick actions -->
+  <section class="animate-up delay-2">
+    <div class="sec-head"><span class="sec-kick">Quick actions</span><span class="sec-rule"></span></div>
+    <div class="qa">
+      <a href="/schedule" class="qi"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>
+      {% if feature_enabled('papers') %}<a href="/papers" class="qi"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Papers</a>{% endif %}
+      {% if feature_enabled('posters') %}<a href="/posters" class="qi"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Posters</a>{% endif %}
+      {% if feature_enabled('notes') %}<a href="/notes" class="qi"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg> Notes</a>{% endif %}
+      <a href="/certificates" class="qi"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> Certificates</a>
+      {% if feature_enabled('companion') %}<a href="/companion" class="qi" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/></svg> Ask the AI</a>{% endif %}
+      {% if user.role.value in ['admin', 'super_admin'] %}<a href="/admin" class="qi" style="color:var(--gold)"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</a>{% endif %}
+    </div>
+  </section>
+
+  <!-- Nudges (companion) -->
+  <section class="animate-up delay-2" id="nudgeSec" style="display:none">
+    <div class="sec-head"><span class="sec-kick">For you</span><span class="sec-rule"></span></div>
+    <div class="qa" id="nudgeBody"></div>
+  </section>
+
+  <!-- Explore -->
+  <section class="animate-up delay-3">
+    <div class="sec-head"><span class="sec-kick">Explore</span><span class="sec-rule"></span></div>
+    <div class="dg">
+      <a href="/schedule" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><h3>Schedule</h3><p>The full program — sessions, talks, breaks — searchable and bookmarkable.</p><span class="go">Open →</span></a>
+      {% if feature_enabled('papers') %}<a href="/papers" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg></div><h3>Papers &amp; Abstracts</h3><p>Submit research, track review status, browse accepted papers. Deadline {{ congress_deadline }}.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('posters') %}<a href="/posters" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><h3>Poster Gallery</h3><p>Browse the poster hall, vote for favourites, and play the scavenger hunt.</p><span class="go">Open →</span></a>{% endif %}
+      <a href="/certificates" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><h3>Certificates</h3><p>Attendance, CME/CPD and speaker certificates — verifiable, with QR.</p><span class="go">Open →</span></a>
+      {% if feature_enabled('connect') %}<a href="/connect" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h3>Connect</h3><p>Find fellow researchers in the opt-in attendee directory.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('sponsors') %}<a href="/sponsors" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M10 5h4v2h-4z"/></svg></div><h3>Sponsors &amp; Exhibitors</h3><p>Meet partners, explore virtual booths, and connect with exhibitors.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('venue') %}<a href="/venue" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h3>Venue &amp; Dubai</h3><p>Live floor plan, turn-by-turn navigation, WiFi, and local info.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('recordings') %}<a href="/recordings" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div><h3>Session Recordings</h3><p>Watch talks you missed, with searchable transcripts and slide sync.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('knowledge') %}<a href="/knowledge" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg></div><h3>Knowledge Map</h3><p>See how talks, posters, papers and people connect — follow a topic across days.</p><span class="go">Open →</span></a>{% endif %}
+      {% if feature_enabled('companion') %}<a href="/companion" class="dt lift"><div class="dt-ico"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg></div><h3>AI Companion</h3><p>Ask anything about the program, get timely nudges, and find your day's best sessions.</p><span class="go">Open →</span></a>{% endif %}
+    </div>
+  </section>
+
   {% if feature_enabled('sponsors') %}
-  <div id="sponsorRail" style="display:none">
-    <div class="stitle">Our Sponsors</div>
-    <a href="/sponsors" style="text-decoration:none"><div id="sponsorLogos" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:36px"></div></a>
-  </div>
-  <script>
-  (async function(){
-    try{const r=await fetch('/api/sponsors',{credentials:'same-origin'});if(!r.ok)return;const d=await r.json();
-      if(!d.sponsors||!d.sponsors.length)return;
-      const wrap=document.getElementById('sponsorRail'),box=document.getElementById('sponsorLogos');
-      box.innerHTML=d.sponsors.slice(0,12).map(function(s){
-        const cap=esc(s.name||'?');   // escape, don't strip — "Smith & Co" stays intact
-        return s.has_logo
-          ? '<div title="'+cap+'" style="height:46px;padding:8px 14px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;display:flex;align-items:center"><img src="/api/sponsors/'+s.id+'/logo" alt="'+cap+'" style="max-height:30px;max-width:120px;object-fit:contain"></div>'
-          : '<div style="padding:10px 16px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;font:600 .85rem var(--fh);color:var(--gold)">'+cap+'</div>';
-      }).join('');
-      wrap.style.display='block';
-    }catch(e){}
-  })();
-  </script>
+  <section id="sponsorRail" class="animate-up" style="display:none">
+    <div class="sec-head"><span class="sec-kick">Our sponsors</span><span class="sec-rule"></span><a class="sec-link" href="/sponsors">See all →</a></div>
+    <a href="/sponsors" style="text-decoration:none"><div class="sponsor-rail" id="sponsorLogos"></div></a>
+  </section>
   {% endif %}
-</div></div>
+
+</div></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+const COMPANION_ON = {{ 'true' if feature_enabled('companion') else 'false' }};
+const QA_ON = {{ 'true' if feature_enabled('qa') else 'false' }};
+const RING_C = 2 * Math.PI * 19;   // circumference for r=19
+
+function fmtClock(iso){try{return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
+function untilText(iso){
+  const m = Math.round((new Date(iso) - Date.now())/60000);
+  if(m<=0) return 'starting now';
+  if(m<60) return 'in ' + m + ' min';
+  const h=Math.floor(m/60), mm=m%60;
+  return 'in ' + h + 'h' + (mm?(' '+mm+'m'):'');
+}
+
+// ── Spotlight: happening now / up next (from the live program) ──
+let _spotTimer=null;
+async function loadSpotlight(){
+  let items=[];
+  try{const d=await api('/api/schedule');items=(d.items||[]).filter(i=>i.type!=='break');}catch(e){}
+  items.sort((a,b)=>new Date(a.start_time)-new Date(b.start_time));
+  const now=Date.now();
+  const live=items.find(i=>new Date(i.start_time)<=now && new Date(i.end_time)>now);
+  const next=items.find(i=>new Date(i.start_time)>now);
+  const card=document.getElementById('spotCard');
+  const pin=(t)=>t?(new Date(t)).getTime():0;
+
+  function sessionCard(it, isLive){
+    const room = it.location ? '<span class="mi"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+esc(it.location)+'</span>' : '';
+    const when = isLive
+      ? '<span class="mi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>ends '+fmtClock(it.end_time)+'</span>'
+      : '<span class="mi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'+fmtClock(it.start_time)+'</span>';
+    const count = isLive
+      ? '<span class="spot-count" style="color:var(--green)">● LIVE now</span>'
+      : '<span class="spot-count" data-when="'+it.start_time+'">'+untilText(it.start_time)+'</span>';
+    const primary = (isLive && QA_ON)
+      ? '<a class="btn btn-gold btn-sm" href="/qa/'+it.id+'">Join live Q&amp;A</a>'
+      : '<a class="btn btn-gold btn-sm" href="/schedule">View in schedule</a>';
+    const bell = COMPANION_ON ? '<a class="btn btn-ghost btn-sm" href="/companion">Plan my day</a>' : '';
+    return '<div class="spot-kick"><span class="pulse"'+(isLive?'':' style="visibility:hidden"')+'></span> '+(isLive?'Happening now':'Up next')+'</div>'+
+      '<div class="spot-title">'+esc(it.title)+'</div>'+
+      '<div class="spot-meta">'+when+room+'</div>'+
+      '<div class="spot-meta" style="margin-bottom:16px">'+count+'</div>'+
+      '<div class="spot-actions">'+primary+bell+'</div>';
+  }
+
+  if(live){card.className='spot live';card.innerHTML=sessionCard(live,true);}
+  else if(next){card.className='spot';card.innerHTML=sessionCard(next,false);}
+  else{
+    card.className='spot';
+    card.innerHTML='<div class="spot-kick"><span class="pulse" style="visibility:hidden"></span> Your day</div>'+
+      '<div class="spot-empty"><strong>'+(items.length?'You\'re all caught up':'The program is being finalized')+'</strong>'+
+      (items.length?'No more sessions scheduled right now. Browse the full program or catch up on recordings.':'Check back soon — sessions will appear here as the schedule fills in.')+'</div>'+
+      '<div class="spot-actions" style="margin-top:16px"><a class="btn btn-gold btn-sm" href="/schedule">Browse the program</a></div>';
+  }
+  // Tick the "in X min" countdown.
+  clearInterval(_spotTimer);
+  _spotTimer=setInterval(()=>{
+    const el=card.querySelector('.spot-count[data-when]');
+    if(el){el.textContent=untilText(el.dataset.when);
+      if(new Date(el.dataset.when)-Date.now()<=0)loadSpotlight();}
+  },30000);
+}
+
+// ── Progress rings (certificates) ──────────────────────────────
+function ring(pct, label, sub, done){
+  const off = RING_C * (1 - Math.max(0,Math.min(1,pct)));
+  const pctTxt = Math.round(pct*100)+'%';
+  return '<div class="prog-row">'+
+    '<div class="prog-ring-wrap"><svg class="ring'+(done?' done':'')+'" viewBox="0 0 44 44">'+
+      '<circle class="ring-bg" cx="22" cy="22" r="19"/>'+
+      '<circle class="ring-fg" cx="22" cy="22" r="19" style="stroke-dasharray:'+RING_C.toFixed(1)+';stroke-dashoffset:'+off.toFixed(1)+'"/></svg>'+
+      '<span class="rv">'+pctTxt+'</span></div>'+
+    '<div class="prog-info"><div class="t">'+esc(label)+'</div><div class="s">'+esc(sub)+'</div></div>'+
+    (done?'<span class="prog-done">✓ done</span>':'')+'</div>';
+}
+async function loadProgress(){
+  let st;try{st=await api('/api/certificates/status');}catch(e){document.getElementById('progCard').style.display='none';return;}
+  const body=document.getElementById('progBody');
+  const rows=[];
+  (st.certificates||[]).forEach(c=>{
+    if(c.kind!=='attendance'&&c.kind!=='cme')return;
+    const pct=c.goal?c.progress/c.goal:0;
+    rows.push(ring(pct, c.title.replace(' Certificate','').replace('Certificate of ',''), c.progress+' / '+c.goal+' '+c.unit, c.unlocked));
+  });
+  if(!rows.length){document.getElementById('progCard').style.display='none';return;}
+  body.innerHTML=rows.join('');
+}
+
+// ── Companion enrichment (greeting, energy, nudges) ────────────
+async function loadBriefing(){
+  if(!COMPANION_ON)return;
+  let d;try{d=await api('/api/companion/briefing');}catch(e){return;}
+  if(d.greeting)document.getElementById('heroHi').innerHTML=esc(d.greeting).replace(/,\s*([^,]+)$/,', <em>$1</em>');
+  if(d.date){const st=d.sessions_today?d.sessions_today+' session'+(d.sessions_today===1?'':'s')+' today':'';
+    document.getElementById('heroSub').textContent=d.date+(st?' · '+st:'');}
+  if(d.energy&&d.energy.headline){
+    const chip=document.getElementById('dayChip');
+    chip.innerHTML='<span class="n">'+(d.attended!=null?d.attended:0)+'</span><span>attended</span>';
+    chip.title=d.energy.headline;
+  }
+  const nudges=(d.nudges||[]).filter(n=>n&&(n.text||n.label));
+  if(nudges.length){
+    document.getElementById('nudgeSec').style.display='';
+    document.getElementById('nudgeBody').innerHTML=nudges.slice(0,4).map(n=>{
+      const label=esc(n.label||n.text);
+      const href=(n.link&&/^\/(?!\/)/.test(n.link))?n.link:'/companion';
+      return '<a class="qi" href="'+href+'">'+label+'</a>';
+    }).join('');
+  }
+}
+
+// ── Sponsor rail ───────────────────────────────────────────────
+async function loadSponsors(){
+  const wrap=document.getElementById('sponsorRail');if(!wrap)return;
+  try{const d=await api('/api/sponsors');if(!d.sponsors||!d.sponsors.length)return;
+    const box=document.getElementById('sponsorLogos');
+    box.innerHTML=d.sponsors.slice(0,12).map(function(s){
+      const cap=esc(s.name||'?');
+      return s.has_logo
+        ? '<div title="'+cap+'" style="height:46px;padding:8px 14px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;display:flex;align-items:center"><img src="/api/sponsors/'+s.id+'/logo" alt="'+cap+'" style="max-height:30px;max-width:120px;object-fit:contain"></div>'
+        : '<div style="padding:10px 16px;background:var(--glass);border:1px solid var(--ga2);border-radius:12px;font:600 .85rem var(--fh);color:var(--gold)">'+cap+'</div>';
+    }).join('');
+    wrap.style.display='block';
+  }catch(e){}
+}
+
+// api() from main.js is POST-only; the dashboard needs GETs, so use a small helper.
+async function api(url){
+  const r=await fetch(url,{credentials:'same-origin'});
+  if(!r.ok)throw new Error('load failed');
+  return r.json();
+}
+
+loadSpotlight();loadProgress();loadBriefing();loadSponsors();
+</script>
 {% endblock %}

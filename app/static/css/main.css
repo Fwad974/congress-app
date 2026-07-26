@@ -245,3 +245,31 @@ a:hover{color:var(--gold-l)}
 .sk-card{background:var(--glass);border:1px solid var(--ga2);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px}
 .sk-line{height:12px;margin:8px 0;border-radius:6px}
 .sk-line.w40{width:40%}.sk-line.w60{width:60%}.sk-line.w80{width:80%}.sk-line.title{height:18px;width:55%;margin-bottom:14px}
+
+/* ── Dashboard / engagement components (existing palette only) ──── */
+/* Section header with a gold rule + optional action link. */
+.sec-head{display:flex;align-items:baseline;gap:12px;margin:0 0 16px}
+.sec-head h2{font:600 1.15rem var(--fh);color:var(--w);letter-spacing:.01em}
+.sec-head .sec-kick{font:600 .68rem var(--f);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.sec-head .sec-rule{flex:1;height:1px;background:linear-gradient(90deg,var(--ga2),transparent)}
+.sec-head .sec-link{font:600 .78rem var(--f);color:var(--gold);text-decoration:none;white-space:nowrap;opacity:.85;transition:.2s}
+.sec-head .sec-link:hover{opacity:1}
+
+/* Live pulse dot — uses the existing --green semantic token. */
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(102,187,106,.5);animation:pulse-ring 1.8s ease-out infinite}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(102,187,106,.45)}70%{box-shadow:0 0 0 8px rgba(102,187,106,0)}100%{box-shadow:0 0 0 0 rgba(102,187,106,0)}}
+
+/* Progress ring (SVG). Set --pct (0..1) via inline style; JS fills stroke. */
+.ring{width:56px;height:56px;transform:rotate(-90deg);flex-shrink:0}
+.ring-bg{fill:none;stroke:var(--ga2);stroke-width:4}
+.ring-fg{fill:none;stroke:var(--gold);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)}
+.ring.done .ring-fg{stroke:var(--green)}
+
+/* Compact progress bar. */
+.pbar{height:6px;border-radius:50px;background:var(--ga2);overflow:hidden}
+.pbar>span{display:block;height:100%;border-radius:50px;background:linear-gradient(90deg,var(--gold-d),var(--gold));width:0;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.pbar.done>span{background:linear-gradient(90deg,var(--emerald-ll),var(--green))}
+
+/* Elevation utility for interactive cards. */
+.lift{transition:transform .25s cubic-bezier(.22,1,.36,1),border-color .25s,box-shadow .25s}
+.lift:hover{transform:translateY(-4px);border-color:var(--ga3);box-shadow:0 14px 40px rgba(0,0,0,.35)}
