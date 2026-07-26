@@ -67,7 +67,19 @@
 .dt:hover .go{opacity:1;transform:none}
 
 .sponsor-rail{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-@media(max-width:768px){.hero-top,.hero-body{padding-left:20px;padding-right:20px}.hero-hi{font-size:1.5rem}.spot,.prog{padding:20px}}
+@media(max-width:768px){
+  .home-wrap{gap:26px;padding-top:18px}
+  .hero-top,.hero-body{padding-left:20px;padding-right:20px}
+  .hero-hi{font-size:1.5rem}.spot,.prog{padding:20px}
+  /* Mobile: Explore compresses to a compact launcher grid — the full
+     descriptions live on desktop; on a phone, icon + name is the journey. */
+  .dg{grid-template-columns:repeat(2,1fr);gap:10px}
+  .dt{padding:14px}
+  .dt-ico{width:34px;height:34px;margin-bottom:10px;border-radius:9px}
+  .dt-ico svg{width:17px;height:17px}
+  .dt h3{font-size:.92rem;margin-bottom:0}
+  .dt p,.dt .go{display:none}
+}
 </style>
 {% endblock %}
 {% block body %}

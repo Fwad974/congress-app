@@ -126,7 +126,10 @@ function renderAccepted(){
   const cat=document.getElementById('acCat').value;
   let list=_accepted.filter(p=>!cat||p.category===cat);
   if(term)list=list.filter(p=>(p.title+' '+p.authors+' '+(p.category||'')+' '+p.abstract).toLowerCase().includes(term));
-  if(!list.length){c.innerHTML='<div class="pp-empty">'+(_accepted.length?'No papers match your search.':'No accepted papers yet — check back during the congress.')+'</div>';return;}
+  if(!list.length){c.innerHTML='<div class="pp-empty">'+(_accepted.length
+    ?'No papers match your search.'
+    :'No accepted papers yet — decisions land here during the congress.'+
+     '<div style="margin-top:14px"><button class="pp-btn primary" onclick="ppTab(\'submit\')">Submit your abstract</button></div>')+'</div>';return;}
   // Group by track for a proceedings-style layout.
   const groups={};list.forEach(p=>{(groups[p.category||'Other']=groups[p.category||'Other']||[]).push(p);});
   c.innerHTML=Object.keys(groups).sort().map(g=>

@@ -47,6 +47,15 @@
 .sched-act.rate.on svg{fill:var(--gold)}
 .sched-act.del{color:var(--red);border-color:rgba(231,76,60,.15)}
 .sched-act.del:hover{background:rgba(231,76,60,.08);border-color:var(--red)}
+/* Journey states: what's on now leads, what's over recedes. */
+.sched-card.live{border-color:rgba(102,187,106,.32);background:linear-gradient(90deg,rgba(102,187,106,.06),var(--glass) 45%);box-shadow:0 0 0 1px rgba(102,187,106,.08),0 8px 26px rgba(0,0,0,.2)}
+.sched-card.past{opacity:.62}
+.sched-card.past:hover{opacity:1}
+.sched-tag.live{background:rgba(102,187,106,.12);color:var(--green);border:1px solid rgba(102,187,106,.28);display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.sched-tag.live .pulse{width:6px;height:6px}
+.sched-live-cta{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+#jumpNow{border-color:rgba(102,187,106,.3);color:var(--green)}
+#jumpNow:hover{border-color:var(--green);background:rgba(102,187,106,.07);color:var(--green)}
 .sched-empty{text-align:center;padding:60px 24px;color:var(--w5);font:.95rem var(--f);background:var(--glass);border:1px dashed rgba(201,169,98,.15);border-radius:var(--rl)}
 .sched-empty strong{color:var(--w);display:block;margin-bottom:6px;font:600 1.05rem var(--fh)}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px)}
@@ -71,7 +80,12 @@
 .loading-bar{height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:loading-slide 1.5s ease infinite;display:none}
 .loading-bar.active{display:block}
 @keyframes loading-slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-@media(max-width:720px){.sched-card{grid-template-columns:1fr;gap:10px}.sched-time{font-size:.76rem}.row-2{grid-template-columns:1fr}}
+@media(max-width:720px){.sched-card{grid-template-columns:1fr;gap:10px}.sched-time{font-size:.76rem}.row-2{grid-template-columns:1fr}
+  /* Mobile: comfortable touch targets, actions as a labeled-feeling row */
+  .sched-act{width:42px;height:42px;border-radius:10px}
+  .sched-act svg{width:17px;height:17px}
+  .sched-actions{gap:8px;flex-wrap:wrap}
+  .sched-live-cta .sched-btn{width:100%;justify-content:center}}
 </style>
 {% endblock %}
 
@@ -99,6 +113,7 @@
       <option value="networking">Networking</option>
       <option value="other">Other</option>
     </select>
+    <button class="sched-btn" id="jumpNow" style="display:none" onclick="jumpToLive()" title="Scroll to the session happening now"><span class="pulse"></span> Happening now</button>
     <button class="sched-btn" id="bookmarkFilterBtn" onclick="toggleBookmarkFilter()" title="Show only your bookmarked items">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
       My Bookmarks
@@ -361,6 +376,8 @@ function render(items, searchQ){
       msg='<strong>No schedule yet</strong>Check back soon — the program is being finalized.';
     }
     c.innerHTML='<div class="sched-empty">'+msg+'</div>';
+    const jn0=document.getElementById('jumpNow');
+    if(jn0)jn0.style.display='none';
     return;
   }
   const groups={};
@@ -379,6 +396,12 @@ function render(items, searchQ){
       g.items.map(card).join('')+
     '</div></div>';
   }).join('');
+  const jn=document.getElementById('jumpNow');
+  if(jn)jn.style.display=c.querySelector('.sched-card.live')?'inline-flex':'none';
+}
+function jumpToLive(){
+  const el=document.querySelector('.sched-card.live');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // Per-type field spec — must mirror app/schemas/schedule.py:EXTRA_SPEC
@@ -484,7 +507,11 @@ function extraDetails(i){
 
 function card(i){
   const x=i.extra||{};
+  const _now=Date.now(),_st=new Date(i.start_time).getTime(),_en=new Date(i.end_time).getTime();
+  const isLive=_st<=_now&&_en>_now&&i.type!=='break';
+  const isPast=_en<=_now;
   const tags=[
+    isLive?'<span class="sched-tag live"><span class="pulse"></span>Live now</span>':'',
     '<span class="sched-tag type '+esc(i.type)+'">'+esc(i.type)+'</span>',
     i.is_presenter?'<span class="sched-tag speaker">You present</span>':'',
     i.is_chair?'<span class="sched-tag speaker">You chair</span>':'',
@@ -509,15 +536,23 @@ function card(i){
     '<button class="sched-act" title="Edit" onclick="openEdit('+i.id+')">'+ICONS.edit+'</button>'+
     '<button class="sched-act del" title="Delete" onclick="confirmDelete('+i.id+')">'+ICONS.trash+'</button>'
   ):'';
-  return '<div class="sched-card">'+
+  // A live session earns a labeled call to action — the icon row stays for
+  // secondary tasks; past sessions keep 1-tap rating front and centre.
+  const liveCta=isLive?(
+    '<div class="sched-live-cta">'+
+    (QA_ON?'<a class="sched-btn primary" href="/qa/'+i.id+'">Join live Q&amp;A</a>':'')+
+    ((i.is_chair||i.is_presenter)?'<a class="sched-btn" href="/present/'+i.id+'" target="_blank" rel="noopener">Open presenter view</a>':'')+
+    '</div>'):'';
+  return '<div class="sched-card'+(isLive?' live':isPast?' past':'')+'">'+
     '<div class="sched-time">'+fmtTime(i.start_time)+' &mdash; '+fmtTime(i.end_time)+'<span class="dur">'+fmtDuration(i.start_time,i.end_time)+'</span></div>'+
     '<div class="sched-body">'+
       '<h3>'+esc(i.title)+'</h3>'+
       '<div class="sched-tags">'+tags+'</div>'+
       (i.description?'<div class="desc">'+esc(i.description)+'</div>':'')+
       extraDetails(i)+
+      liveCta+
     '</div>'+
-    '<div class="sched-actions">'+qaBtn+rateBtn+noteBtn+bmBtn+chairActs+presenterActs+adminActs+'</div>'+
+    '<div class="sched-actions">'+(isLive&&QA_ON?'':qaBtn)+rateBtn+noteBtn+bmBtn+chairActs+presenterActs+adminActs+'</div>'+
   '</div>';
 }
 

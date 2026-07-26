@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <div class="checkin animate-up">
+  <div class="checkin animate-up" id="checkin">
     <div><div class="lbl">📍 Session check-in</div><div style="font:.82rem var(--f);color:var(--w5);margin-top:3px">Scan the QR at the session door, or enter its code here.</div></div>
     <div style="display:flex;gap:8px;margin-left:auto"><input id="ciCode" placeholder="Session code"><button onclick="doCheckin()">Check in</button></div>
   </div>
@@ -92,6 +92,15 @@ async function doCheckin(codeArg){
 document.addEventListener('DOMContentLoaded',async()=>{
   const code=new URLSearchParams(location.search).get('checkin');
   if(code){history.replaceState(null,'',location.pathname);await doCheckin(code);}
+  // Deep link from the bottom-nav "Check in" action: focus the code box.
+  // Deferred past window.load — the browser's own fragment navigation runs
+  // between DOMContentLoaded and load and would steal the focus back.
+  if(location.hash==='#checkin'){
+    const f=()=>{const ci=document.getElementById('ciCode');
+      if(ci){ci.focus();ci.scrollIntoView({block:'center'});}};
+    if(document.readyState==='complete')setTimeout(f,60);
+    else window.addEventListener('load',()=>setTimeout(f,60));
+  }
   loadCerts();loadAttended();
 });
 </script>
