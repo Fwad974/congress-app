@@ -240,14 +240,19 @@ function ring(pct, label, sub, done){
 async function loadProgress(){
   let st;try{st=await api('/api/certificates/status');}catch(e){document.getElementById('progCard').style.display='none';return;}
   const body=document.getElementById('progBody');
-  const rows=[];
+  const rows=[];let started=false;
   (st.certificates||[]).forEach(c=>{
     if(c.kind!=='attendance'&&c.kind!=='cme')return;
+    if(c.progress>0)started=true;
     const pct=c.goal?c.progress/c.goal:0;
     rows.push(ring(pct, c.title.replace(' Certificate','').replace('Certificate of ',''), c.progress+' / '+c.goal+' '+c.unit, c.unlocked));
   });
   if(!rows.length){document.getElementById('progCard').style.display='none';return;}
-  body.innerHTML=rows.join('');
+  // Two 0% rings greet nobody well — before the first check-in, invite instead.
+  body.innerHTML=started?rows.join(''):
+    '<div class="prog-info" style="display:flex;flex-direction:column;gap:12px">'+
+    '<div class="s" style="font-size:.85rem;line-height:1.6">Your congress record starts at your first session — scan the QR at the door, or enter its code.</div>'+
+    '<a class="btn btn-ghost btn-sm" href="/certificates#checkin" style="align-self:flex-start">Check in to a session</a></div>';
 }
 
 // ── Companion enrichment (greeting, energy, nudges) ────────────

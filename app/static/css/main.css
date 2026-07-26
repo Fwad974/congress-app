@@ -290,3 +290,23 @@ a:hover{color:var(--gold-l)}
 .auth-crest img{width:50px;height:50px;filter:drop-shadow(0 4px 14px rgba(201,169,98,.25))}
 .auth-crest .ak{font:600 .6rem var(--f);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
 .auth-crest .ad{font:.72rem var(--m);color:var(--w3);letter-spacing:.05em}
+
+/* ── Interaction polish ──────────────────────────────────────────
+   Keyboard users get a visible gold ring; form fields keep their own
+   focus treatment; taps feel tactile; motion respects user settings. */
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+.form-input:focus-visible,select:focus-visible,textarea:focus-visible,
+.sched-filter:focus-visible,.note-input:focus-visible,.qa-input:focus-visible{outline:none}
+*{-webkit-tap-highlight-color:transparent}
+.btn:active,.chip:active,.qi:active,.sched-btn:active,.pp-btn:active,
+.nav-item:active,.dt:active,.mobile-nav-item:active{transform:scale(.97)}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+@media(max-width:768px){
+  /* 16px+ inputs stop iOS zooming the page on focus. */
+  .form-input,.sched-filter,.note-input,.qa-input,input,select,textarea{font-size:16px}
+  /* Toasts sit above the bottom nav on phones, not over the header. */
+  .toast{top:auto;right:12px;left:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));justify-content:center;text-align:center}
+}
